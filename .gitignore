@@ -3,11 +3,18 @@
 /server/node_modules
 
 # Archivos con variables de entorno/claves (CRÍTICO)
+.env
 /server/.env 
+/client/.env
 
 # Archivos de build (compilación)
 /client/dist 
 
-# Otros
+# Archivos subidos por usuarios
+/server/uploads/*
+!/server/uploads/.gitkeep
+
+# Otros del sistema
 *.log
 .DS_Store
+Thumbs.db

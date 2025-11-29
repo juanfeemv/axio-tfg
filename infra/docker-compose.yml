@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  # Base de datos principal (MongoDB)
+  mongo:
+    image: mongo:latest
+    container_name: axio_mongo
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  # Base de datos caché (Redis)
+  redis:
+    image: redis:alpine
+    container_name: axio_redis
+    restart: always
+    ports:
+      - "6379:6379"
+
+volumes:
+  mongo_data:

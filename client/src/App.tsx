@@ -1,34 +1,28 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
-
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
+    // Contenedor principal: Ocupa toda la altura (h-screen) y centra el contenido
+    <div className="flex min-h-screen items-center justify-center bg-slate-100">
+      
+      {/* Tarjeta blanca con sombra */}
+      <div className="p-8 bg-white rounded-xl shadow-lg text-center">
+        
+        {/* Título grande y rojo */}
+        <h1 className="text-4xl font-bold text-red-600 mb-4">
+          Hola Axio 🚀
+        </h1>
+        
+        {/* Texto gris pequeño */}
+        <p className="text-gray-600 text-lg">
+          El entorno de desarrollo ya está listo.
         </p>
+        
+        {/* Botón de prueba */}
+        <button className="mt-6 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+          Empezar Proyecto
+        </button>
+
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    </div>
   )
 }
 
