@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
+import authRoutes from './routes/authRoutes';
 
 // --- CONFIGURACIÓN ---
 dotenv.config();
@@ -11,6 +12,7 @@ const PORT = process.env.PORT || 3000;
 // --- MIDDLEWARES ---
 app.use(cors());
 app.use(express.json());
+app.use('/api/auth', authRoutes);
 
 // --- RUTA DE PRUEBA ---
 // Fíjate aquí: añadimos :Request y :Response para que TS nos ayude
