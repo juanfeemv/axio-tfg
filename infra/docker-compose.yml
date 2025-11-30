@@ -11,6 +11,22 @@ services:
     volumes:
       - mongo_data:/data/db
 
+  # --- NUEVO: Visor Web para la Base de Datos ---
+  mongo-express:
+    image: mongo-express
+    container_name: axio_admin
+    restart: always
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongo
+      ME_CONFIG_MONGODB_PORT: 27017
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: pass
+    depends_on:
+      - mongo
+  # ----------------------------------------------
+
   # Base de datos caché (Redis)
   redis:
     image: redis:alpine

@@ -2,42 +2,85 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Rutas
 import authRoutes from './routes/authRoutes';
 import analyzeRoutes from './routes/analyzeRoutes';
+import projectRoutes from './routes/projectRoutes';
 
-// --- CONFIGURACIÓN ---
-dotenv.config();
+// --- CONFIGURACIÓN Y DEBUG ---
+
+// Recreamos __filename y __dirname para ES Modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// 1. Buscamos el archivo .env en la carpeta padre (server/)
+const envPath = path.resolve(__dirname, '../.env');
+dotenv.config({ path: envPath });
+
+console.log("\n🔵 [DEBUG] Iniciando app.ts...");
+console.log("🔵 [DEBUG] Buscando archivo .env en:", envPath);
+console.log("🔵 [DEBUG] Valor leído de MONGO_URI:", process.env.MONGO_URI ? process.env.MONGO_URI : "UNDEFINED (¡VACÍO!)");
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // --- MIDDLEWARES ---
 app.use(cors());
 app.use(express.json());
+
+// --- NUEVO: Hacer pública la carpeta uploads para servir imágenes ---
+// Esto permite acceder a http://localhost:3000/uploads/foto.png desde el frontend
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// --- CONEXIÓN DE RUTAS ---
 app.use('/api/auth', authRoutes);
 app.use('/api/analyze', analyzeRoutes);
+app.use('/api/projects', projectRoutes);
 
 // --- RUTA DE PRUEBA ---
-// Fíjate aquí: añadimos :Request y :Response para que TS nos ayude
 app.get('/', (req: Request, res: Response) => {
   res.json({ 
     status: 'online',
     project: 'Axio API (TypeScript)',
-    version: '1.0.0' 
+    version: '1.0.0',
+    db_status: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected'
   });
 });
 
 // --- CONEXIÓN BASE DE DATOS ---
 const connectDB = async () => {
   try {
-    const mongoURI = process.env.MONGO_URI || ''; // TS nos obliga a asegurar que existe
+    const mongoURI = process.env.MONGO_URI || '';
+    
+    console.log("🔶 [DEBUG] Intentando conectar a Mongoose con:", mongoURI);
+    
     if (!mongoURI) {
-        throw new Error("MONGO_URI no está definido en el .env");
+        throw new Error("MONGO_URI no está definido en el .env (Revisa el archivo server/.env)");
     }
+    
     await mongoose.connect(mongoURI);
-    console.log('🟢 MongoDB conectado correctamente');
+    console.log('🟢 [ÉXITO] MongoDB conectado correctamente');
+
+    // --- DIAGNÓSTICO DE BASE DE DATOS ---
+    if (mongoose.connection.db) {
+        const dbName = mongoose.connection.db.databaseName;
+        console.log(`📂 Base de datos seleccionada: ${dbName}`);
+        
+        const collections = await mongoose.connection.db.listCollections().toArray();
+        console.log("📚 Colecciones encontradas en la BD:");
+        if (collections.length > 0) {
+            collections.forEach(col => console.log(`   - ${col.name}`));
+        } else {
+            console.log("   ⚠️  NO HAY COLECCIONES (La base de datos está vacía)");
+        }
+    }
+    
   } catch (error: any) {
-    console.log('🔴 Error conectando a MongoDB');
-    console.log('   Mensaje:', error.message);
+    console.log('🔴 [ERROR] Fallo al conectar a MongoDB');
+    console.log('   Causa:', error.message);
   }
 };
 

@@ -15,20 +15,34 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     // Le ponemos un nombre único con la fecha para que no se repitan
-    // Ej: 17092384-midiseño.png
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     cb(null, uniqueSuffix + path.extname(file.originalname));
   }
 });
 
-// 2. Filtro de seguridad (Solo Imágenes y PDFs)
+// 2. Filtro Híbrido: Acepta Imágenes, PDF y Código Fuente
 const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
   
-  if (allowedTypes.includes(file.mimetype)) {
+  // Lista blanca de tipos MIME permitidos
+  const allowedMimes = [
+    // Imágenes
+    'image/jpeg', 'image/png', 'image/webp', 'image/gif',
+    // Documentos
+    'application/pdf',
+    // Código Web
+    'text/html', 'text/css', 'text/javascript', 'application/javascript',
+    // Texto plano (para .ts, .tsx, .jsx, .json a veces se detectan así)
+    'text/plain', 'application/json', 'application/octet-stream' 
+  ];
+
+  // Verificación extra por extensión (porque .ts a veces da tipos raros)
+  const allowedExtensions = ['.html', '.css', '.js', '.jsx', '.ts', '.tsx', '.json'];
+  const ext = path.extname(file.originalname).toLowerCase();
+
+  if (allowedMimes.includes(file.mimetype) || allowedExtensions.includes(ext)) {
     cb(null, true);
   } else {
-    cb(new Error('Formato no válido. Solo JPG, PNG, WEBP y PDF.'));
+    cb(new Error(`Tipo de archivo no permitido: ${file.mimetype}`));
   }
 };
 

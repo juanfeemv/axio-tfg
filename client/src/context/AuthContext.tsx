@@ -2,38 +2,45 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import axios from 'axios';
 
-// 1. Definimos la forma de los datos del usuario
 interface User {
   id: string;
   username: string;
   email: string;
 }
 
-// 2. Definimos qué funciones y datos tendrá nuestro contexto
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   login: (email: string, pass: string) => Promise<void>;
   logout: () => void;
-  // AÑADIDO: Definimos que existe la función register
   register: (username: string, email: string, pass: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  // CORRECCIÓN: Leemos el localStorage DENTRO del useState.
+  // Así, el valor inicial es 'true' antes de que se pinte nada en pantalla.
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    return !!localStorage.getItem('token');
+  });
+  
   const [user, setUser] = useState<User | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Al cargar la web, miramos si hay token guardado para mantener la sesión
+  // Opcional: Recuperar datos del usuario al recargar
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (token) {
-      setIsAuthenticated(true);
+    const savedUser = localStorage.getItem('user'); // Si guardaras el usuario también
+    
+    if (token && savedUser) {
+       try {
+         setUser(JSON.parse(savedUser));
+       } catch (e) {
+         console.error("Error recuperando usuario");
+       }
     }
   }, []);
 
-  // Función LOGIN
   const login = async (email: string, pass: string) => {
     try {
       const res = await axios.post('http://localhost:3000/api/auth/login', { 
@@ -44,6 +51,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const { token, user } = res.data;
       
       localStorage.setItem('token', token);
+      // Guardamos también datos básicos del usuario para no perder el nombre al recargar
+      localStorage.setItem('user', JSON.stringify(user)); 
+      
       setUser(user);
       setIsAuthenticated(true);
     } catch (error) {
@@ -52,14 +62,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Función LOGOUT
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     setUser(null);
     setIsAuthenticated(false);
   };
 
-  // AÑADIDO: Función REGISTER
   const register = async (username: string, email: string, pass: string) => {
     try {
       await axios.post('http://localhost:3000/api/auth/register', { 
@@ -67,7 +76,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         email, 
         password: pass 
       });
-      // No hacemos login automático, dejamos que vaya a la página de login
     } catch (error) {
       console.error("Error registro:", error);
       throw error;
@@ -75,7 +83,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    // AÑADIDO: Pasamos 'register' dentro del value para que se pueda usar fuera
     <AuthContext.Provider value={{ user, isAuthenticated, login, logout, register }}>
       {children}
     </AuthContext.Provider>
