@@ -4,11 +4,12 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface IProject extends Document {
   title: string;
   owner: mongoose.Types.ObjectId; // Referencia al ID del usuario
-  type: 'url' | 'file' | 'code'; // He añadido 'code' aquí para que no te de error con lo nuevo
+  type: 'url' | 'file' | 'code';
   input: string; // La URL o el nombre original del archivo
-  image?: string; // <--- NUEVO: Campo opcional para la ruta de la imagen/captura
+  image?: string; // Campo opcional para la ruta de la imagen/captura
   status: 'pending' | 'analyzed' | 'failed';
   accessibilityScore?: number;
+  likes: mongoose.Types.ObjectId[]; // <--- NUEVO: Array de IDs de usuarios que dieron like
   createdAt: Date;
 }
 
@@ -34,7 +35,7 @@ const ProjectSchema: Schema = new Schema(
       type: String,
       required: true
     },
-    image: { // <--- NUEVO: Aquí se guardará "uploads/foto.png"
+    image: {
       type: String
     },
     status: {
@@ -46,7 +47,12 @@ const ProjectSchema: Schema = new Schema(
       type: Number,
       min: 0,
       max: 100
-    }
+    },
+    // <--- NUEVO CAMPO LIKES
+    likes: [{ 
+      type: Schema.Types.ObjectId, 
+      ref: 'User' 
+    }]
   },
   {
     timestamps: true

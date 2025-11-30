@@ -4,88 +4,87 @@ import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { createServer } from 'http'; // <--- NUEVO
+import { Server } from 'socket.io';  // <--- NUEVO
 
 // Rutas
 import authRoutes from './routes/authRoutes';
 import analyzeRoutes from './routes/analyzeRoutes';
 import projectRoutes from './routes/projectRoutes';
+import pinRoutes from './routes/pinRoutes';
 
-// --- CONFIGURACIÓN Y DEBUG ---
-
-// Recreamos __filename y __dirname para ES Modules
+// --- CONFIGURACIÓN ---
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-// 1. Buscamos el archivo .env en la carpeta padre (server/)
 const envPath = path.resolve(__dirname, '../.env');
 dotenv.config({ path: envPath });
 
 console.log("\n🔵 [DEBUG] Iniciando app.ts...");
-console.log("🔵 [DEBUG] Buscando archivo .env en:", envPath);
-console.log("🔵 [DEBUG] Valor leído de MONGO_URI:", process.env.MONGO_URI ? process.env.MONGO_URI : "UNDEFINED (¡VACÍO!)");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// --- MIDDLEWARES ---
-app.use(cors());
-app.use(express.json());
+// --- CREAMOS EL SERVIDOR HTTP Y SOCKET.IO ---
+// Express gestiona las rutas normales, httpServer gestiona la conexión real
+const httpServer = createServer(app); 
+const io = new Server(httpServer, {
+  cors: {
+    origin: "*", // Permitimos conexiones desde cualquier frontend (para evitar líos de CORS en dev)
+    methods: ["GET", "POST"]
+  }
+});
 
-// --- NUEVO: Hacer pública la carpeta uploads para servir imágenes ---
-// Esto permite acceder a http://localhost:3000/uploads/foto.png desde el frontend
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// --- LÓGICA DE TIEMPO REAL (SOCKETS) ---
+io.on('connection', (socket) => {
+  console.log('🔌 Nuevo cliente conectado por Socket:', socket.id);
 
-// --- CONEXIÓN DE RUTAS ---
-app.use('/api/auth', authRoutes);
-app.use('/api/analyze', analyzeRoutes);
-app.use('/api/projects', projectRoutes);
+  // 1. Unirse a la sala de un proyecto
+  // Cuando entras a ver un proyecto, te "suscribes" a sus cambios
+  socket.on('join_project', (projectId) => {
+    socket.join(projectId);
+    console.log(`👥 Usuario unido a la sala del proyecto: ${projectId}`);
+  });
 
-// --- RUTA DE PRUEBA ---
-app.get('/', (req: Request, res: Response) => {
-  res.json({ 
-    status: 'online',
-    project: 'Axio API (TypeScript)',
-    version: '1.0.0',
-    db_status: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected'
+  // 2. Alguien pone un Pin
+  socket.on('send_pin', (data) => {
+    // data trae: { projectId, pin }
+    // Rebotamos el pin a TODOS los que estén viendo ese proyecto
+    io.to(data.projectId).emit('new_pin', data.pin);
+    console.log(`📍 Nuevo Pin en proyecto ${data.projectId}`);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('❌ Cliente desconectado');
   });
 });
 
-// --- CONEXIÓN BASE DE DATOS ---
+// --- MIDDLEWARES ---
+app.use(cors());
+app.use(express.json());
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// --- RUTAS API ---
+app.use('/api/auth', authRoutes);
+app.use('/api/analyze', analyzeRoutes);
+app.use('/api/projects', projectRoutes);
+app.use('/api/pins', pinRoutes);
+
+app.get('/', (req: Request, res: Response) => {
+  res.json({ status: 'online', mode: 'real-time' });
+});
+
+// --- CONEXIÓN BD Y ARRANQUE ---
 const connectDB = async () => {
   try {
-    const mongoURI = process.env.MONGO_URI || '';
-    
-    console.log("🔶 [DEBUG] Intentando conectar a Mongoose con:", mongoURI);
-    
-    if (!mongoURI) {
-        throw new Error("MONGO_URI no está definido en el .env (Revisa el archivo server/.env)");
-    }
-    
-    await mongoose.connect(mongoURI);
-    console.log('🟢 [ÉXITO] MongoDB conectado correctamente');
-
-    // --- DIAGNÓSTICO DE BASE DE DATOS ---
-    if (mongoose.connection.db) {
-        const dbName = mongoose.connection.db.databaseName;
-        console.log(`📂 Base de datos seleccionada: ${dbName}`);
-        
-        const collections = await mongoose.connection.db.listCollections().toArray();
-        console.log("📚 Colecciones encontradas en la BD:");
-        if (collections.length > 0) {
-            collections.forEach(col => console.log(`   - ${col.name}`));
-        } else {
-            console.log("   ⚠️  NO HAY COLECCIONES (La base de datos está vacía)");
-        }
-    }
-    
+    await mongoose.connect(process.env.MONGO_URI || '');
+    console.log('🟢 [ÉXITO] MongoDB conectado');
   } catch (error: any) {
-    console.log('🔴 [ERROR] Fallo al conectar a MongoDB');
-    console.log('   Causa:', error.message);
+    console.log('🔴 [ERROR] Fallo al conectar a MongoDB:', error.message);
   }
 };
 
-// --- ARRANCAR SERVIDOR ---
-app.listen(PORT, () => {
-  console.log(`\n🚀 Servidor AXIO (TS) escuchando en http://localhost:${PORT}`);
+// ¡IMPORTANTE! Usamos httpServer.listen, NO app.listen
+httpServer.listen(PORT, () => {
+  console.log(`\n🚀 Servidor AXIO (Sockets + API) escuchando en http://localhost:${PORT}`);
   connectDB();
 });
