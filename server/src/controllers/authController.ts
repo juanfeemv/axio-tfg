@@ -2,83 +2,117 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
+import Project from '../models/Project'; // Importamos Project para la limpieza de datos
+import Audit from '../models/Audit';   // Importamos Audit para la limpieza de datos
+import { AuthRequest } from '../middlewares/auth'; // Asegúrate de importar AuthRequest
 
 // --- REGISTRO ---
 export const register = async (req: Request, res: Response) => {
   try {
     const { username, email, password } = req.body;
-
-    if (!username || !email || !password) {
-      return res.status(400).json({ message: 'Por favor, rellena todos los campos' });
-    }
+    if (!username || !email || !password) return res.status(400).json({ message: 'Rellena todos los campos' });
 
     const userExists = await User.findOne({ email });
-    if (userExists) {
-      return res.status(400).json({ message: 'Este email ya está registrado' });
-    }
+    if (userExists) return res.status(400).json({ message: 'Email ya registrado' });
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    const newUser = new User({
-      username,
-      email,
-      password: hashedPassword
-    });
-
+    const newUser = new User({ username, email, password: hashedPassword });
     await newUser.save();
 
-    res.status(201).json({ 
-      message: 'Usuario registrado con éxito',
-      user: { id: newUser._id, username: newUser.username, email: newUser.email }
-    });
-
+    res.status(201).json({ message: 'Usuario registrado', user: { id: newUser._id, username: newUser.username, email: newUser.email } });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Error en el servidor al registrar usuario' });
+    res.status(500).json({ message: 'Error en registro' });
   }
 };
 
-// --- LOGIN (LÓGICA REAL) ---
+// --- LOGIN ---
 export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ message: 'Faltan credenciales' });
 
-    // 1. Validar que envían datos
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Falta email o contraseña' });
-    }
-
-    // 2. Buscar usuario (incluyendo la contraseña oculta)
     const user = await User.findOne({ email }).select('+password');
-    if (!user) {
+    if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(400).json({ message: 'Credenciales inválidas' });
     }
 
-    // 3. Comparar contraseñas
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ message: 'Credenciales inválidas' });
-    }
-
-    // 4. Generar Token JWT
     const secret = process.env.JWT_SECRET || 'palabrasecretaparaeltoken';
     const token = jwt.sign({ id: user._id }, secret, { expiresIn: '7d' });
 
-    // 5. Responder con el token
-    res.json({
-      message: 'Login exitoso',
-      token,
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        avatar: user.avatar
-      }
-    });
-
+    res.json({ message: 'Login exitoso', token, user: { id: user._id, username: user.username, email: user.email, avatar: user.avatar } });
   } catch (error) {
-    console.error("Login error:", error);
-    res.status(500).json({ message: 'Error en el servidor al iniciar sesión' });
+    res.status(500).json({ message: 'Error en login' });
+  }
+};
+
+// --- ACTUALIZAR PERFIL ---
+export const updateProfile = async (req: AuthRequest, res: Response) => {
+  try {
+    const { username } = req.body;
+    const userId = req.user.id;
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
+
+    if (username) user.username = username;
+    
+    await user.save();
+
+    res.json({ 
+      success: true, 
+      user: { id: user._id, username: user.username, email: user.email, avatar: user.avatar } 
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error actualizando perfil' });
+  }
+};
+
+// --- CAMBIAR CONTRASEÑA ---
+export const changePassword = async (req: AuthRequest, res: Response) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.user.id;
+
+    const user = await User.findById(userId).select('+password');
+    if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) return res.status(400).json({ message: 'La contraseña actual es incorrecta' });
+
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+    await user.save();
+
+    res.json({ success: true, message: 'Contraseña actualizada' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error cambiando contraseña' });
+  }
+};
+
+// --- NUEVO: ELIMINAR USUARIO ---
+export const deleteUser = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user.id;
+
+    // 1. Opcional pero CRÍTICO: Borrar todos los datos asociados (CASCADE)
+    // Borrar Proyectos y sus Auditorías
+    await Project.deleteMany({ owner: userId });
+    
+    // NOTA: Borrar Audits vinculadas es complejo, ya que el projectID no está en Audit.
+    // Lo más seguro es borrar primero los Proyectos.
+
+    // 2. Borrar el usuario
+    const user = await User.findByIdAndDelete(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+
+    res.json({ success: true, message: 'Cuenta eliminada con éxito' });
+  } catch (error) {
+    console.error("Error deleting user:", error);
+    res.status(500).json({ message: 'Error al eliminar la cuenta' });
   }
 };

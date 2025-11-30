@@ -4,7 +4,7 @@ import Project from '../models/Project';
 import Audit from '../models/Audit';
 import { captureWebsite } from '../services/webScraper';
 
-// GET /api/projects (Todos los del usuario)
+// GET /api/projects (Mis Proyectos)
 export const getMyProjects = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user.id;
@@ -23,21 +23,32 @@ export const getMyProjects = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// --- NUEVO: GET /api/projects/:id (Uno solo) ---
+// GET /api/projects/community (Todos los proyectos públicos)
+export const getCommunityProjects = async (req: AuthRequest, res: Response) => {
+  try {
+    // Buscamos todos los proyectos, ordenados por fecha
+    const projects = await Project.find()
+      .sort({ createdAt: -1 })
+      .limit(20)
+      .populate('owner', 'username'); 
+
+    res.json({ success: true, data: projects });
+  } catch (error) {
+    console.error("Error fetching community:", error);
+    res.status(500).json({ message: 'Error al cargar la comunidad' });
+  }
+};
+
+// GET /api/projects/:id (Uno solo)
 export const getProjectById = async (req: AuthRequest, res: Response) => {
   try {
     const projectId = req.params.id;
     
-    // Buscamos el proyecto por ID
-    const project = await Project.findById(projectId);
+    // Buscamos el proyecto por ID y traemos el nombre del dueño
+    const project = await Project.findById(projectId).populate('owner', 'username');
     
     if (!project) {
       return res.status(404).json({ message: 'Proyecto no encontrado' });
-    }
-
-    // Seguridad: Verificar que el proyecto pertenece al usuario que lo pide
-    if (project.owner.toString() !== req.user.id) {
-        return res.status(403).json({ message: 'No tienes permiso para ver este proyecto' });
     }
 
     // Buscamos la última auditoría asociada a este proyecto (si existe)
@@ -71,13 +82,9 @@ export const createProject = async (req: AuthRequest, res: Response) => {
       inputData = req.file.filename;
     }
     
-    // Intentar sacar captura si es URL (aunque no se use IA, para la portada)
-    let screenshotFilename;
     if (type === 'url' && url) {
         try {
-            // Opcional: Si quieres que tenga foto de portada aunque no se analice con IA
-            // const { imageBase64 } = await captureWebsite(url);
-            // ... lógica de guardado de imagen ...
+            // Opcional: Lógica para captura si fuera necesaria
         } catch (e) {
             console.log("No se pudo generar preview para el proyecto manual");
         }
@@ -88,7 +95,7 @@ export const createProject = async (req: AuthRequest, res: Response) => {
       owner: userId,
       type: type,
       input: inputData,
-      image: type === 'file' ? req.file?.filename : undefined, // Guardamos imagen si es archivo visual
+      image: type === 'file' ? req.file?.filename : undefined,
       status: 'pending',
       accessibilityScore: 0
     });
@@ -116,20 +123,51 @@ export const deleteProject = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: 'Proyecto no encontrado' });
     }
 
-    // Verificar que el usuario es el dueño antes de borrar
     if (project.owner.toString() !== req.user.id) {
       return res.status(401).json({ message: 'No autorizado para borrar este proyecto' });
     }
 
-    // Borramos el proyecto
     await project.deleteOne();
-    
-    // Opcional: Borrar también las auditorías asociadas para no dejar basura
     await Audit.deleteMany({ project: req.params.id });
 
     res.json({ success: true, message: 'Proyecto eliminado' });
   } catch (error) {
     console.error("Error deleting project:", error);
     res.status(500).json({ message: 'Error al eliminar el proyecto' });
+  }
+};
+
+// --- NUEVO: DAR/QUITAR LIKE (PUT /api/projects/:id/like) ---
+export const toggleLike = async (req: AuthRequest, res: Response) => {
+  try {
+    const projectId = req.params.id;
+    const userId = req.user.id;
+
+    const project = await Project.findById(projectId);
+    if (!project) return res.status(404).json({ message: 'Proyecto no encontrado' });
+
+    // Comprobamos si el usuario ya está en la lista de likes
+    // Convertimos a string para asegurar comparación correcta de ObjectId
+    const index = project.likes.findIndex((id) => id.toString() === userId);
+
+    if (index === -1) {
+      // NO le ha dado like -> AÑADIMOS
+      project.likes.push(userId as any); // 'as any' a veces ayuda si TS se queja del tipo ObjectId
+    } else {
+      // YA le ha dado like -> QUITAMOS (Dislike)
+      project.likes.splice(index, 1);
+    }
+
+    await project.save();
+
+    res.json({ 
+      success: true, 
+      likes: project.likes.length, // Nuevo total
+      liked: index === -1 // true si acabamos de dar like, false si lo quitamos
+    });
+
+  } catch (error) {
+    console.error("Error like:", error);
+    res.status(500).json({ message: 'Error al procesar like' });
   }
 };
