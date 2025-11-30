@@ -4,7 +4,6 @@ import {
   Upload, 
   Link2, 
   LogOut, 
-  Loader2, 
   CheckCircle, 
   AlertTriangle, 
   PlusCircle, 
@@ -14,7 +13,7 @@ import {
   Sparkles,
   Zap
 } from 'lucide-react';
-import axios from 'axios';
+import api from '../services/api'; // <--- IMPORTANTE: Usamos tu servicio API configurado
 
 // Importamos las otras vistas
 import MyProjects from './MyProjects';
@@ -42,7 +41,9 @@ export default function Dashboard() {
     setResult(null);
 
     try {
-      const res = await axios.post('http://localhost:3000/api/analyze/url', { url });
+      // CAMBIO CLAVE: Usamos 'api.post' para enviar el token automáticamente
+      // Así el backend sabe quién eres y guarda el proyecto en "Mis Proyectos"
+      const res = await api.post('/analyze/url', { url });
       setResult(res.data.data);
     } catch (error) {
       console.error("Error analizando URL:", error);
@@ -62,7 +63,8 @@ export default function Dashboard() {
     formData.append('image', e.target.files[0]);
 
     try {
-      const res = await axios.post('http://localhost:3000/api/analyze', formData, {
+      // CAMBIO CLAVE: Usamos 'api.post' aquí también
+      const res = await api.post('/analyze', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       setResult(res.data.data);
