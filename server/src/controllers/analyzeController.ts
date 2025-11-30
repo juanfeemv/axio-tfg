@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url'; // <--- 1. Importamos esto
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
@@ -8,14 +9,18 @@ import Audit from '../models/Audit';
 import Project from '../models/Project';
 import { captureWebsite } from '../services/webScraper';
 
+// --- 2. Recreamos __dirname para ES Modules ---
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 dotenv.config();
 
 const apiKey = process.env.GEMINI_API_KEY;
-if (!apiKey) console.error("❌ FATAL: No hay API Key");
+if (!apiKey) console.error("❌ FATAL: No hay API Key en el .env");
 
 const genAI = new GoogleGenerativeAI(apiKey || "");
 
-// --- HELPER: Obtener Usuario ---
+// --- HELPER: Obtener ID del Usuario ---
 const getUserIdFromToken = (req: Request): string | null => {
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer')) {
@@ -29,7 +34,7 @@ const getUserIdFromToken = (req: Request): string | null => {
   return null;
 };
 
-// --- HELPER 1: Análisis VISUAL (Imágenes/PDF) ---
+// --- HELPER 1: Análisis VISUAL (Imágenes/PDF/URL) ---
 const analyzeVisual = async (imageBase64: string, mimeType: string) => {
   const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
   
@@ -66,18 +71,18 @@ const analyzeCode = async (codeContent: string, filename: string) => {
   const prompt = `
     Actúa como un auditor experto en Accesibilidad Web (WCAG 2.1) y Código Limpio.
     Analiza este archivo de código fuente: "${filename}".
-    Busca errores de: HTML semántico, etiquetas ARIA faltantes, falta de alt en imágenes, estructura incorrecta.
+    Busca errores de: HTML semántico, etiquetas ARIA faltantes, falta de alt en imágenes.
     
-    CÓDIGO A ANALIZAR:
+    CÓDIGO:
     \`\`\`
     ${codeContent}
     \`\`\`
 
-    Responde SOLO con JSON válido con esta estructura:
+    Responde SOLO con JSON válido:
     {
       "score": 0-100,
       "issues": [
-        { "element": "linea o etiqueta", "problem": "explicación técnica", "suggestion": "código corregido", "severity": "high/medium/low" }
+        { "element": "linea", "problem": "explicación", "suggestion": "corrección", "severity": "high/medium/low" }
       ]
     }
   `;
@@ -92,7 +97,9 @@ const analyzeCode = async (codeContent: string, filename: string) => {
   }
 };
 
-// --- CONTROLADOR PRINCIPAL (Archivos) ---
+// ==========================================
+// CONTROLADOR 1: Subida de Archivos (Imagen o Código)
+// ==========================================
 export const analyzeImage = async (req: Request, res: Response) => {
   try {
     if (!req.file) return res.status(400).json({ message: 'Falta archivo' });
@@ -101,31 +108,26 @@ export const analyzeImage = async (req: Request, res: Response) => {
     const mimeType = req.file.mimetype;
     const originalName = req.file.originalname.toLowerCase();
     
-    console.log(`📸 Analizando archivo: ${req.file.originalname} (${mimeType})`);
+    console.log(`📸 Analizando archivo: ${req.file.originalname}`);
 
     let resultIA;
     let projectType: 'file' | 'code' = 'file';
 
-    // 1. DETECTAR SI ES CÓDIGO
+    // A. Detectamos si es Código
     const isCode = 
       mimeType.includes('text') || 
       mimeType.includes('javascript') || 
       mimeType.includes('json') ||
-      originalName.endsWith('.ts') || 
-      originalName.endsWith('.tsx') ||
-      originalName.endsWith('.jsx') ||
-      originalName.endsWith('.html') ||
-      originalName.endsWith('.css');
+      originalName.endsWith('.html') || originalName.endsWith('.css') ||
+      originalName.endsWith('.js') || originalName.endsWith('.ts') || 
+      originalName.endsWith('.tsx') || originalName.endsWith('.jsx');
 
     if (isCode) {
-      // MODO CÓDIGO: Leemos como texto (UTF-8)
-      console.log("📝 Modo Análisis de Código activado");
       projectType = 'code';
       const codeContent = fs.readFileSync(filePath, 'utf-8');
       resultIA = await analyzeCode(codeContent, req.file.originalname);
     } else {
-      // MODO VISUAL: Leemos como imagen (Base64)
-      console.log("👁️ Modo Análisis Visual activado");
+      // B. Si no es código, es Visual (Imagen/PDF)
       projectType = 'file';
       const fileBuffer = fs.readFileSync(filePath);
       const imageBase64 = fileBuffer.toString('base64');
@@ -134,7 +136,7 @@ export const analyzeImage = async (req: Request, res: Response) => {
 
     const { json, raw } = resultIA;
 
-    // 2. Guardar en BD
+    // C. Guardar en Base de Datos
     const userId = getUserIdFromToken(req);
     let savedProjectId = null;
 
@@ -142,8 +144,9 @@ export const analyzeImage = async (req: Request, res: Response) => {
       const newProject = new Project({
         title: req.file.originalname,
         owner: userId,
-        type: projectType, // Guardamos si fue 'code' o 'file'
-        input: req.file.filename,
+        type: projectType,
+        input: req.file.filename, 
+        image: projectType === 'file' ? req.file.filename : undefined, // Guardamos imagen para verla luego
         status: 'analyzed',
         accessibilityScore: json.score
       });
@@ -153,48 +156,59 @@ export const analyzeImage = async (req: Request, res: Response) => {
       const newAudit = new Audit({ 
         score: json.score, 
         issues: json.issues, 
-        rawResponse: raw,
+        rawResponse: raw, 
         project: savedProjectId 
       });
       await newAudit.save();
-      console.log(`✅ Proyecto (${projectType}) guardado: ${newProject.title}`);
+      
+      console.log(`✅ Proyecto guardado: ${newProject.title}`);
     } else {
-       const newAudit = new Audit({ score: json.score, issues: json.issues, rawResponse: raw });
-       await newAudit.save();
+       // Si es usuario anónimo, borramos el archivo para no llenar el disco
+       try { fs.unlinkSync(filePath); } catch(e) {}
     }
-
-    // 3. Limpieza
-    try { fs.unlinkSync(filePath); } catch(e) {}
 
     res.json({ success: true, data: json, savedId: savedProjectId });
 
   } catch (error: any) {
-    console.error("❌ Error:", error);
-    res.status(500).json({ message: 'Error analizando archivo', error: error.message });
+    res.status(500).json({ message: 'Error procesando archivo', error: error.message });
   }
 };
 
-// --- CONTROLADOR URL (Sin cambios mayores, usa el helper visual) ---
+// ==========================================
+// CONTROLADOR 2: Análisis de URL
+// ==========================================
 export const analyzeUrl = async (req: Request, res: Response) => {
   try {
     const { url } = req.body;
-    if (!url) return res.status(400).json({ message: 'Falta la URL' });
+    if (!url) return res.status(400).json({ message: 'Falta URL' });
 
     console.log(`🌍 Visitando URL: ${url}`);
+    
+    // 1. Sacar foto con Puppeteer
     const { imageBase64, pageTitle } = await captureWebsite(url);
     
-    // Reutilizamos el helper visual
+    // 2. Analizar foto con IA
     const { json, raw } = await analyzeVisual(imageBase64, 'image/png');
 
     const userId = getUserIdFromToken(req);
     let savedProjectId = null;
 
     if (userId) {
+      // 3. IMPORTANTE: Guardar la captura en disco para el Sprint 4
+      const filename = `url-${Date.now()}.png`;
+      
+      // Asegurarnos de que la carpeta uploads existe usando __dirname corregido
+      const uploadDir = path.join(__dirname, '../../uploads'); 
+      if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+      
+      fs.writeFileSync(path.join(uploadDir, filename), Buffer.from(imageBase64, 'base64'));
+
       const newProject = new Project({
         title: pageTitle || url,
         owner: userId,
         type: 'url',
         input: url,
+        image: filename, // Guardamos referencia a la foto
         status: 'analyzed',
         accessibilityScore: json.score
       });
@@ -203,16 +217,14 @@ export const analyzeUrl = async (req: Request, res: Response) => {
 
       const newAudit = new Audit({ score: json.score, issues: json.issues, rawResponse: raw, project: savedProjectId });
       await newAudit.save();
-      console.log(`✅ Proyecto guardado: ${newProject.title}`);
-    } else {
-       const newAudit = new Audit({ score: json.score, issues: json.issues, rawResponse: raw });
-       await newAudit.save();
+      
+      console.log(`✅ URL guardada con captura: ${filename}`);
     }
 
     res.json({ success: true, data: json, savedId: savedProjectId });
 
   } catch (error: any) {
     console.error("❌ Error URL:", error);
-    res.status(500).json({ message: 'Error analizando la web', error: error.message });
+    res.status(500).json({ message: 'Error analizando web', error: error.message });
   }
 };

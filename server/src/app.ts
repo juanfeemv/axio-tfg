@@ -4,9 +4,11 @@ import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import path from 'path';
 import { fileURLToPath } from 'url';
+
+// Rutas
 import authRoutes from './routes/authRoutes';
 import analyzeRoutes from './routes/analyzeRoutes';
-import projectRoutes from './routes/projectRoutes'; // <--- AÑADE ESTA LÍNEA
+import projectRoutes from './routes/projectRoutes';
 
 // --- CONFIGURACIÓN Y DEBUG ---
 
@@ -28,6 +30,12 @@ const PORT = process.env.PORT || 3000;
 // --- MIDDLEWARES ---
 app.use(cors());
 app.use(express.json());
+
+// --- NUEVO: Hacer pública la carpeta uploads para servir imágenes ---
+// Esto permite acceder a http://localhost:3000/uploads/foto.png desde el frontend
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// --- CONEXIÓN DE RUTAS ---
 app.use('/api/auth', authRoutes);
 app.use('/api/analyze', analyzeRoutes);
 app.use('/api/projects', projectRoutes);
@@ -56,8 +64,7 @@ const connectDB = async () => {
     await mongoose.connect(mongoURI);
     console.log('🟢 [ÉXITO] MongoDB conectado correctamente');
 
-    // --- DIAGNÓSTICO DE BASE DE DATOS (NUEVO) ---
-    // Esto listará qué hay dentro de verdad
+    // --- DIAGNÓSTICO DE BASE DE DATOS ---
     if (mongoose.connection.db) {
         const dbName = mongoose.connection.db.databaseName;
         console.log(`📂 Base de datos seleccionada: ${dbName}`);
@@ -70,7 +77,6 @@ const connectDB = async () => {
             console.log("   ⚠️  NO HAY COLECCIONES (La base de datos está vacía)");
         }
     }
-    // ----------------------------------------------
     
   } catch (error: any) {
     console.log('🔴 [ERROR] Fallo al conectar a MongoDB');

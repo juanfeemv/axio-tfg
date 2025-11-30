@@ -1,13 +1,14 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-// 1. Interfaz TypeScript 
+// 1. Interfaz TypeScript
 export interface IProject extends Document {
   title: string;
   owner: mongoose.Types.ObjectId; // Referencia al ID del usuario
-  type: 'url' | 'file';
-  input: string; // La URL (https://...) o la ruta del archivo (uploads/foto.png)
+  type: 'url' | 'file' | 'code'; // He añadido 'code' aquí para que no te de error con lo nuevo
+  input: string; // La URL o el nombre original del archivo
+  image?: string; // <--- NUEVO: Campo opcional para la ruta de la imagen/captura
   status: 'pending' | 'analyzed' | 'failed';
-  accessibilityScore?: number; // Opcional, solo si ya se analizó
+  accessibilityScore?: number;
   createdAt: Date;
 }
 
@@ -21,7 +22,7 @@ const ProjectSchema: Schema = new Schema(
     },
     owner: {
       type: Schema.Types.ObjectId,
-      ref: 'User', // Esto conecta con el modelo User
+      ref: 'User',
       required: true
     },
     type: {
@@ -32,6 +33,9 @@ const ProjectSchema: Schema = new Schema(
     input: {
       type: String,
       required: true
+    },
+    image: { // <--- NUEVO: Aquí se guardará "uploads/foto.png"
+      type: String
     },
     status: {
       type: String,

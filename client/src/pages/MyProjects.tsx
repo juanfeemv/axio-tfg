@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom'; // Hook para navegar
 import api from '../services/api';
 import { 
   FolderOpen, 
@@ -7,11 +8,12 @@ import {
   TrendingUp, 
   Link2, 
   FileText, 
-  FileCode, // Nuevo icono para código
+  FileCode, 
   BarChart3, 
   Filter,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Trash2 // Nuevo icono para borrar
 } from 'lucide-react';
 
 export default function MyProjects() {
@@ -19,7 +21,9 @@ export default function MyProjects() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
-  // Añadimos 'code' al filtro
+  const navigate = useNavigate(); // Ahora sí lo vamos a usar
+
+  // Estado para el filtro
   const [filter, setFilter] = useState<'all' | 'url' | 'file' | 'code'>('all');
 
   // 1. Cargar datos reales
@@ -39,19 +43,39 @@ export default function MyProjects() {
     fetchProjects();
   }, []);
 
+  // --- FUNCIÓN BORRAR ---
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Evita que se haga click en la tarjeta al borrar
+    if (!window.confirm("¿Estás seguro de eliminar este proyecto?")) return;
+
+    try {
+      await api.delete(`/projects/${id}`);
+      // Actualizamos la lista visualmente quitando el borrado
+      setProjects(prev => prev.filter(p => p._id !== id));
+    } catch (error) {
+      console.error("Error borrando:", error);
+      alert("No se pudo eliminar el proyecto.");
+    }
+  };
+
+  // --- FUNCIÓN VER REPORTE ACTUALIZADA ---
+  const handleViewReport = (id: string) => {
+    // Ahora sí navegamos a la página de detalle que creamos
+    navigate(`/project/${id}`);
+  };
+
   // 2. Filtrar proyectos
   const filteredProjects = projects.filter(project => {
     if (filter === 'all') return true;
     return project.type === filter;
   });
 
-  // 3. Calcular estadísticas reales
+  // 3. Calcular estadísticas
   const totalProjects = projects.length;
   const avgScore = totalProjects > 0 
     ? Math.round(projects.reduce((acc, p) => acc + (p.accessibilityScore || 0), 0) / totalProjects) 
     : 0;
   
-  // Estimación visual de issues (ya que aún no guardamos el número exacto en el modelo Project)
   const estimatedIssues = projects.reduce((acc, p) => acc + Math.round((100 - (p.accessibilityScore || 0)) / 5), 0);
 
   if (loading) return (
@@ -166,8 +190,18 @@ export default function MyProjects() {
             return (
               <div 
                 key={project._id} 
-                className="bg-white rounded-2xl shadow-sm border border-slate-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden group cursor-pointer"
+                onClick={() => handleViewReport(project._id)}
+                className="bg-white rounded-2xl shadow-sm border border-slate-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden group cursor-pointer relative"
               >
+                {/* BOTÓN BORRAR FLOTANTE */}
+                <button 
+                  onClick={(e) => handleDelete(project._id, e)}
+                  className="absolute top-3 right-3 p-2 bg-white/90 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-full transition-colors z-10 shadow-sm border border-slate-100 opacity-0 group-hover:opacity-100"
+                  title="Eliminar proyecto"
+                >
+                  <Trash2 size={16} />
+                </button>
+
                 {/* Header with gradient bar based on score */}
                 <div className={`h-2 ${
                   score >= 80 ? 'bg-gradient-to-r from-green-500 to-emerald-500' :
@@ -224,7 +258,13 @@ export default function MyProjects() {
                   </div>
 
                   {/* Action Button */}
-                  <button className="w-full py-2.5 bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-xl text-slate-600 hover:text-blue-600 text-sm font-semibold flex items-center justify-center gap-2 transition-all group-hover:shadow-md">
+                  <button 
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        handleViewReport(project._id);
+                    }}
+                    className="w-full py-2.5 bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-xl text-slate-600 hover:text-blue-600 text-sm font-semibold flex items-center justify-center gap-2 transition-all group-hover:shadow-md"
+                  >
                     Ver Reporte <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
                   </button>
                 </div>

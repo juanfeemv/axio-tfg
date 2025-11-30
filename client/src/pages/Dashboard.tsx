@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useLocation } from 'react-router-dom';
 import { 
   Upload, 
   Link2, 
   LogOut, 
-  Loader2, 
   CheckCircle, 
   AlertTriangle, 
   PlusCircle, 
@@ -13,9 +13,10 @@ import {
   Settings as SettingsIcon,
   Sparkles,
   Zap,
-  FileCode // Icono nuevo para el código
+  FileCode, // Icono para la tarjeta de código
+  Save // Icono para el modo "Solo Guardar"
 } from 'lucide-react';
-import api from '../services/api'; // <--- Usamos tu servicio API con token
+import api from '../services/api';
 
 // Importamos las otras vistas
 import MyProjects from './MyProjects';
@@ -24,17 +25,28 @@ import Explore from './Explore';
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
+  const location = useLocation();
   
   // Estado de Navegación
   const [activeTab, setActiveTab] = useState<'new' | 'projects' | 'explore' | 'settings'>('new');
+  
+  // Efecto para cambiar pestaña automáticamente si venimos de "Volver"
+  useEffect(() => {
+    if (location.state && location.state.tab) {
+      setActiveTab(location.state.tab);
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
 
-  // Estados de la Auditoría (IA)
+  // Estado del Interruptor (IA vs Solo Subir)
+  const [useAI, setUseAI] = useState(true);
+
+  // Estados de la Auditoría
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
 
-  // --- LÓGICA DE AUDITORÍA (IA) ---
-
+  // --- LÓGICA URL ---
   const handleUrlAnalyze = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!url) return;
@@ -43,33 +55,62 @@ export default function Dashboard() {
     setResult(null);
 
     try {
-      // Usamos 'api.post' para enviar el token automáticamente
-      const res = await api.post('/analyze/url', { url });
-      setResult(res.data.data);
+      if (useAI) {
+        // MODO IA: Analizar
+        const res = await api.post('/analyze/url', { url });
+        setResult(res.data.data);
+      } else {
+        // MODO GUARDAR: Solo crear proyecto
+        await api.post('/projects', { 
+          title: new URL(url).hostname, 
+          type: 'url', 
+          url: url 
+        });
+        alert("✅ Proyecto guardado. Ve a 'Mis Proyectos' para verlo.");
+        setUrl('');
+      }
     } catch (error) {
-      console.error("Error analizando URL:", error);
-      alert("Error al analizar la web. Revisa que el servidor esté encendido.");
+      console.error("Error URL:", error);
+      alert("Error al procesar la web.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // --- LÓGICA ARCHIVOS (Imagen o Código) ---
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'code') => {
     if (!e.target.files?.[0]) return;
     
     setLoading(true);
     setResult(null);
 
+    const file = e.target.files[0];
     const formData = new FormData();
-    formData.append('image', e.target.files[0]); // El backend lo detectará sea imagen o código
+    
+    // El backend espera 'image' para análisis IA y 'file' para guardar proyecto simple
+    const fieldName = useAI ? 'image' : 'file';
+    formData.append(fieldName, file);
+
+    // Si es solo guardar, mandamos datos extra
+    if (!useAI) {
+        formData.append('title', file.name);
+        formData.append('type', type === 'image' ? 'file' : 'code');
+    }
 
     try {
-      const res = await api.post('/analyze', formData, {
+      const endpoint = useAI ? '/analyze' : '/projects';
+      
+      const res = await api.post(endpoint, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      setResult(res.data.data);
+
+      if (useAI) {
+        setResult(res.data.data);
+      } else {
+        alert("✅ Archivo subido correctamente.");
+      }
     } catch (error) {
-      console.error("Error subiendo archivo:", error);
+      console.error("Error archivo:", error);
       alert("Error al subir el archivo.");
     } finally {
       setLoading(false);
@@ -159,7 +200,7 @@ export default function Dashboard() {
           <div className="p-8 max-w-7xl mx-auto min-h-full">
             
             {/* Cabecera de Bienvenida */}
-            <header className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-4">
+            <header className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-4xl">👋</span>
@@ -167,7 +208,7 @@ export default function Dashboard() {
                     Hola, <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">{user?.username}</span>
                   </h2>
                 </div>
-                <p className="text-slate-500 text-lg">¿Qué vamos a mejorar hoy?</p>
+                <p className="text-slate-500 text-lg">¿Qué quieres subir hoy?</p>
               </div>
               <div className="flex items-center gap-3">
                 <div className="text-right">
@@ -180,7 +221,26 @@ export default function Dashboard() {
               </div>
             </header>
 
-            {/* SECCIÓN INPUTS (Solo si no hay resultado) */}
+            {/* --- INTERRUPTOR DE MODO (IA vs SOLO SUBIR) --- */}
+            {!result && !loading && (
+              <div className="mb-8 flex justify-center md:justify-start animate-fade-in">
+                <div 
+                  className="bg-white p-1.5 rounded-full border border-slate-200 shadow-sm flex items-center gap-1 cursor-pointer select-none"
+                  onClick={() => setUseAI(!useAI)}
+                >
+                  <div className={`px-5 py-2.5 rounded-full text-sm font-bold flex items-center gap-2 transition-all duration-300 ${useAI ? 'bg-blue-600 text-white shadow-md transform scale-105' : 'text-slate-500 hover:bg-slate-50'}`}>
+                    <Sparkles size={16} />
+                    Analizar con IA
+                  </div>
+                  <div className={`px-5 py-2.5 rounded-full text-sm font-bold flex items-center gap-2 transition-all duration-300 ${!useAI ? 'bg-emerald-500 text-white shadow-md transform scale-105' : 'text-slate-500 hover:bg-slate-50'}`}>
+                    <Save size={16} />
+                    Solo Subir
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* SECCIÓN INPUTS */}
             {!result && !loading && (
               <div className="grid md:grid-cols-3 gap-6 animate-fade-in-up">
                 
@@ -191,7 +251,9 @@ export default function Dashboard() {
                     <Link2 size={24} />
                   </div>
                   <h3 className="text-lg font-bold text-slate-800 mb-2">Web en Vivo</h3>
-                  <p className="text-slate-500 text-sm mb-6 h-10">Analiza una URL pública. La IA navegará y detectará errores.</p>
+                  <p className="text-slate-500 text-sm mb-6 h-10">
+                    {useAI ? 'La IA navegará y detectará errores.' : 'Guarda la URL para compartirla con la comunidad.'}
+                  </p>
                   
                   <form onSubmit={handleUrlAnalyze} className="relative">
                     <input 
@@ -204,7 +266,7 @@ export default function Dashboard() {
                     />
                     <button 
                       type="submit"
-                      className="absolute right-2 top-2 bottom-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-3 rounded-lg font-semibold transition-all shadow-lg shadow-blue-500/30 hover:scale-105"
+                      className={`absolute right-2 top-2 bottom-2 text-white px-3 rounded-lg font-semibold transition-all shadow-lg hover:scale-105 ${useAI ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/30' : 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/30'}`}
                     >
                       →
                     </button>
@@ -218,29 +280,33 @@ export default function Dashboard() {
                     <Upload size={24} />
                   </div>
                   <h3 className="text-lg font-bold text-slate-800 mb-2">Diseño Visual</h3>
-                  <p className="text-slate-500 text-sm mb-6 h-10">Sube un mockup (JPG, PNG) o PDF. Ideal para fases de diseño.</p>
+                  <p className="text-slate-500 text-sm mb-6 h-10">
+                    {useAI ? 'Sube un mockup para análisis visual.' : 'Comparte un diseño para feedback.'}
+                  </p>
                   
-                  <label className="border-2 border-dashed border-slate-300 rounded-xl h-[52px] flex items-center justify-center cursor-pointer hover:border-purple-500 hover:bg-purple-50 transition-all group-hover:shadow-md">
-                    <input type="file" className="hidden" onChange={handleFileUpload} accept="image/*,application/pdf" />
-                    <span className="text-sm font-semibold text-slate-600 group-hover:text-purple-700 flex items-center gap-2">
-                      <Upload size={16} /> Subir Archivo
+                  <label className={`border-2 border-dashed border-slate-300 rounded-xl h-[52px] flex items-center justify-center cursor-pointer transition-all group-hover:shadow-md ${useAI ? 'hover:border-purple-500 hover:bg-purple-50' : 'hover:border-emerald-500 hover:bg-emerald-50'}`}>
+                    <input type="file" className="hidden" onChange={(e) => handleFileUpload(e, 'image')} accept="image/*,application/pdf" />
+                    <span className={`text-sm font-semibold flex items-center gap-2 ${useAI ? 'text-slate-600 group-hover:text-purple-700' : 'text-slate-600 group-hover:text-emerald-700'}`}>
+                      <Upload size={16} /> {useAI ? 'Analizar Imagen' : 'Subir Diseño'}
                     </span>
                   </label>
                 </div>
 
-                {/* 3. Card CÓDIGO (NUEVA) */}
+                {/* 3. Card CÓDIGO (NUEVA - ESTILO ESMERALDA) */}
                 <div className="bg-white p-6 rounded-3xl shadow-lg border-2 border-slate-200 hover:shadow-2xl hover:border-emerald-300 hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl"></div>
                   <div className="h-12 w-12 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-emerald-500/30">
                     <FileCode size={24} />
                   </div>
                   <h3 className="text-lg font-bold text-slate-800 mb-2">Código Fuente</h3>
-                  <p className="text-slate-500 text-sm mb-6 h-10">Analiza un archivo local (.html, .js, .tsx) para revisión semántica.</p>
+                  <p className="text-slate-500 text-sm mb-6 h-10">
+                    {useAI ? 'Revisión semántica automática.' : 'Comparte código para revisión manual.'}
+                  </p>
                   
-                  <label className="border-2 border-dashed border-slate-300 rounded-xl h-[52px] flex items-center justify-center cursor-pointer hover:border-emerald-500 hover:bg-emerald-50 transition-all group-hover:shadow-md">
-                    <input type="file" className="hidden" onChange={handleFileUpload} accept=".html,.css,.js,.jsx,.ts,.tsx,.json" />
-                    <span className="text-sm font-semibold text-slate-600 group-hover:text-emerald-700 flex items-center gap-2">
-                      <FileCode size={16} /> Subir Código
+                  <label className={`border-2 border-dashed border-slate-300 rounded-xl h-[52px] flex items-center justify-center cursor-pointer transition-all group-hover:shadow-md ${useAI ? 'hover:border-blue-500 hover:bg-blue-50' : 'hover:border-emerald-500 hover:bg-emerald-50'}`}>
+                    <input type="file" className="hidden" onChange={(e) => handleFileUpload(e, 'code')} accept=".html,.css,.js,.jsx,.ts,.tsx,.json" />
+                    <span className={`text-sm font-semibold flex items-center gap-2 ${useAI ? 'text-slate-600 group-hover:text-blue-700' : 'text-slate-600 group-hover:text-emerald-700'}`}>
+                      <FileCode size={16} /> {useAI ? 'Analizar Código' : 'Subir Código'}
                     </span>
                   </label>
                 </div>
@@ -257,8 +323,10 @@ export default function Dashboard() {
                     <Sparkles className="text-blue-600 animate-pulse" size={32} />
                   </div>
                 </div>
-                <h3 className="text-xl font-bold text-slate-800 mt-8 mb-2">Analizando Proyecto</h3>
-                <p className="text-slate-500 animate-pulse">Gemini está revisando la accesibilidad...</p>
+                <h3 className="text-xl font-bold text-slate-800 mt-8 mb-2">Procesando Proyecto</h3>
+                <p className="text-slate-500 animate-pulse">
+                    {useAI ? 'Gemini está revisando la accesibilidad...' : 'Guardando en la base de datos...'}
+                </p>
                 <div className="flex gap-2 mt-4">
                   <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce"></div>
                   <div className="h-2 w-2 bg-purple-600 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>

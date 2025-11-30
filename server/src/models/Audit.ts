@@ -2,8 +2,9 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IAudit extends Document {
   score: number;
-  issues: any[]; // Array con los errores
-  rawResponse?: string; // Por si acaso guardamos el texto crudo
+  issues: any[]; 
+  rawResponse?: string; 
+  project?: mongoose.Types.ObjectId; // <--- CAMPO FALTANTE EN LA INTERFAZ
   createdAt: Date;
 }
 
@@ -20,10 +21,17 @@ const AuditSchema: Schema = new Schema(
         element: String,
         problem: String,
         suggestion: String,
-        severity: String // 'high', 'medium', 'low'
+        severity: String 
       }
     ],
-    rawResponse: String
+    rawResponse: String,
+    
+    // --- CAMPO FALTANTE EN EL ESQUEMA ---
+    // Sin esto, Mongoose ignora el ID del proyecto al guardar
+    project: {
+      type: Schema.Types.ObjectId,
+      ref: 'Project'
+    }
   },
   {
     timestamps: true
