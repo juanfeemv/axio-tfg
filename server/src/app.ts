@@ -6,6 +6,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import authRoutes from './routes/authRoutes';
 import analyzeRoutes from './routes/analyzeRoutes';
+import projectRoutes from './routes/projectRoutes'; // <--- AÑADE ESTA LÍNEA
 
 // --- CONFIGURACIÓN Y DEBUG ---
 
@@ -29,6 +30,7 @@ app.use(cors());
 app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/analyze', analyzeRoutes);
+app.use('/api/projects', projectRoutes);
 
 // --- RUTA DE PRUEBA ---
 app.get('/', (req: Request, res: Response) => {

@@ -4,6 +4,7 @@ import {
   Upload, 
   Link2, 
   LogOut, 
+  Loader2, 
   CheckCircle, 
   AlertTriangle, 
   PlusCircle, 
@@ -11,9 +12,10 @@ import {
   Globe, 
   Settings as SettingsIcon,
   Sparkles,
-  Zap
+  Zap,
+  FileCode // Icono nuevo para el código
 } from 'lucide-react';
-import api from '../services/api'; // <--- IMPORTANTE: Usamos tu servicio API configurado
+import api from '../services/api'; // <--- Usamos tu servicio API con token
 
 // Importamos las otras vistas
 import MyProjects from './MyProjects';
@@ -41,8 +43,7 @@ export default function Dashboard() {
     setResult(null);
 
     try {
-      // CAMBIO CLAVE: Usamos 'api.post' para enviar el token automáticamente
-      // Así el backend sabe quién eres y guarda el proyecto en "Mis Proyectos"
+      // Usamos 'api.post' para enviar el token automáticamente
       const res = await api.post('/analyze/url', { url });
       setResult(res.data.data);
     } catch (error) {
@@ -60,17 +61,16 @@ export default function Dashboard() {
     setResult(null);
 
     const formData = new FormData();
-    formData.append('image', e.target.files[0]);
+    formData.append('image', e.target.files[0]); // El backend lo detectará sea imagen o código
 
     try {
-      // CAMBIO CLAVE: Usamos 'api.post' aquí también
       const res = await api.post('/analyze', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       setResult(res.data.data);
     } catch (error) {
       console.error("Error subiendo archivo:", error);
-      alert("Error al subir la imagen.");
+      alert("Error al subir el archivo.");
     } finally {
       setLoading(false);
     }
@@ -156,7 +156,7 @@ export default function Dashboard() {
         
         {/* PESTAÑA: NUEVA AUDITORÍA */}
         {activeTab === 'new' && (
-          <div className="p-8 max-w-6xl mx-auto min-h-full">
+          <div className="p-8 max-w-7xl mx-auto min-h-full">
             
             {/* Cabecera de Bienvenida */}
             <header className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-4">
@@ -182,58 +182,67 @@ export default function Dashboard() {
 
             {/* SECCIÓN INPUTS (Solo si no hay resultado) */}
             {!result && !loading && (
-              <div className="grid md:grid-cols-2 gap-6 animate-fade-in-up">
+              <div className="grid md:grid-cols-3 gap-6 animate-fade-in-up">
                 
-                {/* Card URL */}
-                <div className="bg-white p-8 rounded-3xl shadow-lg border-2 border-slate-200 hover:shadow-2xl hover:border-blue-300 hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-2xl"></div>
-                  <div className="relative">
-                    <div className="h-14 w-14 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-lg shadow-blue-500/30">
-                      <Link2 size={28} />
-                    </div>
-                    <h3 className="text-xl font-bold text-slate-800 mb-2">Web en Vivo</h3>
-                    <p className="text-slate-500 mb-8 leading-relaxed">
-                      Introduce una URL pública. Nuestra IA navegará por ella, capturará la pantalla y analizará la accesibilidad.
-                    </p>
-                    
-                    <form onSubmit={handleUrlAnalyze} className="relative">
-                      <input 
-                        type="url" 
-                        placeholder="https://ejemplo.com" 
-                        className="w-full border-2 border-slate-300 rounded-xl px-5 py-4 pr-28 text-sm focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all shadow-sm"
-                        value={url}
-                        onChange={(e) => setUrl(e.target.value)}
-                        required
-                      />
-                      <button 
-                        type="submit"
-                        className="absolute right-2 top-2 bottom-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-5 rounded-lg font-semibold transition-all shadow-lg shadow-blue-500/30 hover:scale-105"
-                      >
-                        Analizar
-                      </button>
-                    </form>
+                {/* 1. Card URL */}
+                <div className="bg-white p-6 rounded-3xl shadow-lg border-2 border-slate-200 hover:shadow-2xl hover:border-blue-300 hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl"></div>
+                  <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-blue-500/30">
+                    <Link2 size={24} />
                   </div>
+                  <h3 className="text-lg font-bold text-slate-800 mb-2">Web en Vivo</h3>
+                  <p className="text-slate-500 text-sm mb-6 h-10">Analiza una URL pública. La IA navegará y detectará errores.</p>
+                  
+                  <form onSubmit={handleUrlAnalyze} className="relative">
+                    <input 
+                      type="url" 
+                      placeholder="https://ejemplo.com" 
+                      className="w-full border-2 border-slate-300 rounded-xl px-4 py-3 pr-12 text-sm focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all shadow-sm"
+                      value={url}
+                      onChange={(e) => setUrl(e.target.value)}
+                      required
+                    />
+                    <button 
+                      type="submit"
+                      className="absolute right-2 top-2 bottom-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-3 rounded-lg font-semibold transition-all shadow-lg shadow-blue-500/30 hover:scale-105"
+                    >
+                      →
+                    </button>
+                  </form>
                 </div>
 
-                {/* Card Archivo */}
-                <div className="bg-white p-8 rounded-3xl shadow-lg border-2 border-slate-200 hover:shadow-2xl hover:border-purple-300 hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full blur-2xl"></div>
-                  <div className="relative">
-                    <div className="h-14 w-14 bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-lg shadow-purple-500/30">
-                      <Upload size={28} />
-                    </div>
-                    <h3 className="text-xl font-bold text-slate-800 mb-2">Diseño o Documento</h3>
-                    <p className="text-slate-500 mb-8 leading-relaxed">
-                      Sube un mockup (JPG, PNG) o PDF. Ideal para validar accesibilidad en fases de diseño (Shift-Left Testing).
-                    </p>
-                    
-                    <label className="border-2 border-dashed border-slate-300 rounded-xl h-[54px] flex items-center justify-center cursor-pointer hover:border-purple-500 hover:bg-purple-50 transition-all group-hover:shadow-md">
-                      <input type="file" className="hidden" onChange={handleFileUpload} accept="image/*,application/pdf" />
-                      <span className="text-sm font-semibold text-slate-600 group-hover:text-purple-700 flex items-center gap-2">
-                        <Upload size={16} /> Click para subir archivo
-                      </span>
-                    </label>
+                {/* 2. Card Diseño (Imagen/PDF) */}
+                <div className="bg-white p-6 rounded-3xl shadow-lg border-2 border-slate-200 hover:shadow-2xl hover:border-purple-300 hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/5 rounded-full blur-2xl"></div>
+                  <div className="h-12 w-12 bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-purple-500/30">
+                    <Upload size={24} />
                   </div>
+                  <h3 className="text-lg font-bold text-slate-800 mb-2">Diseño Visual</h3>
+                  <p className="text-slate-500 text-sm mb-6 h-10">Sube un mockup (JPG, PNG) o PDF. Ideal para fases de diseño.</p>
+                  
+                  <label className="border-2 border-dashed border-slate-300 rounded-xl h-[52px] flex items-center justify-center cursor-pointer hover:border-purple-500 hover:bg-purple-50 transition-all group-hover:shadow-md">
+                    <input type="file" className="hidden" onChange={handleFileUpload} accept="image/*,application/pdf" />
+                    <span className="text-sm font-semibold text-slate-600 group-hover:text-purple-700 flex items-center gap-2">
+                      <Upload size={16} /> Subir Archivo
+                    </span>
+                  </label>
+                </div>
+
+                {/* 3. Card CÓDIGO (NUEVA) */}
+                <div className="bg-white p-6 rounded-3xl shadow-lg border-2 border-slate-200 hover:shadow-2xl hover:border-emerald-300 hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl"></div>
+                  <div className="h-12 w-12 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-emerald-500/30">
+                    <FileCode size={24} />
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-800 mb-2">Código Fuente</h3>
+                  <p className="text-slate-500 text-sm mb-6 h-10">Analiza un archivo local (.html, .js, .tsx) para revisión semántica.</p>
+                  
+                  <label className="border-2 border-dashed border-slate-300 rounded-xl h-[52px] flex items-center justify-center cursor-pointer hover:border-emerald-500 hover:bg-emerald-50 transition-all group-hover:shadow-md">
+                    <input type="file" className="hidden" onChange={handleFileUpload} accept=".html,.css,.js,.jsx,.ts,.tsx,.json" />
+                    <span className="text-sm font-semibold text-slate-600 group-hover:text-emerald-700 flex items-center gap-2">
+                      <FileCode size={16} /> Subir Código
+                    </span>
+                  </label>
                 </div>
 
               </div>
@@ -248,12 +257,12 @@ export default function Dashboard() {
                     <Sparkles className="text-blue-600 animate-pulse" size={32} />
                   </div>
                 </div>
-                <h3 className="text-xl font-bold text-slate-800 mt-8 mb-2">Analizando Accesibilidad</h3>
-                <p className="text-slate-500 animate-pulse">Gemini está revisando contrastes y estructura...</p>
+                <h3 className="text-xl font-bold text-slate-800 mt-8 mb-2">Analizando Proyecto</h3>
+                <p className="text-slate-500 animate-pulse">Gemini está revisando la accesibilidad...</p>
                 <div className="flex gap-2 mt-4">
                   <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce"></div>
                   <div className="h-2 w-2 bg-purple-600 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="h-2 w-2 bg-pink-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  <div className="h-2 w-2 bg-emerald-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                 </div>
               </div>
             )}

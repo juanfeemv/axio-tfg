@@ -26,7 +26,7 @@ const ProjectSchema: Schema = new Schema(
     },
     type: {
       type: String,
-      enum: ['url', 'file'],
+      enum: ['url', 'file', 'code'],
       required: true
     },
     input: {
