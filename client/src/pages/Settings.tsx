@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 import { User, Shield, Bell, Mail, Lock, Palette, Zap, Save, Camera } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext'; // <--- Importamos el hook del tema
+import { useTheme } from '../context/ThemeContext'; // <--- Usamos el estado global del tema
 import api from '../services/api';
 
 export default function Settings() {
-  const { user, updateUser } = useAuth(); 
+  const { user, updateUser, logout } = useAuth(); // Añadimos logout para la Zona de Peligro
   const { theme, toggleTheme } = useTheme(); // <--- Usamos el estado global del tema
 
-  // Estados de UI
+  // Estados de UI inicializados con datos reales
   const [username, setUsername] = useState(user?.username || '');
   const [emailNotifs, setEmailNotifs] = useState(true);
   const [realTimeAlerts, setRealTimeAlerts] = useState(true);
@@ -43,9 +43,9 @@ export default function Settings() {
          updateUser(res.data.user);
          alert("✅ Perfil actualizado correctamente");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      alert("Error al actualizar perfil");
+      alert(error.response?.data?.message || "Error al actualizar perfil");
     } finally {
       setLoading(false);
     }
@@ -75,11 +75,21 @@ export default function Settings() {
     }
   };
 
-  // --- 4. BORRAR CUENTA ---
-  const handleDeleteAccount = () => {
+  // --- 4. BORRAR CUENTA (Funcional) ---
+  const handleDeleteAccount = async () => {
       if(window.confirm("¿Estás SEGURO? Esta acción es irreversible y borrará todos tus proyectos.")) {
-          alert("Funcionalidad bloqueada en la demo por seguridad.");
-          // Aquí iría: await api.delete('/auth/me'); logout();
+          setLoading(true);
+          try {
+              // Llamamos a la ruta DELETE del backend
+              await api.delete('/auth/me'); 
+              logout(); // Cerramos la sesión local
+              alert("✅ Cuenta eliminada con éxito. Redirigiendo...");
+          } catch (error) {
+              console.error("Error eliminando cuenta:", error);
+              alert("Error al intentar eliminar la cuenta.");
+          } finally {
+              setLoading(false);
+          }
       }
   };
 

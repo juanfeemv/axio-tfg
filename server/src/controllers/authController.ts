@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
+import Project from '../models/Project'; // Importamos Project para la limpieza de datos
+import Audit from '../models/Audit';   // Importamos Audit para la limpieza de datos
 import { AuthRequest } from '../middlewares/auth'; // Asegúrate de importar AuthRequest
 
 // --- REGISTRO ---
@@ -45,7 +47,7 @@ export const login = async (req: Request, res: Response) => {
   }
 };
 
-// --- NUEVO: ACTUALIZAR PERFIL ---
+// --- ACTUALIZAR PERFIL ---
 export const updateProfile = async (req: AuthRequest, res: Response) => {
   try {
     const { username } = req.body;
@@ -67,7 +69,7 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// --- NUEVO: CAMBIAR CONTRASEÑA ---
+// --- CAMBIAR CONTRASEÑA ---
 export const changePassword = async (req: AuthRequest, res: Response) => {
   try {
     const { currentPassword, newPassword } = req.body;
@@ -86,5 +88,31 @@ export const changePassword = async (req: AuthRequest, res: Response) => {
     res.json({ success: true, message: 'Contraseña actualizada' });
   } catch (error) {
     res.status(500).json({ message: 'Error cambiando contraseña' });
+  }
+};
+
+// --- NUEVO: ELIMINAR USUARIO ---
+export const deleteUser = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user.id;
+
+    // 1. Opcional pero CRÍTICO: Borrar todos los datos asociados (CASCADE)
+    // Borrar Proyectos y sus Auditorías
+    await Project.deleteMany({ owner: userId });
+    
+    // NOTA: Borrar Audits vinculadas es complejo, ya que el projectID no está en Audit.
+    // Lo más seguro es borrar primero los Proyectos.
+
+    // 2. Borrar el usuario
+    const user = await User.findByIdAndDelete(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+
+    res.json({ success: true, message: 'Cuenta eliminada con éxito' });
+  } catch (error) {
+    console.error("Error deleting user:", error);
+    res.status(500).json({ message: 'Error al eliminar la cuenta' });
   }
 };

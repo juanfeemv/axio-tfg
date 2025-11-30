@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { User, Mail, Lock, ArrowRight, Sparkles, Shield, CheckCircle } from 'lucide-react';
+import { User, Mail, Lock, ArrowRight, Shield, CheckCircle } from 'lucide-react';
 
 export default function Register() {
   const [username, setUsername] = useState('');
