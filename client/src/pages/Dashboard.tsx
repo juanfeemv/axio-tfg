@@ -29,16 +29,29 @@ export default function Dashboard() {
   const { user, logout } = useAuth();
   const location = useLocation();
   
-  // Estado de Navegación
-  const [activeTab, setActiveTab] = useState<'new' | 'projects' | 'explore' | 'settings'>('new');
+  // Estado de Navegación con PERSISTENCIA
+  // 1. Prioridad: State de navegación (al volver de un proyecto)
+  // 2. Prioridad: LocalStorage (al recargar F5)
+  // 3. Default: 'new'
+  const [activeTab, setActiveTab] = useState<'new' | 'projects' | 'explore' | 'settings'>(() => {
+    if (location.state && location.state.tab) {
+        return location.state.tab;
+    }
+    const savedTab = localStorage.getItem('dashboard_active_tab');
+    return (savedTab as 'new' | 'projects' | 'explore' | 'settings') || 'new';
+  });
   
   // Estado para el menú móvil
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  // Efecto para cambiar pestaña automáticamente si venimos de "Volver"
+  // Efecto para guardar la pestaña actual en LocalStorage
+  useEffect(() => {
+    localStorage.setItem('dashboard_active_tab', activeTab);
+  }, [activeTab]);
+
+  // Efecto para limpiar el history state al cargar (opcional, para limpieza)
   useEffect(() => {
     if (location.state && location.state.tab) {
-      setActiveTab(location.state.tab);
       window.history.replaceState({}, document.title);
     }
   }, [location]);
@@ -129,9 +142,7 @@ export default function Dashboard() {
   return (
     <div className="flex h-screen bg-gradient-to-br from-slate-50 to-slate-100 overflow-hidden relative">
       
-      {/* --- HEADER MÓVIL (VISIBLE SOLO EN MÓVIL) --- 
-          z-50 asegura que esté por encima del menú lateral y del overlay
-      */}
+      {/* --- HEADER MÓVIL --- */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-slate-900 text-white flex items-center justify-between px-4 z-50 shadow-md">
          <div className="flex items-center gap-2">
             <Sparkles className="text-blue-400" size={20} />
@@ -142,9 +153,7 @@ export default function Dashboard() {
          </button>
       </div>
 
-      {/* --- OVERLAY OSCURO --- 
-          z-40 está debajo del header (z-50) pero encima del contenido principal
-      */}
+      {/* --- OVERLAY OSCURO --- */}
       {isSidebarOpen && (
         <div 
           className="fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-sm"
@@ -164,7 +173,7 @@ export default function Dashboard() {
         <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
         <div className="absolute bottom-0 left-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
         
-        {/* Logo solo visible en Desktop (en móvil está en el header fijo) */}
+        {/* Logo solo visible en Desktop */}
         <div className="p-6 relative hidden md:block">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
@@ -384,8 +393,7 @@ export default function Dashboard() {
                 </button>
 
                 <div className="bg-white rounded-3xl shadow-2xl border-2 border-slate-200 overflow-hidden">
-                  
-                  {/* Header Resultado */}
+                  {/* ... Resultado HTML igual que antes ... */}
                   <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white p-8 relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl"></div>
                     <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
@@ -424,7 +432,6 @@ export default function Dashboard() {
                     </div>
                   </div>
 
-                  {/* Body Resultado */}
                   <div className="p-8 bg-gradient-to-b from-slate-50 to-white">
                     <div className="flex items-center gap-3 mb-6">
                       <div className="h-10 w-10 bg-orange-100 rounded-xl flex items-center justify-center">
@@ -462,7 +469,6 @@ export default function Dashboard() {
                       ))}
                     </div>
                   </div>
-
                 </div>
               </div>
             )}
@@ -470,7 +476,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* OTRAS PESTAÑAS (Renderizado Condicional) */}
+        {/* OTRAS PESTAÑAS */}
         {activeTab === 'projects' && <MyProjects />}
         {activeTab === 'explore' && <Explore />}
         {activeTab === 'settings' && <Settings />}
@@ -480,7 +486,7 @@ export default function Dashboard() {
   );
 }
 
-// Componente auxiliar para los botones del menú
+// SidebarItem permanece igual
 function SidebarItem({ icon, label, active, onClick }: { icon: any, label: string, active: boolean, onClick: () => void }) {
   return (
     <button 

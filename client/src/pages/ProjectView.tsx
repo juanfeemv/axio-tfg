@@ -174,27 +174,46 @@ export default function ProjectView() {
 
       <div className="flex-1 flex overflow-hidden">
         
-        {/* CANVAS */}
-        <main className="flex-1 bg-slate-950 relative overflow-auto flex items-center justify-center p-8 min-w-0">
+        {/* CANVAS PRINCIPAL */}
+        {/* CORRECCIÓN 1: overflow-hidden aquí para evitar doble scrollbar en la página */}
+        <main className="flex-1 bg-slate-950 relative overflow-hidden flex items-center justify-center p-6 min-w-0">
             <div className="transition-all duration-500 relative shadow-2xl rounded-xl overflow-hidden w-full h-full flex items-center justify-center" style={showEmpathy ? getFilterStyle() : {}}>
                 
                 {/* CAPA DE PINES PARA IMÁGENES/WEB */}
-                {/* Pasamos solo los pines visuales para que los comentarios de chat no floten en la esquina */}
                 {showEmpathy && !isPdf && <PinLayer pins={visualPins} onSavePin={handleSavePin} />}
 
                 {project.type === 'code' ? (
-                    <div className="bg-slate-900 p-8 border border-slate-700 max-w-4xl w-full font-mono text-sm text-slate-300 flex flex-col max-h-[80vh]">
-                        <div className="flex justify-between mb-4 border-b border-slate-700 pb-2 shrink-0">
-                            <span className="text-emerald-400 flex gap-2"><FileCode /> {project.input}</span>
-                            <button onClick={() => navigator.clipboard.writeText(codeContent)}><Copy size={16}/></button>
+                    /* CORRECCIÓN 2: 
+                       - Quitamos max-w-4xl y max-h-[80vh]
+                       - Ponemos w-full y h-full para llenar el main
+                       - Quitamos el p-8 de aquí y lo movemos adentro (pre) para que el scroll llegue al borde
+                    */
+                    <div className="bg-[#0d1117] border border-slate-700 w-full h-full font-mono text-sm text-slate-300 flex flex-col rounded-xl overflow-hidden">
+                        
+                        {/* Header del Código */}
+                        <div className="flex justify-between items-center px-4 py-2 border-b border-slate-700 bg-slate-900 shrink-0">
+                            <span className="text-emerald-400 flex gap-2 items-center font-semibold">
+                                <FileCode size={18} /> 
+                                {project.input}
+                            </span>
+                            <button 
+                                onClick={() => navigator.clipboard.writeText(codeContent)}
+                                className="p-2 hover:bg-slate-800 rounded transition-colors text-slate-400 hover:text-white"
+                                title="Copiar código"
+                            >
+                                <Copy size={16}/>
+                            </button>
                         </div>
                          
-                        {/* CÓDIGO CON PINES */}
-                        <div className="flex-1 overflow-auto custom-scrollbar bg-[#0d1117] relative">
-                            <div className="relative min-h-full min-w-full inline-block">
+                        {/* Área de Código con Scroll */}
+                        <div className="flex-1 overflow-auto custom-scrollbar relative">
+                            {/* Wrapper relativo para los pines sobre el código */}
+                            <div className="relative min-h-full min-w-max inline-block">
                                 <PinLayer pins={visualPins} onSavePin={handleSavePin} />
                                 <div className="p-6">
-                                    <pre className="whitespace-pre"><code>{codeContent || "Cargando..."}</code></pre>
+                                    <pre className="whitespace-pre font-mono text-sm leading-relaxed">
+                                        <code>{codeContent || "Cargando..."}</code>
+                                    </pre>
                                 </div>
                             </div>
                         </div>
@@ -204,23 +223,26 @@ export default function ProjectView() {
                          <iframe src={imageUrl} className="w-full h-full" title="Visor PDF" />
                     </div>
                 ) : (
-                    <img src={imageUrl} alt="Proyecto" className="max-h-[85vh] max-w-full object-contain block" />
+                    /* Contenedor con scroll para imágenes grandes */
+                    <div className="w-full h-full overflow-auto flex items-center justify-center custom-scrollbar">
+                         <img src={imageUrl} alt="Proyecto" className="max-w-none shadow-lg" />
+                    </div>
                 )}
             </div>
         </main>
 
         {/* SIDEBAR */}
-        <aside className="w-96 bg-slate-900 border-l border-slate-700 flex flex-col shrink-0 z-10">
-            <div className="flex border-b border-slate-700">
+        <aside className="w-96 bg-slate-900 border-l border-slate-700 flex flex-col shrink-0 z-10 shadow-xl">
+            <div className="flex border-b border-slate-700 bg-slate-900">
                 <button 
                     onClick={() => setSidebarTab('ai')}
-                    className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${sidebarTab === 'ai' ? 'text-blue-400 border-b-2 border-blue-500 bg-slate-800' : 'text-slate-400 hover:bg-slate-800'}`}
+                    className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 transition-all ${sidebarTab === 'ai' ? 'text-blue-400 border-b-2 border-blue-500 bg-slate-800' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
                 >
                     <Zap size={16} /> Auditoría IA
                 </button>
                 <button 
                     onClick={() => setSidebarTab('chat')}
-                    className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${sidebarTab === 'chat' ? 'text-purple-400 border-b-2 border-purple-500 bg-slate-800' : 'text-slate-400 hover:bg-slate-800'}`}
+                    className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 transition-all ${sidebarTab === 'chat' ? 'text-purple-400 border-b-2 border-purple-500 bg-slate-800' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
                 >
                     <MessageSquare size={16} /> Chat ({pins.length})
                 </button>
@@ -231,7 +253,7 @@ export default function ProjectView() {
                 {sidebarTab === 'ai' && (
                     <div className="space-y-4">
                         {audit?.issues?.map((issue: any, idx: number) => (
-                            <div key={idx} className="bg-slate-800 p-4 rounded-lg border border-slate-700">
+                            <div key={idx} className="bg-slate-800 p-4 rounded-lg border border-slate-700 animate-fade-in">
                                 <div className="flex justify-between mb-2">
                                     <span className="text-sm font-bold text-blue-200">{issue.element}</span>
                                     <span className={`text-[10px] px-2 py-0.5 rounded uppercase font-bold ${issue.severity === 'high' ? 'bg-red-500/20 text-red-300' : 'bg-blue-500/20 text-blue-300'}`}>{issue.severity}</span>
