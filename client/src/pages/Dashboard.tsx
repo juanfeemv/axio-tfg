@@ -14,11 +14,13 @@ import {
   Sparkles,
   Zap,
   FileCode, 
-  Save
+  Save,
+  Menu, 
+  X     
 } from 'lucide-react';
 import api from '../services/api';
 
-// Importamos las otras vistas  
+// Importamos las otras vistas
 import MyProjects from './MyProjects';
 import Settings from './Settings';
 import Explore from './Explore';
@@ -30,6 +32,9 @@ export default function Dashboard() {
   // Estado de Navegación
   const [activeTab, setActiveTab] = useState<'new' | 'projects' | 'explore' | 'settings'>('new');
   
+  // Estado para el menú móvil
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
   // Efecto para cambiar pestaña automáticamente si venimos de "Volver"
   useEffect(() => {
     if (location.state && location.state.tab) {
@@ -45,6 +50,12 @@ export default function Dashboard() {
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
+
+  // Función auxiliar para cerrar menú al navegar en móvil
+  const handleTabChange = (tab: any) => {
+    setActiveTab(tab);
+    setIsSidebarOpen(false);
+  };
 
   // --- LÓGICA URL ---
   const handleUrlAnalyze = async (e: React.FormEvent) => {
@@ -115,18 +126,46 @@ export default function Dashboard() {
     }
   };
 
-  // --- RENDERIZADO ---
-
   return (
-    <div className="flex h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-950 overflow-hidden transition-colors duration-300">
+    <div className="flex h-screen bg-gradient-to-br from-slate-50 to-slate-100 overflow-hidden relative">
       
-      {/* 1. SIDEBAR LATERAL */}
-      <aside className="w-64 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white flex flex-col shadow-2xl z-10 relative overflow-hidden">
+      {/* --- HEADER MÓVIL (VISIBLE SOLO EN MÓVIL) --- 
+          z-50 asegura que esté por encima del menú lateral y del overlay
+      */}
+      <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-slate-900 text-white flex items-center justify-between px-4 z-50 shadow-md">
+         <div className="flex items-center gap-2">
+            <Sparkles className="text-blue-400" size={20} />
+            <span className="font-bold text-lg tracking-wider">AXIO</span>
+         </div>
+         <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 text-slate-300 hover:text-white">
+            {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
+         </button>
+      </div>
+
+      {/* --- OVERLAY OSCURO --- 
+          z-40 está debajo del header (z-50) pero encima del contenido principal
+      */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-sm"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+      {/* 1. SIDEBAR LATERAL (Responsive) */}
+      <aside className={`
+        fixed left-0 z-40 w-64 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white flex flex-col shadow-2xl 
+        transform transition-transform duration-300 ease-in-out
+        top-16 bottom-0
+        md:top-0 md:relative
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+      `}>
         {/* Decorative gradient */}
-        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl"></div>
+        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute bottom-0 left-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
         
-        <div className="p-6 relative">
+        {/* Logo solo visible en Desktop (en móvil está en el header fijo) */}
+        <div className="p-6 relative hidden md:block">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
               <Sparkles className="text-white" size={20} />
@@ -139,40 +178,41 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
-        
-        <nav className="flex-1 px-4 space-y-2 relative">
+
+        {/* Navegación */}
+        <nav className="flex-1 px-4 space-y-2 relative mt-4 md:mt-0 overflow-y-auto">
           <SidebarItem 
             icon={<PlusCircle size={20} />} 
             label="Nueva Auditoría" 
             active={activeTab === 'new'} 
-            onClick={() => setActiveTab('new')} 
+            onClick={() => handleTabChange('new')} 
           />
           <SidebarItem 
             icon={<FolderOpen size={20} />} 
             label="Mis Proyectos" 
             active={activeTab === 'projects'} 
-            onClick={() => setActiveTab('projects')} 
+            onClick={() => handleTabChange('projects')} 
           />
           <SidebarItem 
             icon={<Globe size={20} />} 
             label="Comunidad" 
             active={activeTab === 'explore'} 
-            onClick={() => setActiveTab('explore')} 
+            onClick={() => handleTabChange('explore')} 
           />
           <div className="pt-4 mt-4 border-t border-slate-700/50">
             <SidebarItem 
               icon={<SettingsIcon size={20} />} 
               label="Configuración" 
               active={activeTab === 'settings'} 
-              onClick={() => setActiveTab('settings')} 
+              onClick={() => handleTabChange('settings')} 
             />
           </div>
         </nav>
         
         {/* User section */}
-        <div className="p-4 border-t border-slate-700/50 relative">
-          <div className="flex items-center gap-3 mb-3 p-3 bg-slate-800/50 rounded-xl">
-            <div className="h-10 w-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-sm font-bold">
+        <div className="p-4 border-t border-slate-700/50 relative bg-slate-900/50">
+          <div className="flex items-center gap-3 mb-3 p-3 bg-slate-800/50 rounded-xl border border-slate-700/50">
+            <div className="h-10 w-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-sm font-bold shadow-inner">
               {user?.username.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
@@ -191,27 +231,27 @@ export default function Dashboard() {
       </aside>
 
       {/* 2. ÁREA PRINCIPAL */}
-      <main className="flex-1 overflow-y-auto relative">
+      <main className="flex-1 overflow-y-auto relative pt-16 md:pt-0 transition-all duration-300">
         
         {/* PESTAÑA: NUEVA AUDITORÍA */}
         {activeTab === 'new' && (
-          <div className="p-8 max-w-7xl mx-auto min-h-full">
+          <div className="p-4 md:p-8 max-w-7xl mx-auto min-h-full">
             
             {/* Cabecera de Bienvenida */}
             <header className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="text-4xl">👋</span>
-                  <h2 className="text-3xl font-bold text-slate-800 dark:text-white">
+                  <span className="text-3xl md:text-4xl">👋</span>
+                  <h2 className="text-2xl md:text-3xl font-bold text-slate-800">
                     Hola, <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">{user?.username}</span>
                   </h2>
                 </div>
-                <p className="text-slate-500 dark:text-slate-400 text-lg">¿Qué quieres subir hoy?</p>
+                <p className="text-slate-500 text-base md:text-lg">¿Qué quieres subir hoy?</p>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="hidden md:flex items-center gap-3">
                 <div className="text-right">
                   <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Plan Gratuito</p>
-                  <p className="text-sm text-blue-600 dark:text-blue-400 font-medium cursor-pointer hover:underline flex items-center gap-1">
+                  <p className="text-sm text-blue-600 font-medium cursor-pointer hover:underline flex items-center gap-1">
                     <Zap size={14} />
                     Actualizar a Pro
                   </p>
@@ -223,15 +263,15 @@ export default function Dashboard() {
             {!result && !loading && (
               <div className="mb-8 flex justify-center md:justify-start animate-fade-in">
                 <div 
-                  className="bg-white dark:bg-slate-800 p-1.5 rounded-full border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-1 cursor-pointer select-none"
+                  className="bg-white p-1.5 rounded-full border border-slate-200 shadow-sm flex items-center gap-1 cursor-pointer select-none overflow-hidden"
                   onClick={() => setUseAI(!useAI)}
                 >
-                  <div className={`px-5 py-2.5 rounded-full text-sm font-bold flex items-center gap-2 transition-all duration-300 ${useAI ? 'bg-blue-600 text-white shadow-md transform scale-105' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
-                    <Sparkles size={16} />
-                    Analizar con IA
+                  <div className={`px-4 md:px-5 py-2 md:py-2.5 rounded-full text-xs md:text-sm font-bold flex items-center gap-2 transition-all duration-300 ${useAI ? 'bg-blue-600 text-white shadow-md transform scale-105' : 'text-slate-500 hover:bg-slate-50'}`}>
+                    <Sparkles size={14} />
+                    <span className="hidden sm:inline">Analizar con</span> IA
                   </div>
-                  <div className={`px-5 py-2.5 rounded-full text-sm font-bold flex items-center gap-2 transition-all duration-300 ${!useAI ? 'bg-emerald-500 text-white shadow-md transform scale-105' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
-                    <Save size={16} />
+                  <div className={`px-4 md:px-5 py-2 md:py-2.5 rounded-full text-xs md:text-sm font-bold flex items-center gap-2 transition-all duration-300 ${!useAI ? 'bg-emerald-500 text-white shadow-md transform scale-105' : 'text-slate-500 hover:bg-slate-50'}`}>
+                    <Save size={14} />
                     Solo Subir
                   </div>
                 </div>
@@ -243,21 +283,21 @@ export default function Dashboard() {
               <div className="grid md:grid-cols-3 gap-6 animate-fade-in-up">
                 
                 {/* 1. Card URL */}
-                <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-lg border-2 border-slate-200 dark:border-slate-700 hover:shadow-2xl hover:border-blue-300 dark:hover:border-blue-500/50 hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden">
+                <div className="bg-white p-6 rounded-3xl shadow-lg border-2 border-slate-200 hover:shadow-2xl hover:border-blue-300 hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl"></div>
                   <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-blue-500/30">
                     <Link2 size={24} />
                   </div>
-                  <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">Web en Vivo</h3>
-                  <p className="text-slate-500 dark:text-slate-400 text-sm mb-6 h-10">
-                    {useAI ? 'La IA navegará y detectará errores.' : 'Guarda la URL para compartirla con la comunidad.'}
+                  <h3 className="text-lg font-bold text-slate-800 mb-2">Web en Vivo</h3>
+                  <p className="text-slate-500 text-sm mb-6 h-10 line-clamp-2">
+                    {useAI ? 'La IA navegará y detectará errores.' : 'Guarda la URL para compartirla.'}
                   </p>
                   
                   <form onSubmit={handleUrlAnalyze} className="relative">
                     <input 
                       type="url" 
                       placeholder="https://ejemplo.com" 
-                      className="w-full border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-xl px-4 py-3 pr-12 text-sm text-slate-800 dark:text-white focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all shadow-sm"
+                      className="w-full border-2 border-slate-300 rounded-xl px-4 py-3 pr-12 text-sm focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all shadow-sm"
                       value={url}
                       onChange={(e) => setUrl(e.target.value)}
                       required
@@ -272,39 +312,39 @@ export default function Dashboard() {
                 </div>
 
                 {/* 2. Card Diseño (Imagen/PDF) */}
-                <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-lg border-2 border-slate-200 dark:border-slate-700 hover:shadow-2xl hover:border-purple-300 dark:hover:border-purple-500/50 hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden">
+                <div className="bg-white p-6 rounded-3xl shadow-lg border-2 border-slate-200 hover:shadow-2xl hover:border-purple-300 hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/5 rounded-full blur-2xl"></div>
                   <div className="h-12 w-12 bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-purple-500/30">
                     <Upload size={24} />
                   </div>
-                  <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">Diseño Visual</h3>
-                  <p className="text-slate-500 dark:text-slate-400 text-sm mb-6 h-10">
+                  <h3 className="text-lg font-bold text-slate-800 mb-2">Diseño Visual</h3>
+                  <p className="text-slate-500 text-sm mb-6 h-10 line-clamp-2">
                     {useAI ? 'Sube un mockup para análisis visual.' : 'Comparte un diseño para feedback.'}
                   </p>
                   
-                  <label className={`border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl h-[52px] flex items-center justify-center cursor-pointer transition-all group-hover:shadow-md ${useAI ? 'hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20' : 'hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'}`}>
+                  <label className={`border-2 border-dashed border-slate-300 rounded-xl h-[52px] flex items-center justify-center cursor-pointer transition-all group-hover:shadow-md ${useAI ? 'hover:border-purple-500 hover:bg-purple-50' : 'hover:border-emerald-500 hover:bg-emerald-50'}`}>
                     <input type="file" className="hidden" onChange={(e) => handleFileUpload(e, 'image')} accept="image/*,application/pdf" />
-                    <span className={`text-sm font-semibold flex items-center gap-2 ${useAI ? 'text-slate-600 dark:text-slate-300 group-hover:text-purple-700 dark:group-hover:text-purple-400' : 'text-slate-600 dark:text-slate-300 group-hover:text-emerald-700 dark:group-hover:text-emerald-400'}`}>
-                      <Upload size={16} /> {useAI ? 'Analizar Imagen' : 'Subir Diseño'}
+                    <span className={`text-sm font-semibold flex items-center gap-2 ${useAI ? 'text-slate-600 group-hover:text-purple-700' : 'text-slate-600 group-hover:text-emerald-700'}`}>
+                      <Upload size={16} /> {useAI ? 'Analizar' : 'Subir'}
                     </span>
                   </label>
                 </div>
 
-                {/* 3. Card CÓDIGO (NUEVA - ESTILO ESMERALDA) */}
-                <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-lg border-2 border-slate-200 dark:border-slate-700 hover:shadow-2xl hover:border-emerald-300 dark:hover:border-emerald-500/50 hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden">
+                {/* 3. Card CÓDIGO */}
+                <div className="bg-white p-6 rounded-3xl shadow-lg border-2 border-slate-200 hover:shadow-2xl hover:border-emerald-300 hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl"></div>
                   <div className="h-12 w-12 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-emerald-500/30">
                     <FileCode size={24} />
                   </div>
-                  <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">Código Fuente</h3>
-                  <p className="text-slate-500 dark:text-slate-400 text-sm mb-6 h-10">
-                    {useAI ? 'Revisión semántica automática.' : 'Comparte código para revisión manual.'}
+                  <h3 className="text-lg font-bold text-slate-800 mb-2">Código Fuente</h3>
+                  <p className="text-slate-500 text-sm mb-6 h-10 line-clamp-2">
+                    {useAI ? 'Revisión semántica automática.' : 'Comparte código para revisión.'}
                   </p>
                   
-                  <label className={`border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl h-[52px] flex items-center justify-center cursor-pointer transition-all group-hover:shadow-md ${useAI ? 'hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20' : 'hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'}`}>
+                  <label className={`border-2 border-dashed border-slate-300 rounded-xl h-[52px] flex items-center justify-center cursor-pointer transition-all group-hover:shadow-md ${useAI ? 'hover:border-blue-500 hover:bg-blue-50' : 'hover:border-emerald-500 hover:bg-emerald-50'}`}>
                     <input type="file" className="hidden" onChange={(e) => handleFileUpload(e, 'code')} accept=".html,.css,.js,.jsx,.ts,.tsx,.json" />
-                    <span className={`text-sm font-semibold flex items-center gap-2 ${useAI ? 'text-slate-600 dark:text-slate-300 group-hover:text-blue-700 dark:group-hover:text-blue-400' : 'text-slate-600 dark:text-slate-300 group-hover:text-emerald-700 dark:group-hover:text-emerald-400'}`}>
-                      <FileCode size={16} /> {useAI ? 'Analizar Código' : 'Subir Código'}
+                    <span className={`text-sm font-semibold flex items-center gap-2 ${useAI ? 'text-slate-600 group-hover:text-blue-700' : 'text-slate-600 group-hover:text-emerald-700'}`}>
+                      <FileCode size={16} /> {useAI ? 'Analizar' : 'Subir'}
                     </span>
                   </label>
                 </div>
@@ -316,13 +356,13 @@ export default function Dashboard() {
             {loading && (
               <div className="flex flex-col items-center justify-center h-[50vh] animate-fade-in">
                 <div className="relative">
-                  <div className="h-24 w-24 rounded-full border-4 border-slate-200 dark:border-slate-700 border-t-blue-600 animate-spin"></div>
+                  <div className="h-24 w-24 rounded-full border-4 border-slate-200 border-t-blue-600 animate-spin"></div>
                   <div className="absolute inset-0 flex items-center justify-center">
                     <Sparkles className="text-blue-600 animate-pulse" size={32} />
                   </div>
                 </div>
-                <h3 className="text-xl font-bold text-slate-800 dark:text-white mt-8 mb-2">Procesando Proyecto</h3>
-                <p className="text-slate-500 dark:text-slate-400 animate-pulse">
+                <h3 className="text-xl font-bold text-slate-800 mt-8 mb-2">Procesando Proyecto</h3>
+                <p className="text-slate-500 animate-pulse">
                     {useAI ? 'Gemini está revisando la accesibilidad...' : 'Guardando en la base de datos...'}
                 </p>
                 <div className="flex gap-2 mt-4">
@@ -338,12 +378,12 @@ export default function Dashboard() {
               <div className="animate-fade-in-up pb-10">
                 <button 
                   onClick={() => setResult(null)}
-                  className="mb-6 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-semibold flex items-center gap-2 transition-all hover:gap-3 group"
+                  className="mb-6 text-slate-500 hover:text-blue-600 font-semibold flex items-center gap-2 transition-all hover:gap-3 group"
                 >
                   <span className="group-hover:-translate-x-1 transition-transform">←</span> Volver al inicio
                 </button>
 
-                <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border-2 border-slate-200 dark:border-slate-700 overflow-hidden">
+                <div className="bg-white rounded-3xl shadow-2xl border-2 border-slate-200 overflow-hidden">
                   
                   {/* Header Resultado */}
                   <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white p-8 relative overflow-hidden">
@@ -385,36 +425,36 @@ export default function Dashboard() {
                   </div>
 
                   {/* Body Resultado */}
-                  <div className="p-8 bg-gradient-to-b from-slate-50 to-white dark:from-slate-900 dark:to-slate-950">
+                  <div className="p-8 bg-gradient-to-b from-slate-50 to-white">
                     <div className="flex items-center gap-3 mb-6">
-                      <div className="h-10 w-10 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex items-center justify-center">
-                        <AlertTriangle className="text-orange-600 dark:text-orange-400" size={20} />
+                      <div className="h-10 w-10 bg-orange-100 rounded-xl flex items-center justify-center">
+                        <AlertTriangle className="text-orange-600" size={20} />
                       </div>
-                      <h3 className="font-bold text-slate-800 dark:text-white text-xl">
+                      <h3 className="font-bold text-slate-800 text-xl">
                         {result.issues?.length || 0} Problemas Detectados
                       </h3>
                     </div>
                     
                     <div className="grid gap-4">
                       {result.issues?.map((issue: any, index: number) => (
-                        <div key={index} className="bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all border-l-4 border-l-blue-500">
+                        <div key={index} className="bg-white border-2 border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all border-l-4 border-l-blue-500">
                           <div className="flex flex-col md:flex-row justify-between mb-4 gap-3">
-                            <span className="font-bold text-slate-800 dark:text-white text-lg">{issue.element || 'Elemento General'}</span>
+                            <span className="font-bold text-slate-800 text-lg">{issue.element || 'Elemento General'}</span>
                             <span className={`self-start text-xs px-3 py-1.5 rounded-full font-bold uppercase tracking-wide ${
-                              issue.severity === 'high' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-2 border-red-200 dark:border-red-800' : 
-                              issue.severity === 'medium' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 border-2 border-orange-200 dark:border-orange-800' : 
-                              'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-2 border-blue-200 dark:border-blue-800'
+                              issue.severity === 'high' ? 'bg-red-100 text-red-700 border-2 border-red-200' : 
+                              issue.severity === 'medium' ? 'bg-orange-100 text-orange-800 border-2 border-orange-200' : 
+                              'bg-blue-100 text-blue-700 border-2 border-blue-200'
                             }`}>
                               {issue.severity === 'high' ? '🔴 Alta' : issue.severity === 'medium' ? '🟡 Media' : '🔵 Baja'}
                             </span>
                           </div>
                           
-                          <p className="text-slate-600 dark:text-slate-300 mb-4 leading-relaxed">{issue.problem || issue.issue}</p>
+                          <p className="text-slate-600 mb-4 leading-relaxed">{issue.problem || issue.issue}</p>
                           
-                          <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/10 dark:to-emerald-900/10 border-2 border-green-200 dark:border-green-800 text-green-800 dark:text-green-300 text-sm p-4 rounded-xl flex gap-3 items-start">
-                            <CheckCircle size={20} className="mt-0.5 shrink-0 text-green-600 dark:text-green-400" />
+                          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 text-green-800 text-sm p-4 rounded-xl flex gap-3 items-start">
+                            <CheckCircle size={20} className="mt-0.5 shrink-0 text-green-600" />
                             <div>
-                              <span className="font-bold block mb-1 text-green-900 dark:text-green-200">💡 Sugerencia de corrección:</span>
+                              <span className="font-bold block mb-1 text-green-900">💡 Sugerencia de corrección:</span>
                               {issue.suggestion}
                             </div>
                           </div>

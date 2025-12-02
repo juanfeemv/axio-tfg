@@ -5,7 +5,8 @@ import {
   createProject, 
   deleteProject, 
   getCommunityProjects, 
-  toggleLike // <--- Importamos la nueva función
+  toggleLike,
+  rateProject // <--- Importamos la nueva función de votación
 } from '../controllers/projectController';
 import { protect } from '../middlewares/auth';
 import { upload } from '../middlewares/upload';
@@ -28,7 +29,10 @@ router.post('/', protect, upload.single('file'), createProject);
 // DELETE /api/projects/:id -> Borrar proyecto
 router.delete('/:id', protect, deleteProject);
 
-// PUT /api/projects/:id/like -> Dar o quitar like (NUEVO)
+// PUT /api/projects/:id/like -> Dar o quitar like
 router.put('/:id/like', protect, toggleLike);
+
+// PUT /api/projects/:id/rate -> Votar proyecto (1-5 estrellas) (NUEVO)
+router.put('/:id/rate', protect, rateProject);
 
 export default router;
