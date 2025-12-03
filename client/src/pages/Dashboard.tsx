@@ -29,27 +29,27 @@ export default function Dashboard() {
   const { user, logout } = useAuth();
   const location = useLocation();
   
-  // Estado de Navegación con PERSISTENCIA
+  // Estado de Navegación CON PERSISTENCIA solo durante la sesión
   // 1. Prioridad: State de navegación (al volver de un proyecto)
-  // 2. Prioridad: LocalStorage (al recargar F5)
+  // 2. Prioridad: SessionStorage (al recargar F5 en la misma sesión)
   // 3. Default: 'new'
   const [activeTab, setActiveTab] = useState<'new' | 'projects' | 'explore' | 'settings'>(() => {
     if (location.state && location.state.tab) {
         return location.state.tab;
     }
-    const savedTab = localStorage.getItem('dashboard_active_tab');
+    const savedTab = sessionStorage.getItem('dashboard_active_tab');
     return (savedTab as 'new' | 'projects' | 'explore' | 'settings') || 'new';
   });
   
   // Estado para el menú móvil
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  // Efecto para guardar la pestaña actual en LocalStorage
+  // Guardar la pestaña actual en SessionStorage cada vez que cambia
   useEffect(() => {
-    localStorage.setItem('dashboard_active_tab', activeTab);
+    sessionStorage.setItem('dashboard_active_tab', activeTab);
   }, [activeTab]);
 
-  // Efecto para limpiar el history state al cargar (opcional, para limpieza)
+  // Limpiar el history state después de usarlo
   useEffect(() => {
     if (location.state && location.state.tab) {
       window.history.replaceState({}, document.title);
