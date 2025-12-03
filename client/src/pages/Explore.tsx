@@ -21,10 +21,10 @@ export default function Explore() {
   const { user } = useAuth();
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  
+   
   // Estado para controlar qué filtro está activo
   const [filter, setFilter] = useState<'all' | 'popular' | 'recent' | 'score' | 'rating'>('all');
-  
+   
   const navigate = useNavigate();
 
   // 1. Cargar datos REALES de la comunidad desde la Base de Datos
@@ -137,7 +137,7 @@ export default function Explore() {
 
   return (
     <div className="p-8 max-w-7xl mx-auto min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-300 font-sans">
-      
+       
       {/* Header */}
       <div className="relative mb-12 overflow-hidden rounded-3xl shadow-sm border border-purple-100 dark:border-purple-900/50 animate-fade-in-up">
         <div className="absolute inset-0 bg-gradient-to-r from-blue-50 via-purple-50 to-pink-50 dark:from-slate-700/50 dark:via-slate-800/50 dark:to-slate-900/50"></div>
@@ -154,7 +154,7 @@ export default function Explore() {
           <p className="text-slate-600 dark:text-slate-300 text-lg max-w-2xl">
             Descubre proyectos auditados por Axio, inspírate y ayuda a la comunidad puntuando sus aportes.
           </p>
-          
+           
           <div className="flex gap-6 mt-6">
             <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
               <div className="h-8 w-8 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center shadow-sm">
@@ -260,12 +260,12 @@ export default function Explore() {
                         <span className="text-xs font-bold uppercase tracking-widest opacity-70">{project.type}</span>
                       </div>
                   )}
-                  
+                   
                   {/* Overlay oscuro solo para imágenes reales, no PDFs */}
                   {!isPdf && imageUrl && (
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
                   )}
-                  
+                   
                   {/* Badge "Vista previa" */}
                   <div className={`absolute bottom-4 left-4 flex items-center gap-1 text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity ${isPdf ? 'text-slate-700 dark:text-slate-300 bg-white/90 dark:bg-slate-800/90 px-2 py-1 rounded-lg' : 'text-white/90'}`}>
                     <Eye size={14} />
@@ -302,7 +302,7 @@ export default function Explore() {
                   <p className="text-slate-500 dark:text-slate-400 text-xs font-mono bg-slate-50 dark:bg-slate-900 p-1.5 rounded mb-4 truncate border border-slate-100 dark:border-slate-700">
                     {project.input}
                   </p>
-                  
+                   
                   {/* SISTEMA DE VOTACIÓN */}
                   <div className="mt-auto mb-4 bg-slate-50 dark:bg-slate-700/30 p-3 rounded-xl">
                       <div className="flex items-center justify-between text-xs mb-2">
@@ -315,7 +315,7 @@ export default function Explore() {
                       </div>
                       
                       <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-                         {[1, 2, 3, 4, 5].map((star) => (
+                          {[1, 2, 3, 4, 5].map((star) => (
                             <button
                                 key={star}
                                 onClick={(e) => handleRate(project._id, star, e)}
@@ -331,7 +331,7 @@ export default function Explore() {
                                     } transition-colors`} 
                                 />
                             </button>
-                         ))}
+                          ))}
                       </div>
                   </div>
 
@@ -358,8 +358,9 @@ export default function Explore() {
                         {project.likes?.length || 0}
                       </button>
                       
+                      {/* --- AQUI ESTA EL CAMBIO: NUMERO DE COMENTARIOS --- */}
                       <div className="flex items-center gap-1 hover:text-blue-500 dark:hover:text-blue-400 transition">
-                        <MessageSquare size={14} /> 0
+                        <MessageSquare size={14} /> {project.commentsCount || 0}
                       </div>
                     </div>
                   </div>

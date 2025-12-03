@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { AuthRequest } from '../middlewares/auth';
 import Project from '../models/Project';
 import Audit from '../models/Audit';
+import Pin from '../models/Pin'; // <--- IMPORTADO
 import { captureWebsite } from '../services/webScraper';
 
 // GET /api/projects (Mis Proyectos)
@@ -23,7 +24,7 @@ export const getMyProjects = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// --- ACTUALIZADO: Obtener Comunidad con contexto de voto ---
+// --- ACTUALIZADO: Obtener Comunidad con contexto de voto y CONTEO DE PINES ---
 export const getCommunityProjects = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user.id;
@@ -33,17 +34,22 @@ export const getCommunityProjects = async (req: AuthRequest, res: Response) => {
       .populate('owner', 'username')
       .lean(); // Convertimos a objeto JS simple para poder inyectar propiedades
 
-    // Añadimos el campo "myVote" para saber qué votó el usuario actual
-    const projectsWithUserData = projects.map((p: any) => {
+    // Añadimos el campo "myVote" y contamos los PINES
+    const projectsWithUserData = await Promise.all(projects.map(async (p: any) => {
         const myRating = p.ratings?.find((r: any) => r.user.toString() === userId);
+        
+        // Contamos cuántos pines tiene este proyecto
+        const commentsCount = await Pin.countDocuments({ project: p._id });
+
         return {
             ...p,
             myVote: myRating ? myRating.value : 0, // 0 si no ha votado
             votesCount: p.ratings?.length || 0,     // Total de votos
+            commentsCount: commentsCount,           // <--- DATO NUEVO
             // Ocultamos el array de ratings por privacidad
             ratings: undefined 
         };
-    });
+    }));
 
     res.json({ success: true, data: projectsWithUserData });
   } catch (error) {
