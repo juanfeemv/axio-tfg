@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { User, Mail, Lock, ArrowRight, Shield, CheckCircle } from 'lucide-react';
+import { User, Mail, Lock, ArrowRight, Shield, CheckCircle, XCircle } from 'lucide-react';
 
 export default function Register() {
   const [username, setUsername] = useState('');
@@ -13,23 +13,35 @@ export default function Register() {
   const { register } = useAuth();
   const navigate = useNavigate();
 
+  // Validaciones de contraseña
+  const hasMinLength = password.length >= 8;
+  const hasUpperCase = /[A-Z]/.test(password);
+  const hasLowerCase = /[a-z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+  
+  const isPasswordValid = hasMinLength && hasUpperCase && hasLowerCase && hasNumber;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
     
+    // Validación frontend
+    if (!isPasswordValid) {
+      setError('La contraseña no cumple con los requisitos de seguridad');
+      setIsLoading(false);
+      return;
+    }
+    
     try {
       await register(username, email, password);
       navigate('/login');
-    } catch (err) {
-      setError('Error al registrarse. Intenta con otro email.');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Error al registrarse. Intenta con otro email.');
     } finally {
       setIsLoading(false);
     }
   };
-
-  // Validación de fortaleza de contraseña
-  const passwordStrength = password.length >= 8 ? 'strong' : password.length >= 6 ? 'medium' : 'weak';
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50 p-4 relative overflow-hidden">
@@ -116,33 +128,44 @@ export default function Register() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  minLength={6}
                 />
               </div>
               
-              {/* Password Strength Indicator */}
+              {/* Password Requirements Checklist */}
               {password && (
-                <div className="space-y-2">
-                  <div className="flex gap-1">
-                    <div className={`h-1.5 flex-1 rounded-full transition-all ${
-                      passwordStrength === 'weak' ? 'bg-red-500' : 'bg-slate-200'
-                    }`}></div>
-                    <div className={`h-1.5 flex-1 rounded-full transition-all ${
-                      passwordStrength === 'medium' || passwordStrength === 'strong' ? 'bg-yellow-500' : 'bg-slate-200'
-                    }`}></div>
-                    <div className={`h-1.5 flex-1 rounded-full transition-all ${
-                      passwordStrength === 'strong' ? 'bg-green-500' : 'bg-slate-200'
-                    }`}></div>
+                <div className="bg-slate-50 border-2 border-slate-200 rounded-xl p-4 space-y-2">
+                  <p className="text-xs font-semibold text-slate-600 mb-2">Requisitos de seguridad:</p>
+                  
+                  <div className="space-y-1.5">
+                    <div className={`flex items-center gap-2 text-sm transition-colors ${hasMinLength ? 'text-green-600' : 'text-slate-500'}`}>
+                      {hasMinLength ? <CheckCircle size={16} className="shrink-0" /> : <XCircle size={16} className="shrink-0" />}
+                      <span>Mínimo 8 caracteres</span>
+                    </div>
+                    
+                    <div className={`flex items-center gap-2 text-sm transition-colors ${hasUpperCase ? 'text-green-600' : 'text-slate-500'}`}>
+                      {hasUpperCase ? <CheckCircle size={16} className="shrink-0" /> : <XCircle size={16} className="shrink-0" />}
+                      <span>Al menos una mayúscula (A-Z)</span>
+                    </div>
+                    
+                    <div className={`flex items-center gap-2 text-sm transition-colors ${hasLowerCase ? 'text-green-600' : 'text-slate-500'}`}>
+                      {hasLowerCase ? <CheckCircle size={16} className="shrink-0" /> : <XCircle size={16} className="shrink-0" />}
+                      <span>Al menos una minúscula (a-z)</span>
+                    </div>
+                    
+                    <div className={`flex items-center gap-2 text-sm transition-colors ${hasNumber ? 'text-green-600' : 'text-slate-500'}`}>
+                      {hasNumber ? <CheckCircle size={16} className="shrink-0" /> : <XCircle size={16} className="shrink-0" />}
+                      <span>Al menos un número (0-9)</span>
+                    </div>
                   </div>
-                  <p className={`text-xs font-medium ${
-                    passwordStrength === 'strong' ? 'text-green-600' :
-                    passwordStrength === 'medium' ? 'text-yellow-600' :
-                    'text-red-600'
-                  }`}>
-                    {passwordStrength === 'strong' ? '✓ Contraseña fuerte' :
-                     passwordStrength === 'medium' ? 'Contraseña media' :
-                     'Contraseña débil'}
-                  </p>
+                  
+                  {isPasswordValid && (
+                    <div className="mt-3 pt-3 border-t border-slate-200">
+                      <div className="flex items-center gap-2 text-green-600 font-semibold text-sm">
+                        <CheckCircle size={16} />
+                        <span>¡Contraseña segura!</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -170,8 +193,8 @@ export default function Register() {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={isLoading}
-              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-slate-400 disabled:to-slate-400 text-white font-semibold py-3.5 rounded-xl transition-all shadow-lg shadow-purple-500/30 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 group"
+              disabled={isLoading || !isPasswordValid}
+              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-slate-400 disabled:to-slate-400 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-xl transition-all shadow-lg shadow-purple-500/30 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 group"
             >
               {isLoading ? (
                 <>
