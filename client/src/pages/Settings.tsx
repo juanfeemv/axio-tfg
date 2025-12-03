@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
-import { User, Shield, Bell, Mail, Lock, Palette, Zap, Save, Camera } from 'lucide-react';
+import { User, Shield, Bell, Mail, Lock, Palette, Zap, Save, Camera, Key, Check, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext'; // <--- Usamos el estado global del tema
+import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';
 
 export default function Settings() {
-  const { user, updateUser, logout } = useAuth(); // Añadimos logout para la Zona de Peligro
-  const { theme, toggleTheme } = useTheme(); // <--- Usamos el estado global del tema
+  const { user, updateUser, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
-  // Estados de UI inicializados con datos reales
+  // Estados de UI
   const [username, setUsername] = useState(user?.username || '');
   const [emailNotifs, setEmailNotifs] = useState(true);
   const [realTimeAlerts, setRealTimeAlerts] = useState(true);
@@ -18,27 +18,38 @@ export default function Settings() {
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [currentPass, setCurrentPass] = useState('');
   const [newPass, setNewPass] = useState('');
+  
+  // Estados de Validación y Feedback Visual
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
+
+  // Validación en tiempo real (NUEVA LÓGICA)
+  const hasMinLength = newPass.length >= 8;
+  const hasUpperCase = /[A-Z]/.test(newPass);
+  const hasLowerCase = /[a-z]/.test(newPass);
+  const hasNumber = /[0-9]/.test(newPass);
+  const hasValue = newPass.length > 0;
+
+  const isPasswordValid = hasMinLength && hasUpperCase && hasLowerCase && hasNumber;
 
   // Sincronizar estado local si el usuario cambia externamente
   useEffect(() => {
     if (user?.username) setUsername(user.username);
   }, [user]);
 
-  // --- 1. CAMBIAR TEMA (Visual) ---
+  // --- 1. CAMBIAR TEMA ---
   const handleThemeChange = (mode: 'light' | 'dark') => {
     toggleTheme(mode);
   };
 
-  // --- 2. GUARDAR PERFIL (Backend) ---
+  // --- 2. GUARDAR PERFIL ---
   const handleSaveProfile = async () => {
     if (!username.trim()) return alert("El nombre no puede estar vacío");
     
     setLoading(true);
     try {
-      // Llamamos al Backend
       const res = await api.put('/auth/profile', { username });
       
-      // Si sale bien, actualizamos el contexto localmente
       if (res.data.success) {
          updateUser(res.data.user);
          alert("✅ Perfil actualizado correctamente");
@@ -51,10 +62,22 @@ export default function Settings() {
     }
   };
 
-  // --- 3. CAMBIAR CONTRASEÑA (Backend) ---
+  // --- 3. CAMBIAR CONTRASEÑA (Validación estricta) ---
   const handleChangePassword = async () => {
-    if (!currentPass || !newPass) return alert("Rellena ambas contraseñas");
-    if (newPass.length < 6) return alert("La nueva contraseña debe tener al menos 6 caracteres");
+    // Limpiar estados previos
+    setPasswordError('');
+    setPasswordSuccess(false);
+
+    // Validación preventiva
+    if (!currentPass || !newPass) {
+      setPasswordError("Por favor completa todos los campos.");
+      return;
+    }
+    
+    if (!isPasswordValid) {
+      setPasswordError("La contraseña no cumple con todos los requisitos de seguridad.");
+      return;
+    }
     
     setLoading(true);
     try {
@@ -63,27 +86,32 @@ export default function Settings() {
         newPassword: newPass 
       });
       
-      alert("✅ Contraseña cambiada con éxito");
-      setShowPasswordForm(false);
-      setCurrentPass('');
-      setNewPass('');
+      // Éxito visual
+      setPasswordSuccess(true);
+      
+      // Resetear formulario tras 2 segundos
+      setTimeout(() => {
+        setShowPasswordForm(false);
+        setCurrentPass('');
+        setNewPass('');
+        setPasswordSuccess(false);
+      }, 2000);
+
     } catch (error: any) {
       console.error(error);
-      alert(error.response?.data?.message || "Error al cambiar contraseña");
+      setPasswordError(error.response?.data?.message || "La contraseña actual no es correcta");
     } finally {
       setLoading(false);
     }
   };
 
-  // --- 4. BORRAR CUENTA (Funcional) ---
+  // --- 4. BORRAR CUENTA ---
   const handleDeleteAccount = async () => {
       if(window.confirm("¿Estás SEGURO? Esta acción es irreversible y borrará todos tus proyectos.")) {
           setLoading(true);
           try {
-              // Llamamos a la ruta DELETE del backend
               await api.delete('/auth/me'); 
-              logout(); // Cerramos la sesión local
-              alert("✅ Cuenta eliminada con éxito. Redirigiendo...");
+              logout(); 
           } catch (error) {
               console.error("Error eliminando cuenta:", error);
               alert("Error al intentar eliminar la cuenta.");
@@ -134,21 +162,27 @@ export default function Settings() {
               <div className="flex-1 space-y-4 w-full">
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Nombre de Usuario</label>
-                  <input 
-                    type="text" 
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all dark:text-white"
-                  />
+                  <div className="relative group">
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+                    <input 
+                        type="text" 
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all dark:text-white"
+                    />
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Email</label>
-                  <input 
-                    type="email" 
-                    value={user?.email || ''}
-                    disabled 
-                    className="w-full px-4 py-2.5 bg-slate-100 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-xl text-slate-500 dark:text-slate-400 cursor-not-allowed"
-                  />
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                    <input 
+                        type="email" 
+                        value={user?.email || ''}
+                        disabled 
+                        className="w-full pl-12 pr-4 py-3 bg-slate-100 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-xl text-slate-500 dark:text-slate-400 cursor-not-allowed"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -174,7 +208,7 @@ export default function Settings() {
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Protege tu cuenta y datos</p>
           </div>
 
-          <div className="p-6 space-y-4">
+          <div className="p-6">
             {!showPasswordForm ? (
               <button onClick={() => setShowPasswordForm(true)} className="w-full text-left px-5 py-4 bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl transition-all flex justify-between items-center group">
                 <div className="flex items-center gap-3">
@@ -190,27 +224,85 @@ export default function Settings() {
               </button>
             ) : (
               <div className="bg-slate-50 dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-700 animate-in zoom-in duration-200">
-                <h3 className="font-bold text-slate-700 dark:text-white mb-4">Nueva Contraseña</h3>
-                <div className="space-y-3">
-                  <input 
-                    type="password" 
-                    placeholder="Contraseña Actual"
-                    value={currentPass}
-                    onChange={(e) => setCurrentPass(e.target.value)}
-                    className="w-full px-4 py-2 border dark:border-slate-600 rounded-lg dark:bg-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-purple-500"
-                  />
-                  <input 
-                    type="password" 
-                    placeholder="Nueva Contraseña (min 6 chars)"
-                    value={newPass}
-                    onChange={(e) => setNewPass(e.target.value)}
-                    className="w-full px-4 py-2 border dark:border-slate-600 rounded-lg dark:bg-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-purple-500"
-                  />
+                <div className="flex justify-between items-center mb-6">
+                    <h3 className="font-bold text-slate-800 dark:text-white text-lg">Nueva Contraseña</h3>
+                    <button onClick={() => setShowPasswordForm(false)} className="text-slate-400 hover:text-slate-600 transition-colors">✕</button>
+                </div>
+                
+                {/* Mensajes de Feedback */}
+                {passwordError && (
+                  <div className="bg-red-50 border border-red-200 text-red-600 p-4 rounded-xl mb-6 text-sm flex items-start gap-3 animate-shake">
+                    <AlertCircle className="h-5 w-5 flex-shrink-0" />
+                    <span>{passwordError}</span>
+                  </div>
+                )}
+                {passwordSuccess && (
+                  <div className="bg-green-50 border border-green-200 text-green-600 p-4 rounded-xl mb-6 text-sm flex items-center gap-3 animate-pulse">
+                    <Check className="h-5 w-5" />
+                    <span>¡Contraseña actualizada correctamente!</span>
+                  </div>
+                )}
+
+                <div className="space-y-5">
+                  {/* Input 1: Contraseña Actual */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Contraseña Actual</label>
+                    <div className="relative group">
+                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-purple-600 transition-colors" />
+                        <input 
+                            type="password" 
+                            placeholder="••••••••"
+                            value={currentPass}
+                            onChange={(e) => setCurrentPass(e.target.value)}
+                            className="w-full pl-12 pr-4 py-3 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all dark:text-white placeholder:text-slate-300"
+                        />
+                    </div>
+                  </div>
+
+                  {/* Input 2: Nueva Contraseña con Validación Visual */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Nueva Contraseña</label>
+                    <div className="relative group">
+                        <Key className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-purple-600 transition-colors" />
+                        <input 
+                            type="password" 
+                            placeholder="••••••••"
+                            value={newPass}
+                            onChange={(e) => setNewPass(e.target.value)}
+                            className={`w-full pl-12 pr-4 py-3 bg-white dark:bg-slate-800 border-2 rounded-xl focus:ring-4 outline-none transition-all dark:text-white placeholder:text-slate-300 ${
+                                hasValue && !isPasswordValid
+                                ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' 
+                                : 'border-slate-200 dark:border-slate-700 focus:border-purple-500 focus:ring-purple-500/20'
+                            }`}
+                        />
+                    </div>
+
+                    {/* Lista de Requisitos Proactiva Detallada */}
+                    <div className="mt-2 p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700/50 shadow-sm">
+                        <p className="text-xs text-slate-400 mb-2 font-medium">Requisitos de seguridad:</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <RequirementItem met={hasMinLength} text="Mínimo 8 caracteres" />
+                          <RequirementItem met={hasUpperCase} text="Una mayúscula" />
+                          <RequirementItem met={hasLowerCase} text="Una minúscula" />
+                          <RequirementItem met={hasNumber} text="Un número" />
+                        </div>
+                    </div>
+                  </div>
+
                   <div className="flex gap-2 pt-2">
-                    <button onClick={handleChangePassword} disabled={loading} className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-purple-700 disabled:opacity-50">
+                    <button 
+                        onClick={handleChangePassword} 
+                        disabled={loading || !isPasswordValid || !currentPass} 
+                        className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white py-3 rounded-xl font-bold shadow-lg shadow-purple-500/30 transition-all active:scale-[0.98] disabled:opacity-50 disabled:shadow-none"
+                    >
                        {loading ? '...' : 'Confirmar Cambio'}
                     </button>
-                    <button onClick={() => setShowPasswordForm(false)} className="text-slate-500 dark:text-slate-400 px-4 py-2 rounded-lg text-sm hover:bg-slate-200 dark:hover:bg-slate-700">Cancelar</button>
+                    <button 
+                        onClick={() => { setShowPasswordForm(false); setPasswordError(''); }} 
+                        className="px-5 py-3 text-slate-500 dark:text-slate-400 font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-colors"
+                    >
+                        Cancelar
+                    </button>
                   </div>
                 </div>
               </div>
@@ -278,6 +370,22 @@ export default function Settings() {
         </div>
 
       </div>
+    </div>
+  );
+}
+
+// Subcomponente para los items de requisitos
+function RequirementItem({ met, text }: { met: boolean; text: string }) {
+  return (
+    <div className={`flex items-center gap-2 text-sm transition-all duration-300 ${met ? 'text-green-600 font-medium' : 'text-slate-500'}`}>
+      <div className={`h-5 w-5 rounded-full flex items-center justify-center border transition-all ${
+        met 
+        ? 'bg-green-100 border-green-200 text-green-600 scale-105' 
+        : 'bg-slate-100 border-slate-200 text-slate-300'
+      }`}>
+        {met ? <Check size={12} strokeWidth={3} /> : <div className="h-1.5 w-1.5 rounded-full bg-slate-300" />}
+      </div>
+      <span>{text}</span>
     </div>
   );
 }

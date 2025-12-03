@@ -320,7 +320,7 @@ export default function Dashboard() {
                   </div>
                   <h3 className="text-lg font-bold text-slate-800 mb-2 dark:text-white">Diseño Visual</h3>
                   <p className="text-slate-500 text-sm mb-6 h-10 line-clamp-2 dark:text-slate-400">
-                    {useAI ? 'Sube un mockup para análisis visual.' : 'Comparte un diseño para feedback.'}
+                    {useAI ? 'Sube una diseño (imagen o PDF) para análisis visual.' : 'Comparte un diseño (imagen o PDF) para feedback.'}
                   </p>
                   
                   {/* AÑADIDO: dark:border-slate-600 dark:hover:bg-purple-900/20 */}
@@ -341,7 +341,7 @@ export default function Dashboard() {
                   </div>
                   <h3 className="text-lg font-bold text-slate-800 mb-2 dark:text-white">Código Fuente</h3>
                   <p className="text-slate-500 text-sm mb-6 h-10 line-clamp-2 dark:text-slate-400">
-                    {useAI ? 'Revisión semántica automática.' : 'Comparte código para revisión.'}
+                    {useAI ? 'Revisión de código automática.' : 'Comparte código a la comunidad.'}
                   </p>
                   
                   {/* AÑADIDO: dark:border-slate-600 dark:hover:bg-blue-900/20 */}
@@ -368,7 +368,7 @@ export default function Dashboard() {
                 {/* AÑADIDO: dark:text-white */}
                 <h3 className="text-xl font-bold text-slate-800 mt-8 mb-2 dark:text-white">Procesando Proyecto</h3>
                 <p className="text-slate-500 animate-pulse dark:text-slate-400">
-                    {useAI ? 'Gemini está revisando la accesibilidad...' : 'Guardando en la base de datos...'}
+                    {useAI ? 'La IA está revisando la accesibilidad...' : 'Guardando en la base de datos...'}
                 </p>
                 <div className="flex gap-2 mt-4">
                   <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce"></div>
