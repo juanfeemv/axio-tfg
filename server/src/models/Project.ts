@@ -1,58 +1,43 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-// 1. Interfaz TypeScript
 export interface IProject extends Document {
   title: string;
-  owner: mongoose.Types.ObjectId; // Referencia al ID del usuario
+  owner: mongoose.Types.ObjectId;
   type: 'url' | 'file' | 'code';
-  input: string; // La URL o el nombre original del archivo
-  image?: string; // Campo opcional para la ruta de la imagen/captura
+  input: string;
+  image?: string;
   status: 'pending' | 'analyzed' | 'failed';
   accessibilityScore?: number;
-  likes: mongoose.Types.ObjectId[]; // <--- NUEVO: Array de IDs de usuarios que dieron like
+  likes: mongoose.Types.ObjectId[];
+  
+  // --- NUEVO: SISTEMA DE VOTACIÓN (Community Rating) ---
+  ratings: { user: mongoose.Types.ObjectId; value: number }[]; // Array con quién votó y cuánto
+  averageRating: number; // La nota media calculada (ej: 4.5)
+  // ----------------------------------------------------
+  
   createdAt: Date;
 }
 
-// 2. Esquema Mongoose (La estructura en BD)
 const ProjectSchema: Schema = new Schema(
   {
-    title: {
-      type: String,
-      required: [true, 'El título del proyecto es obligatorio'],
-      trim: true
-    },
-    owner: {
-      type: Schema.Types.ObjectId,
-      ref: 'User',
-      required: true
-    },
-    type: {
-      type: String,
-      enum: ['url', 'file', 'code'],
-      required: true
-    },
-    input: {
-      type: String,
-      required: true
-    },
-    image: {
-      type: String
-    },
-    status: {
-      type: String,
-      enum: ['pending', 'analyzed', 'failed'],
-      default: 'pending'
-    },
-    accessibilityScore: {
-      type: Number,
-      min: 0,
-      max: 100
-    },
-    // <--- NUEVO CAMPO LIKES
-    likes: [{ 
-      type: Schema.Types.ObjectId, 
-      ref: 'User' 
-    }]
+    title: { type: String, required: true, trim: true },
+    owner: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    type: { type: String, enum: ['url', 'file', 'code'], required: true },
+    input: { type: String, required: true },
+    image: { type: String },
+    status: { type: String, enum: ['pending', 'analyzed', 'failed'], default: 'pending' },
+    accessibilityScore: { type: Number, min: 0, max: 100 },
+    
+    // Likes (Me gusta simples)
+    likes: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+
+    // --- NUEVO: VOTACIONES (Estrellas 1-5) ---
+    ratings: [{
+      user: { type: Schema.Types.ObjectId, ref: 'User' },
+      value: { type: Number, min: 1, max: 5 }
+    }],
+    averageRating: { type: Number, default: 0 }
+    // -----------------------------------------
   },
   {
     timestamps: true

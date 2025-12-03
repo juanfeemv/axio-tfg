@@ -5,7 +5,7 @@ import { useSocket } from '../context/SocketContext';
 import PinLayer from '../components/collaboration/PinLayer';
 import { 
   ArrowLeft, Sparkles, FileCode, Copy, 
-  Loader2, Eye, EyeOff, Activity, MessageSquare, Zap 
+  Loader2, Eye, EyeOff, Activity, MessageSquare, Zap, Send 
 } from 'lucide-react';
 
 export default function ProjectView() {
@@ -25,6 +25,7 @@ export default function ProjectView() {
 
   // Estados de UI
   const [sidebarTab, setSidebarTab] = useState<'ai' | 'chat'>('ai');
+  const [chatInput, setChatInput] = useState(''); // Nuevo estado para el input del chat
   
   // Estado del Motor de Empatía
   type FilterType = 'none' | 'blur' | 'protanopia' | 'deuteranopia' | 'tritanopia' | 'achromatopsia';
@@ -77,7 +78,7 @@ export default function ProjectView() {
     };
   }, [socket, id]);
 
-  // 3. Función para Guardar Pin
+  // 3. Función para Guardar Pin (Visual o Chat)
   const handleSavePin = async (x: number, y: number, content: string) => {
     try {
         const res = await api.post('/pins', { projectId: id, x, y, content });
@@ -88,6 +89,14 @@ export default function ProjectView() {
         
         setSidebarTab('chat');
     } catch (e) { console.error(e); }
+  };
+
+  // Función para enviar mensaje desde la barra lateral (sin coordenadas)
+  const handleSendChat = () => {
+    if (!chatInput.trim()) return;
+    // Usamos coordenadas negativas para indicar que es un comentario global
+    handleSavePin(-1, -1, chatInput);
+    setChatInput('');
   };
 
   // Estilos Filtros
@@ -110,8 +119,11 @@ export default function ProjectView() {
   if (!project) return <div className="p-10 text-center text-red-500">Proyecto no encontrado</div>;
 
   const imageUrl = project.image ? `http://localhost:3000/uploads/${project.image}` : undefined;
-  
+  const isPdf = project.image?.toLowerCase().endsWith('.pdf');
   const showEmpathy = project.type !== 'code';
+
+  // Filtramos los pines para la capa visual (solo los que tienen coordenadas positivas)
+  const visualPins = pins.filter(p => p.x >= 0 && p.y >= 0);
 
   return (
     <div className="h-screen bg-slate-900 text-white flex flex-col overflow-hidden">
@@ -162,60 +174,86 @@ export default function ProjectView() {
 
       <div className="flex-1 flex overflow-hidden">
         
-        {/* CANVAS */}
-        <main className="flex-1 bg-slate-950 relative overflow-auto flex items-center justify-center p-8 min-w-0">
-            <div className="transition-all duration-500 relative shadow-2xl rounded-xl overflow-hidden" style={showEmpathy ? getFilterStyle() : {}}>
+        {/* CANVAS PRINCIPAL */}
+        {/* CORRECCIÓN 1: overflow-hidden aquí para evitar doble scrollbar en la página */}
+        <main className="flex-1 bg-slate-950 relative overflow-hidden flex items-center justify-center p-6 min-w-0">
+            <div className="transition-all duration-500 relative shadow-2xl rounded-xl overflow-hidden w-full h-full flex items-center justify-center" style={showEmpathy ? getFilterStyle() : {}}>
                 
                 {/* CAPA DE PINES PARA IMÁGENES/WEB */}
-                {showEmpathy && <PinLayer pins={pins} onSavePin={handleSavePin} />}
+                {showEmpathy && !isPdf && <PinLayer pins={visualPins} onSavePin={handleSavePin} />}
 
                 {project.type === 'code' ? (
-                    <div className="bg-slate-900 p-8 border border-slate-700 max-w-4xl w-full font-mono text-sm text-slate-300 flex flex-col max-h-[80vh]">
-                        <div className="flex justify-between mb-4 border-b border-slate-700 pb-2">
-                            <span className="text-emerald-400 flex gap-2"><FileCode /> {project.input}</span>
-                            <button onClick={() => navigator.clipboard.writeText(codeContent)}><Copy size={16}/></button>
+                    /* CORRECCIÓN 2: 
+                       - Quitamos max-w-4xl y max-h-[80vh]
+                       - Ponemos w-full y h-full para llenar el main
+                       - Quitamos el p-8 de aquí y lo movemos adentro (pre) para que el scroll llegue al borde
+                    */
+                    <div className="bg-[#0d1117] border border-slate-700 w-full h-full font-mono text-sm text-slate-300 flex flex-col rounded-xl overflow-hidden">
+                        
+                        {/* Header del Código */}
+                        <div className="flex justify-between items-center px-4 py-2 border-b border-slate-700 bg-slate-900 shrink-0">
+                            <span className="text-emerald-400 flex gap-2 items-center font-semibold">
+                                <FileCode size={18} /> 
+                                {project.input}
+                            </span>
+                            <button 
+                                onClick={() => navigator.clipboard.writeText(codeContent)}
+                                className="p-2 hover:bg-slate-800 rounded transition-colors text-slate-400 hover:text-white"
+                                title="Copiar código"
+                            >
+                                <Copy size={16}/>
+                            </button>
                         </div>
                          
-                        {/* CÓDIGO CON PINES: Envolvemos el código en un contenedor relativo con PinLayer */}
-                        <div className="flex-1 overflow-auto custom-scrollbar bg-[#0d1117] relative">
-                            <div className="relative min-h-full min-w-full inline-block">
-                                {/* Aquí añadimos la capa de pines específica para el código */}
-                                <PinLayer pins={pins} onSavePin={handleSavePin} />
+                        {/* Área de Código con Scroll */}
+                        <div className="flex-1 overflow-auto custom-scrollbar relative">
+                            {/* Wrapper relativo para los pines sobre el código */}
+                            <div className="relative min-h-full min-w-max inline-block">
+                                <PinLayer pins={visualPins} onSavePin={handleSavePin} />
                                 <div className="p-6">
-                                    <pre><code>{codeContent || "Cargando..."}</code></pre>
+                                    <pre className="whitespace-pre font-mono text-sm leading-relaxed">
+                                        <code>{codeContent || "Cargando..."}</code>
+                                    </pre>
                                 </div>
                             </div>
                         </div>
                     </div>
+                ) : isPdf ? (
+                    <div className="w-full h-full bg-slate-800 rounded-lg overflow-hidden border border-slate-700">
+                         <iframe src={imageUrl} className="w-full h-full" title="Visor PDF" />
+                    </div>
                 ) : (
-                    // Imagen o Captura
-                    <img src={imageUrl} alt="Proyecto" className="max-h-[85vh] max-w-full object-contain block" />
+                    /* Contenedor con scroll para imágenes grandes */
+                    <div className="w-full h-full overflow-auto flex items-center justify-center custom-scrollbar">
+                         <img src={imageUrl} alt="Proyecto" className="max-w-none shadow-lg" />
+                    </div>
                 )}
             </div>
         </main>
 
         {/* SIDEBAR */}
-        <aside className="w-96 bg-slate-900 border-l border-slate-700 flex flex-col shrink-0 z-10">
-            <div className="flex border-b border-slate-700">
+        <aside className="w-96 bg-slate-900 border-l border-slate-700 flex flex-col shrink-0 z-10 shadow-xl">
+            <div className="flex border-b border-slate-700 bg-slate-900">
                 <button 
                     onClick={() => setSidebarTab('ai')}
-                    className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${sidebarTab === 'ai' ? 'text-blue-400 border-b-2 border-blue-500 bg-slate-800' : 'text-slate-400 hover:bg-slate-800'}`}
+                    className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 transition-all ${sidebarTab === 'ai' ? 'text-blue-400 border-b-2 border-blue-500 bg-slate-800' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
                 >
                     <Zap size={16} /> Auditoría IA
                 </button>
                 <button 
                     onClick={() => setSidebarTab('chat')}
-                    className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${sidebarTab === 'chat' ? 'text-purple-400 border-b-2 border-purple-500 bg-slate-800' : 'text-slate-400 hover:bg-slate-800'}`}
+                    className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 transition-all ${sidebarTab === 'chat' ? 'text-purple-400 border-b-2 border-purple-500 bg-slate-800' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
                 >
                     <MessageSquare size={16} /> Chat ({pins.length})
                 </button>
             </div>
 
+            {/* Contenido del Sidebar */}
             <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
                 {sidebarTab === 'ai' && (
                     <div className="space-y-4">
                         {audit?.issues?.map((issue: any, idx: number) => (
-                            <div key={idx} className="bg-slate-800 p-4 rounded-lg border border-slate-700">
+                            <div key={idx} className="bg-slate-800 p-4 rounded-lg border border-slate-700 animate-fade-in">
                                 <div className="flex justify-between mb-2">
                                     <span className="text-sm font-bold text-blue-200">{issue.element}</span>
                                     <span className={`text-[10px] px-2 py-0.5 rounded uppercase font-bold ${issue.severity === 'high' ? 'bg-red-500/20 text-red-300' : 'bg-blue-500/20 text-blue-300'}`}>{issue.severity}</span>
@@ -236,7 +274,7 @@ export default function ProjectView() {
                             <div className="text-center text-slate-500 py-10 px-4">
                                 <MessageSquare className="mx-auto mb-3 h-10 w-10 opacity-20" />
                                 <p>No hay comentarios aún.</p>
-                                <p className="text-xs mt-2">Haz clic en la pantalla para añadir el primero.</p>
+                                <p className="text-xs mt-2">Haz clic en la imagen para poner un pin o escribe abajo.</p>
                             </div>
                         ) : (
                             pins.map((pin, idx) => (
@@ -257,6 +295,28 @@ export default function ProjectView() {
                     </div>
                 )}
             </div>
+
+            {/* INPUT CHAT (Solo visible en pestaña Chat) */}
+            {sidebarTab === 'chat' && (
+                <div className="p-4 bg-slate-800 border-t border-slate-700 shrink-0">
+                    <div className="relative flex items-center gap-2">
+                        <input 
+                            type="text" 
+                            className="w-full bg-slate-900 border border-slate-700 rounded-lg py-2.5 pl-3 pr-10 text-sm focus:ring-2 focus:ring-purple-500 outline-none text-white placeholder:text-slate-500"
+                            placeholder="Escribe un comentario general..."
+                            value={chatInput}
+                            onChange={(e) => setChatInput(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSendChat()}
+                        />
+                        <button 
+                            onClick={handleSendChat}
+                            className="absolute right-2 p-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors"
+                        >
+                            <Send size={14} />
+                        </button>
+                    </div>
+                </div>
+            )}
         </aside>
       </div>
     </div>

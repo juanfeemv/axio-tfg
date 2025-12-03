@@ -14,7 +14,7 @@ interface AuthContextType {
   login: (email: string, pass: string) => Promise<void>;
   logout: () => void;
   register: (username: string, email: string, pass: string) => Promise<void>;
-  updateUser: (userData: User) => void; // <--- NUEVA FUNCIÓN NECESARIA PARA SETTINGS
+  updateUser: (userData: User) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -67,8 +67,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    sessionStorage.clear(); // ⬅️ LIMPIA TODO el sessionStorage
     setUser(null);
     setIsAuthenticated(false);
+    window.location.href = '/login'; // ⬅️ Redirige con recarga completa
   };
 
   const register = async (username: string, email: string, pass: string) => {
@@ -84,7 +86,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // NUEVA: Actualiza el estado local del usuario (usada en Settings)
+  // Actualiza el estado local del usuario (usada en Settings)
   const updateUser = (userData: User) => {
     setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
