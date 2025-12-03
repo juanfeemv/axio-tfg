@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../services/api';
 import { useSocket } from '../context/SocketContext';
+import { useAuth } from '../context/AuthContext'; // Asumimos que tienes este contexto
 import PinLayer from '../components/collaboration/PinLayer';
 import { 
   ArrowLeft, Sparkles, FileCode, Copy, 
-  Loader2, Eye, EyeOff, Activity, MessageSquare, Zap, Send 
+  Loader2, Eye, EyeOff, Activity, MessageSquare, Zap, Send, Trash2 
 } from 'lucide-react';
 
 export default function ProjectView() {
@@ -13,6 +14,7 @@ export default function ProjectView() {
   const navigate = useNavigate();
   const location = useLocation();
   const { socket } = useSocket();
+  const { user } = useAuth(); // Obtenemos usuario actual para validar permisos UI
   
   const previousTab = location.state?.from || 'projects';
 
@@ -25,7 +27,7 @@ export default function ProjectView() {
 
   // Estados de UI
   const [sidebarTab, setSidebarTab] = useState<'ai' | 'chat'>('ai');
-  const [chatInput, setChatInput] = useState(''); // Nuevo estado para el input del chat
+  const [chatInput, setChatInput] = useState('');
   
   // Estado del Motor de Empatía
   type FilterType = 'none' | 'blur' | 'protanopia' | 'deuteranopia' | 'tritanopia' | 'achromatopsia';
@@ -63,22 +65,32 @@ export default function ProjectView() {
 
     socket.emit('join_project', id);
 
+    // Nuevo Pin
     const handleNewPin = (newPin: any) => {
         setPins(prev => {
             const exists = prev.some(p => p._id === newPin._id);
             if (exists) return prev;
             return [...prev, newPin];
         });
+        // Opcional: Auto-scroll al chat si llega mensaje
+        if(sidebarTab !== 'chat') setSidebarTab('chat');
+    };
+
+    // Pin Borrado (Nuevo Listener)
+    const handlePinDeleted = ({ pinId }: { pinId: string }) => {
+        setPins(prev => prev.filter(p => p._id !== pinId));
     };
 
     socket.on('new_pin', handleNewPin);
+    socket.on('pin_deleted', handlePinDeleted);
 
     return () => {
         socket.off('new_pin', handleNewPin);
+        socket.off('pin_deleted', handlePinDeleted);
     };
-  }, [socket, id]);
+  }, [socket, id, sidebarTab]);
 
-  // 3. Función para Guardar Pin (Visual o Chat)
+  // 3. Funciones de Acción
   const handleSavePin = async (x: number, y: number, content: string) => {
     try {
         const res = await api.post('/pins', { projectId: id, x, y, content });
@@ -91,15 +103,27 @@ export default function ProjectView() {
     } catch (e) { console.error(e); }
   };
 
-  // Función para enviar mensaje desde la barra lateral (sin coordenadas)
+  // Función Borrar Pin
+  const handleDeletePin = async (pinId: string) => {
+    // Optimistic UI update (opcional, aquí esperamos confirmación API para ser seguros)
+    try {
+        await api.delete(`/pins/${pinId}`);
+        // Actualizamos estado local
+        setPins(prev => prev.filter(p => p._id !== pinId));
+        // Avisamos a los demás
+        socket?.emit('delete_pin', { projectId: id, pinId });
+    } catch (error) {
+        console.error("Error deleting pin:", error);
+        alert("No se pudo borrar el comentario");
+    }
+  };
+
   const handleSendChat = () => {
     if (!chatInput.trim()) return;
-    // Usamos coordenadas negativas para indicar que es un comentario global
     handleSavePin(-1, -1, chatInput);
     setChatInput('');
   };
 
-  // Estilos Filtros
   const getFilterStyle = () => {
     switch (activeFilter) {
       case 'blur': return { filter: 'blur(4px)' };
@@ -121,9 +145,15 @@ export default function ProjectView() {
   const imageUrl = project.image ? `http://localhost:3000/uploads/${project.image}` : undefined;
   const isPdf = project.image?.toLowerCase().endsWith('.pdf');
   const showEmpathy = project.type !== 'code';
-
-  // Filtramos los pines para la capa visual (solo los que tienen coordenadas positivas)
   const visualPins = pins.filter(p => p.x >= 0 && p.y >= 0);
+
+  // Helper para saber si puedo borrar (Soy autor OR Soy dueño del proyecto)
+  const canDelete = (pin: any) => {
+    if (!user) return false;
+    // Asumiendo que pin.author es un objeto poblado con _id o string
+    const authorId = pin.author._id || pin.author; 
+    return authorId === user.id || project.owner === user.id;
+  };
 
   return (
     <div className="h-screen bg-slate-900 text-white flex flex-col overflow-hidden">
@@ -175,22 +205,13 @@ export default function ProjectView() {
       <div className="flex-1 flex overflow-hidden">
         
         {/* CANVAS PRINCIPAL */}
-        {/* CORRECCIÓN 1: overflow-hidden aquí para evitar doble scrollbar en la página */}
         <main className="flex-1 bg-slate-950 relative overflow-hidden flex items-center justify-center p-6 min-w-0">
             <div className="transition-all duration-500 relative shadow-2xl rounded-xl overflow-hidden w-full h-full flex items-center justify-center" style={showEmpathy ? getFilterStyle() : {}}>
                 
-                {/* CAPA DE PINES PARA IMÁGENES/WEB */}
                 {showEmpathy && !isPdf && <PinLayer pins={visualPins} onSavePin={handleSavePin} />}
 
                 {project.type === 'code' ? (
-                    /* CORRECCIÓN 2: 
-                       - Quitamos max-w-4xl y max-h-[80vh]
-                       - Ponemos w-full y h-full para llenar el main
-                       - Quitamos el p-8 de aquí y lo movemos adentro (pre) para que el scroll llegue al borde
-                    */
                     <div className="bg-[#0d1117] border border-slate-700 w-full h-full font-mono text-sm text-slate-300 flex flex-col rounded-xl overflow-hidden">
-                        
-                        {/* Header del Código */}
                         <div className="flex justify-between items-center px-4 py-2 border-b border-slate-700 bg-slate-900 shrink-0">
                             <span className="text-emerald-400 flex gap-2 items-center font-semibold">
                                 <FileCode size={18} /> 
@@ -205,9 +226,7 @@ export default function ProjectView() {
                             </button>
                         </div>
                          
-                        {/* Área de Código con Scroll */}
                         <div className="flex-1 overflow-auto custom-scrollbar relative">
-                            {/* Wrapper relativo para los pines sobre el código */}
                             <div className="relative min-h-full min-w-max inline-block">
                                 <PinLayer pins={visualPins} onSavePin={handleSavePin} />
                                 <div className="p-6">
@@ -223,7 +242,6 @@ export default function ProjectView() {
                          <iframe src={imageUrl} className="w-full h-full" title="Visor PDF" />
                     </div>
                 ) : (
-                    /* Contenedor con scroll para imágenes grandes */
                     <div className="w-full h-full overflow-auto flex items-center justify-center custom-scrollbar">
                          <img src={imageUrl} alt="Proyecto" className="max-w-none shadow-lg" />
                     </div>
@@ -248,7 +266,6 @@ export default function ProjectView() {
                 </button>
             </div>
 
-            {/* Contenido del Sidebar */}
             <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
                 {sidebarTab === 'ai' && (
                     <div className="space-y-4">
@@ -278,16 +295,29 @@ export default function ProjectView() {
                             </div>
                         ) : (
                             pins.map((pin, idx) => (
-                                <div key={idx} className="bg-slate-800 p-3 rounded-xl border border-slate-700 flex gap-3 animate-fade-in-up">
+                                <div key={idx} className="group bg-slate-800 p-3 rounded-xl border border-slate-700 flex gap-3 animate-fade-in-up hover:border-slate-600 transition-colors">
                                     <div className="h-8 w-8 rounded-full bg-purple-900/50 text-purple-200 flex items-center justify-center text-xs font-bold shrink-0 border border-purple-500/30">
                                         {pin.author?.username?.charAt(0).toUpperCase()}
                                     </div>
-                                    <div>
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <span className="text-sm font-bold text-slate-200">@{pin.author?.username}</span>
-                                            <span className="text-[10px] text-slate-500">{new Date(pin.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center justify-between mb-1">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-sm font-bold text-slate-200">@{pin.author?.username}</span>
+                                                <span className="text-[10px] text-slate-500">{new Date(pin.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                                            </div>
+                                            
+                                            {/* BOTÓN BORRAR: Visible solo para autor o dueño */}
+                                            {canDelete(pin) && (
+                                                <button 
+                                                    onClick={() => handleDeletePin(pin._id)}
+                                                    className="opacity-0 group-hover:opacity-100 text-slate-500 hover:text-red-400 transition-all p-1 hover:bg-slate-700/50 rounded"
+                                                    title="Borrar comentario"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            )}
                                         </div>
-                                        <p className="text-sm text-slate-400 leading-relaxed">{pin.content}</p>
+                                        <p className="text-sm text-slate-400 leading-relaxed break-words">{pin.content}</p>
                                     </div>
                                 </div>
                             ))
@@ -296,7 +326,6 @@ export default function ProjectView() {
                 )}
             </div>
 
-            {/* INPUT CHAT (Solo visible en pestaña Chat) */}
             {sidebarTab === 'chat' && (
                 <div className="p-4 bg-slate-800 border-t border-slate-700 shrink-0">
                     <div className="relative flex items-center gap-2">
