@@ -2,7 +2,7 @@ import { Response } from 'express';
 import { AuthRequest } from '../middlewares/auth';
 import Project from '../models/Project';
 import Audit from '../models/Audit';
-import Pin from '../models/Pin'; // <--- IMPORTADO
+import Pin from '../models/Pin';
 import { captureWebsite } from '../services/webScraper';
 
 // GET /api/projects (Mis Proyectos)
@@ -126,6 +126,29 @@ export const createProject = async (req: AuthRequest, res: Response) => {
     });
 
     await newProject.save();
+
+    // 🔔 NOTIFICAR A N8N
+    try {
+      const n8nUrl = process.env.N8N_WEBHOOK_URL || 'http://n8n:5678/webhook-test/nuevo-proyecto';
+      
+      await fetch(n8nUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId: newProject._id,
+          title: newProject.title,
+          type: newProject.type,
+          url: newProject.input,
+          owner: userId,
+          createdAt: newProject.createdAt
+        })
+      });
+      
+      console.log('✅ Webhook n8n notificado correctamente');
+    } catch (webhookError) {
+      console.error('❌ Error al notificar n8n:', webhookError);
+      // No bloqueamos la creación del proyecto si falla n8n
+    }
 
     res.status(201).json({
       success: true,
