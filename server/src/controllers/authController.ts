@@ -3,7 +3,6 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
 import Project from '../models/Project';
-import Audit from '../models/Audit';
 import { AuthRequest } from '../middlewares/auth';
 
 // Función auxiliar para validar la contraseña
