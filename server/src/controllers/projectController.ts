@@ -3,7 +3,7 @@ import { AuthRequest } from '../middlewares/auth';
 import Project from '../models/Project';
 import Audit from '../models/Audit';
 import Pin from '../models/Pin';
-import { captureWebsite } from '../services/webScraper';
+import User from '../models/User';
 
 // GET /api/projects (Mis Proyectos)
 export const getMyProjects = async (req: AuthRequest, res: Response) => {
@@ -129,7 +129,7 @@ export const createProject = async (req: AuthRequest, res: Response) => {
 
     // 🔔 NOTIFICAR A N8N
     try {
-      const n8nUrl = process.env.N8N_WEBHOOK_URL || 'http://n8n:5678/webhook-test/nuevo-proyecto';
+      const n8nUrl = process.env.N8N_WEBHOOK_URL || 'http://n8n:5678/webhook/nuevo-proyecto';
       
       await fetch(n8nUrl, {
         method: 'POST',

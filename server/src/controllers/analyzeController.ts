@@ -1,12 +1,13 @@
 import { Request, Response } from 'express';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url'; // <--- 1. Importamos esto
+import { fileURLToPath } from 'url';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
 import Audit from '../models/Audit';
 import Project from '../models/Project';
+import User from '../models/User'; // 👈 NUEVO: Importar User
 import { captureWebsite } from '../services/webScraper';
 
 // --- 2. Recreamos __dirname para ES Modules ---
@@ -32,6 +33,35 @@ const getUserIdFromToken = (req: Request): string | null => {
     } catch (e) { return null; }
   }
   return null;
+};
+
+// 🔔 NUEVO HELPER: Notificar a n8n
+const notifyN8n = async (project: any, userId: string) => {
+  try {
+    const n8nUrl = process.env.N8N_WEBHOOK_URL || 'http://n8n:5678/webhook/nuevo-proyecto';
+    
+    const userInfo = await User.findById(userId).select('username email');
+    
+    await fetch(n8nUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        projectId: project._id,
+        title: project.title,
+        type: project.type,
+        url: project.input,
+        owner: userId,
+        ownerName: userInfo?.username || userInfo?.email || 'Usuario Anónimo',
+        createdAt: project.createdAt,
+        hasAI: true, // 👈 Indica que fue analizado con IA
+        score: project.accessibilityScore
+      })
+    });
+    
+    console.log('✅ Webhook n8n notificado (con IA)');
+  } catch (webhookError) {
+    console.error('❌ Error al notificar n8n:', webhookError);
+  }
 };
 
 // --- HELPER 1: Análisis VISUAL (Imágenes/PDF/URL) ---
@@ -146,7 +176,7 @@ export const analyzeImage = async (req: Request, res: Response) => {
         owner: userId,
         type: projectType,
         input: req.file.filename, 
-        image: projectType === 'file' ? req.file.filename : undefined, // Guardamos imagen para verla luego
+        image: projectType === 'file' ? req.file.filename : undefined,
         status: 'analyzed',
         accessibilityScore: json.score
       });
@@ -162,6 +192,9 @@ export const analyzeImage = async (req: Request, res: Response) => {
       await newAudit.save();
       
       console.log(`✅ Proyecto guardado: ${newProject.title}`);
+      
+      // 🔔 NOTIFICAR A N8N
+      await notifyN8n(newProject, userId);
     } else {
        // Si es usuario anónimo, borramos el archivo para no llenar el disco
        try { fs.unlinkSync(filePath); } catch(e) {}
@@ -208,7 +241,7 @@ export const analyzeUrl = async (req: Request, res: Response) => {
         owner: userId,
         type: 'url',
         input: url,
-        image: filename, // Guardamos referencia a la foto
+        image: filename,
         status: 'analyzed',
         accessibilityScore: json.score
       });
@@ -219,6 +252,9 @@ export const analyzeUrl = async (req: Request, res: Response) => {
       await newAudit.save();
       
       console.log(`✅ URL guardada con captura: ${filename}`);
+      
+      // 🔔 NOTIFICAR A N8N
+      await notifyN8n(newProject, userId);
     }
 
     res.json({ success: true, data: json, savedId: savedProjectId });

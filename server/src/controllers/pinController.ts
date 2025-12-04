@@ -1,7 +1,8 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middlewares/auth';
 import Pin from '../models/Pin';
-import Project from '../models/Project'; // Importamos Project para verificar al dueño
+import Project from '../models/Project';
+import User from '../models/User'; // 👈 NUEVO
 
 // GET /api/pins/:projectId -> Obtener todos los pines de un proyecto
 export const getProjectPins = async (req: AuthRequest, res: Response) => {
@@ -40,6 +41,41 @@ export const createPin = async (req: AuthRequest, res: Response) => {
     await newPin.save();
     
     await newPin.populate('author', 'username');
+
+    // 🔔 NOTIFICAR A N8N (Nuevo comentario/pin)
+    try {
+      const n8nUrl = process.env.N8N_WEBHOOK_URL_COMMENT || 'http://n8n:5678/webhook/nuevo-comentario';
+      
+      // Obtenemos info del autor del comentario
+      const commentAuthor = await User.findById(userId).select('username email');
+      
+      // Obtenemos info del proyecto y su dueño
+      const project = await Project.findById(projectId).populate('owner', 'username email');
+      
+      if (project) {
+        await fetch(n8nUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            commentId: newPin._id,
+            content: newPin.content,
+            commentAuthor: commentAuthor?.username || commentAuthor?.email || 'Usuario',
+            commentAuthorId: userId,
+            projectId: project._id,
+            projectTitle: project.title,
+            projectOwner: (project.owner as any).username || (project.owner as any).email || 'Usuario',
+            projectOwnerId: (project.owner as any)._id,
+            createdAt: newPin.createdAt,
+            position: { x: newPin.x, y: newPin.y }
+          })
+        });
+        
+        console.log('✅ Webhook n8n notificado (nuevo comentario)');
+      }
+    } catch (webhookError) {
+      console.error('❌ Error al notificar n8n:', webhookError);
+      // No bloqueamos la creación del pin si falla n8n
+    }
 
     res.status(201).json({ success: true, data: newPin });
 
