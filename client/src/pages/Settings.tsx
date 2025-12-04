@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User, Shield, Bell, Mail, Lock, Palette, Zap, Save, Camera, Key, Check, AlertCircle } from 'lucide-react';
+import { User, Shield, Mail, Lock, Palette, Save, Camera, Key, Check, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';
@@ -10,8 +10,6 @@ export default function Settings() {
 
   // Estados de UI
   const [username, setUsername] = useState(user?.username || '');
-  const [emailNotifs, setEmailNotifs] = useState(true);
-  const [realTimeAlerts, setRealTimeAlerts] = useState(true);
   const [loading, setLoading] = useState(false);
   
   // Estados Contraseña
@@ -310,34 +308,6 @@ export default function Settings() {
           </div>
         </div>
 
-        {/* NOTIFICACIONES CARD */}
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-slate-700 dark:to-slate-800 p-6 border-b border-slate-200 dark:border-slate-700">
-            <h2 className="font-bold text-slate-800 dark:text-white text-lg flex items-center gap-2">
-              <Bell size={20} className="text-green-600 dark:text-green-400" />
-              Notificaciones
-            </h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Gestiona cómo y cuándo quieres recibir notificaciones</p>
-          </div>
-
-          <div className="p-6 space-y-5">
-            <ToggleOption
-              icon={<Mail size={20} />}
-              title="Notificaciones por Email"
-              description="Recibe el informe PDF automáticamente al completar una auditoría"
-              checked={emailNotifs}
-              onChange={setEmailNotifs}
-            />
-            <ToggleOption
-              icon={<Zap size={20} />}
-              title="Alertas en Tiempo Real"
-              description="Notificaciones instantáneas sobre el progreso de tus auditorías"
-              checked={realTimeAlerts}
-              onChange={setRealTimeAlerts}
-            />
-          </div>
-        </div>
-
         {/* APARIENCIA CARD */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
           <div className="bg-gradient-to-r from-pink-50 to-rose-50 dark:from-slate-700 dark:to-slate-800 p-6 border-b border-slate-200 dark:border-slate-700">
@@ -386,25 +356,6 @@ function RequirementItem({ met, text }: { met: boolean; text: string }) {
         {met ? <Check size={12} strokeWidth={3} /> : <div className="h-1.5 w-1.5 rounded-full bg-slate-300" />}
       </div>
       <span>{text}</span>
-    </div>
-  );
-}
-
-function ToggleOption({ icon, title, description, checked, onChange }: any) {
-  return (
-    <div className="flex items-start justify-between p-4 bg-slate-50 dark:bg-slate-900 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
-      <div className="flex gap-4 flex-1">
-        <div className="h-10 w-10 bg-white dark:bg-slate-800 rounded-xl flex items-center justify-center text-slate-600 dark:text-slate-400 flex-shrink-0 shadow-sm border border-slate-100 dark:border-slate-700">
-          {icon}
-        </div>
-        <div className="flex-1">
-          <p className="font-semibold text-slate-800 dark:text-white">{title}</p>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{description}</p>
-        </div>
-      </div>
-      <button onClick={() => onChange(!checked)} className={`relative w-12 h-6 rounded-full transition-colors duration-300 flex-shrink-0 mt-1 ${checked ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-600'}`}>
-        <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-300 ${checked ? 'translate-x-7' : 'translate-x-1'}`}></div>
-      </button>
     </div>
   );
 }
