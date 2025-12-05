@@ -6,7 +6,9 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
-import ProjectView from './pages/ProjectView'; 
+import ProjectView from './pages/ProjectView';
+import ForgotPassword from './pages/ForgotPassword'; 
+import ResetPassword from './pages/ResetPassword';   
 
 // Componente para proteger rutas (Si no estás logueado, te echa al Login)
 const PrivateRoute = ({ children }: { children: ReactNode }) => {
@@ -22,6 +24,8 @@ function App() {
           {/* Rutas Públicas */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />        
+          <Route path="/reset-password/:token" element={<ResetPassword />} />  
           
           {/* Rutas Privadas (Solo usuarios logueados) */}
           <Route 

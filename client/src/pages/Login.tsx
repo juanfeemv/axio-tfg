@@ -86,9 +86,9 @@ export default function Login() {
                 <label className="block text-sm font-semibold text-slate-700">
                   Contraseña
                 </label>
-                <a href="#" className="text-xs text-blue-600 hover:text-blue-800 font-medium hover:underline">
-                  ¿Olvidaste tu contraseña?
-                </a>
+                <Link to="/forgot-password" className="text-xs text-blue-600 hover:text-blue-800 font-medium hover:underline">
+  ¿Olvidaste tu contraseña?
+</Link>
               </div>
               <div className="relative group">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
