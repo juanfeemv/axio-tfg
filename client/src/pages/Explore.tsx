@@ -246,10 +246,10 @@ export default function Explore() {
                           style={{ 
                             width: '140%', 
                             height: '140%', 
-                            transform: 'scale(1.15)',
+                            transform: 'scale(1)',
                             transformOrigin: 'top left',
-                            left: '-20%',
-                            top: '-10%'
+                            left: '-36%',
+                            top: '-35%'
                           }}
                         />
                       </div>
@@ -358,7 +358,6 @@ export default function Explore() {
                         {project.likes?.length || 0}
                       </button>
                       
-                      {/* --- AQUI ESTA EL CAMBIO: NUMERO DE COMENTARIOS --- */}
                       <div className="flex items-center gap-1 hover:text-blue-500 dark:hover:text-blue-400 transition">
                         <MessageSquare size={14} /> {project.commentsCount || 0}
                       </div>
