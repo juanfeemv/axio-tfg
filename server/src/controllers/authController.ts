@@ -188,7 +188,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
     // 🔔 NOTIFICAR A N8N para enviar email
     try {
-      const n8nUrl = process.env.N8N_WEBHOOK_URL_RESET || 'http://n8n:5678/webhook-test/reset-password';
+      const n8nUrl = process.env.N8N_WEBHOOK_URL_RESET || 'http://n8n:5678/webhook/reset-password';
       
       const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
       
