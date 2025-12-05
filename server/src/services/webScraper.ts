@@ -9,7 +9,6 @@ export const captureWebsite = async (url: string): Promise<{ imageBase64: string
   const browser = await puppeteer.launch({
     headless: true,
     // CLAVE PARA DOCKER: Si existe la variable (en el contenedor), usa ese navegador.
-    // Si no (en tu PC), usa el que descarga puppeteer por defecto.
     executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
     args: [
       '--no-sandbox', 
@@ -26,7 +25,7 @@ export const captureWebsite = async (url: string): Promise<{ imageBase64: string
     // Optimizamos el viewport para que parezca un portátil estándar
     await page.setViewport({ width: 1280, height: 800 });
 
-    // Navegamos esperando solo a que el DOM esté listo (más rápido que networkidle0)
+    // Navegamos esperando solo a que el DOM esté listo
     // Aumentamos timeout a 60s por si la red de Docker va lenta
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
 

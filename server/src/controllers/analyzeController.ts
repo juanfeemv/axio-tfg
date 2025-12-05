@@ -16,7 +16,7 @@ const __dirname = path.dirname(__filename);
 dotenv.config();
 
 const apiKey = process.env.GEMINI_API_KEY;
-if (!apiKey) console.error("❌ FATAL: No hay API Key en el .env");
+if (!apiKey) console.error("❌ FATAL: No hay API Key en el .env"); //Comprobación si hay API Key
 
 const genAI = new GoogleGenerativeAI(apiKey || "");
 
@@ -35,7 +35,7 @@ const getUserIdFromToken = (req: Request): string | null => {
 
 const notifyN8n = async (project: any, userId: string) => {
   try {
-    const n8nUrl = process.env.N8N_WEBHOOK_URL || 'http://n8n:5678/webhook/nuevo-proyecto';
+    const n8nUrl = process.env.N8N_WEBHOOK_URL || 'http://n8n:5678/webhook/nuevo-proyecto'; // Implementación de la automatización
     
     const userInfo = await User.findById(userId).select('username email');
     
@@ -61,6 +61,7 @@ const notifyN8n = async (project: any, userId: string) => {
   }
 };
 
+{/* PROMPTS PARA LA IA*/}
 const analyzeVisual = async (imageBase64: string, mimeType: string) => {
   const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
   
@@ -122,7 +123,7 @@ const analyzeCode = async (codeContent: string, filename: string) => {
   }
 };
 
-export const analyzeImage = async (req: Request, res: Response) => {
+export const analyzeImage = async (req: Request, res: Response) => { // Analizo la imagen con su carga
   try {
     if (!req.file) return res.status(400).json({ message: 'Falta archivo' });
 

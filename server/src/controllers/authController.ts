@@ -5,7 +5,7 @@ import User from '../models/User';
 import Project from '../models/Project';
 import { AuthRequest } from '../middlewares/auth';
 
-// Función auxiliar para validar la contraseña
+// Función para validar la contraseña
 const validatePassword = (password: string): { valid: boolean; message?: string } => {
   if (password.length < 8) {
     return { valid: false, message: 'La contraseña debe tener al menos 8 caracteres' };

@@ -11,7 +11,6 @@ dotenv.config({ path: path.resolve(__dirname, '../.env') });
 const viewDatabase = async () => {
   try {
     // Intentamos conectar a la misma URI que usa tu aplicación
-    // Nota: Si usas Docker, 127.0.0.1 suele ser más fiable que localhost
     const envUri = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/axio_db";
     console.log(`🔌 Conectando el VISOR a: ${envUri}`);
     
@@ -29,7 +28,7 @@ const viewDatabase = async () => {
 
     // 2. Ver Usuarios Reales
     console.log('\n👤 USUARIOS REGISTRADOS:');
-    // AÑADIDO: .select('+password') fuerza a Mongo a traer el campo oculto
+    // .select('+password') fuerza a Mongo a traer el campo oculto
     const users = await User.find({}).select('+password');
     
     if (users.length === 0) {

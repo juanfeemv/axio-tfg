@@ -20,7 +20,7 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
       // 3. Guardamos los datos del usuario en la petición
       req.user = decoded;
       
-      next(); // ¡Pase usted!
+      next(); 
     } catch (error) {
       console.error(error);
       res.status(401).json({ message: 'Not authorized, token failed' });

@@ -12,7 +12,7 @@ import authRoutes from './routes/authRoutes';
 import analyzeRoutes from './routes/analyzeRoutes';
 import projectRoutes from './routes/projectRoutes';
 import pinRoutes from './routes/pinRoutes';
-import statsRoutes from './routes/statsRoutes'; // 👈 NUEVO
+import statsRoutes from './routes/statsRoutes'; 
 
 // --- CONFIGURACIÓN ---
 const __filename = fileURLToPath(import.meta.url);
@@ -63,7 +63,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/analyze', analyzeRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/pins', pinRoutes);
-app.use('/api/stats', statsRoutes); // 👈 NUEVO
+app.use('/api/stats', statsRoutes); 
 
 app.get('/', (req: Request, res: Response) => {
   res.json({ status: 'online', mode: 'real-time' });

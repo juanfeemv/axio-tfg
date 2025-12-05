@@ -9,7 +9,7 @@ import User from '../models/User';
 export const getMyProjects = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user.id;
-    // Ordenamos por fecha de creación descendente (más nuevo primero)
+    // Ordeno por fecha de creación descendente (más nuevo primero)
     const projects = await Project.find({ owner: userId }).sort({ createdAt: -1 });
 
     res.json({
@@ -32,7 +32,7 @@ export const getCommunityProjects = async (req: AuthRequest, res: Response) => {
       .sort({ createdAt: -1 })
       .limit(20)
       .populate('owner', 'username')
-      .lean(); // Convertimos a objeto JS simple para poder inyectar propiedades
+      .lean(); // Convertimos a objeto JS simple 
 
     // Añadimos el campo "myVote" y contamos los PINES
     const projectsWithUserData = await Promise.all(projects.map(async (p: any) => {
@@ -45,7 +45,7 @@ export const getCommunityProjects = async (req: AuthRequest, res: Response) => {
             ...p,
             myVote: myRating ? myRating.value : 0, // 0 si no ha votado
             votesCount: p.ratings?.length || 0,     // Total de votos
-            commentsCount: commentsCount,           // <--- DATO NUEVO
+            commentsCount: commentsCount,          
             // Ocultamos el array de ratings por privacidad
             ratings: undefined 
         };
@@ -69,9 +69,6 @@ export const getProjectById = async (req: AuthRequest, res: Response) => {
     if (!project) {
       return res.status(404).json({ message: 'Proyecto no encontrado' });
     }
-
-    // Nota: Si en el futuro quieres hacer proyectos privados, aquí iría la comprobación de seguridad.
-    // Por ahora, permitimos verlos si tienes el enlace (para la comunidad).
     
     // Buscamos la última auditoría asociada a este proyecto (si existe)
     const audit = await Audit.findOne({ project: projectId }).sort({ createdAt: -1 });
@@ -107,9 +104,6 @@ export const createProject = async (req: AuthRequest, res: Response) => {
     // Intentar sacar captura si es URL (aunque no se use IA, para la portada)
     if (type === 'url' && url) {
         try {
-            // Opcional: Si quieres que tenga foto de portada aunque no se analice con IA
-            // const { imageBase64 } = await captureWebsite(url);
-            // ... lógica de guardado de imagen ...
         } catch (e) {
             console.log("No se pudo generar preview para el proyecto manual");
         }
@@ -201,7 +195,7 @@ export const toggleLike = async (req: AuthRequest, res: Response) => {
     const project = await Project.findById(projectId);
     if (!project) return res.status(404).json({ message: 'Proyecto no encontrado' });
 
-    // Comprobamos si el usuario ya está en la lista de likes
+    // Comprobar si el usuario ya está en la lista de likes
     // Convertimos a string para asegurar comparación correcta de ObjectId
     const index = project.likes.findIndex((id) => id.toString() === userId);
 
@@ -217,7 +211,7 @@ export const toggleLike = async (req: AuthRequest, res: Response) => {
 
     res.json({ 
       success: true, 
-      likes: project.likes.length, // Nuevo total
+      likes: project.likes.length, 
       liked: index === -1 // true si acabamos de dar like, false si lo quitamos
     });
 

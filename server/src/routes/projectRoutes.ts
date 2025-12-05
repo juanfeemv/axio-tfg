@@ -6,7 +6,7 @@ import {
   deleteProject, 
   getCommunityProjects, 
   toggleLike,
-  rateProject // <--- Importamos la nueva función de votación
+  rateProject
 } from '../controllers/projectController';
 import { protect } from '../middlewares/auth';
 import { upload } from '../middlewares/upload';
@@ -17,7 +17,6 @@ const router = Router();
 router.get('/', protect, getMyProjects);
 
 // GET /api/projects/community -> Ver proyectos públicos de la comunidad
-// ⚠️ IMPORTANTE: Esta ruta debe ir ANTES de /:id para que no confunda "community" con un ID
 router.get('/community', protect, getCommunityProjects);
 
 // GET /api/projects/:id -> Ver UN proyecto específico
