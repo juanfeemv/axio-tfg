@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User, Shield, Mail, Lock, Palette, Save, Camera, Key, Check, AlertCircle } from 'lucide-react';
+import { User, Shield, Mail, Lock, Palette, Save, Key, Check, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';
@@ -146,12 +146,9 @@ export default function Settings() {
           <div className="p-6">
             <div className="flex flex-col md:flex-row gap-6 items-start">
               {/* Avatar */}
-              <div className="relative group cursor-pointer">
+              <div className="relative group">
                 <div className="h-24 w-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center text-4xl font-bold text-white shadow-lg uppercase">
                   {user?.username?.charAt(0) || 'U'}
-                </div>
-                <div className="absolute inset-0 bg-black/50 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Camera className="text-white" size={24} />
                 </div>
               </div>
 
