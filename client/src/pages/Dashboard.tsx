@@ -212,7 +212,6 @@ export default function Dashboard() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-sm truncate">{user?.username}</p>
-              <p className="text-xs text-slate-400">Plan Gratuito</p>
             </div>
           </div>
           <button 
@@ -242,15 +241,6 @@ export default function Dashboard() {
                 </div>
                 {/* AÑADIDO: dark:text-slate-400 */}
                 <p className="text-slate-500 text-base md:text-lg dark:text-slate-400">¿Qué quieres subir hoy?</p>
-              </div>
-              <div className="hidden md:flex items-center gap-3">
-                <div className="text-right">
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Plan Gratuito</p>
-                  <p className="text-sm text-blue-600 font-medium cursor-pointer hover:underline flex items-center gap-1">
-                    <Zap size={14} />
-                    Actualizar a Pro
-                  </p>
-                </div>
               </div>
             </header>
 
