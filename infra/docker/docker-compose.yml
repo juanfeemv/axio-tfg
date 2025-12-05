@@ -63,7 +63,6 @@ services:
     build: ../../client
     container_name: axio_frontend
     restart: always
-    # CAMBIO: Usamos puerto 8080 para evitar conflictos con Skype/Windows
     ports:
       - "8080:80"
     depends_on:
