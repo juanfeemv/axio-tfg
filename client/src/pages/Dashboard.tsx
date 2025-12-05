@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import api from '../services/api';
 
-// Importamos las otras vistas
+// Importo las otras vistas
 import MyProjects from './MyProjects';
 import Settings from './Settings';
 import Explore from './Explore';
@@ -129,7 +129,6 @@ export default function Dashboard() {
   };
 
   return (
-    // AÑADIDO: dark:from-slate-900 dark:to-slate-950
     <div className="flex h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-950 overflow-hidden relative transition-colors duration-300">
       
       {/* --- HEADER MÓVIL --- */}
@@ -151,7 +150,7 @@ export default function Dashboard() {
         />
       )}
 
-      {/* 1. SIDEBAR LATERAL (Responsive) */}
+      {/* 1. SIDEBAR LATERAL */}
       <aside className={`
         fixed left-0 z-40 w-64 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white flex flex-col shadow-2xl 
         transform transition-transform duration-300 ease-in-out
@@ -233,12 +232,10 @@ export default function Dashboard() {
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-3xl md:text-4xl">👋</span>
-                  {/* AÑADIDO: dark:text-white */}
                   <h2 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-white">
                     Hola, <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">{user?.username}</span>
                   </h2>
                 </div>
-                {/* AÑADIDO: dark:text-slate-400 */}
                 <p className="text-slate-500 text-base md:text-lg dark:text-slate-400">¿Qué quieres subir hoy?</p>
               </div>
             </header>
@@ -247,7 +244,6 @@ export default function Dashboard() {
             {!result && !loading && (
               <div className="mb-8 flex justify-center md:justify-start animate-fade-in">
                 <div 
-                  // AÑADIDO: dark:bg-slate-800 dark:border-slate-700
                   className="bg-white p-1.5 rounded-full border border-slate-200 shadow-sm flex items-center gap-1 cursor-pointer select-none overflow-hidden dark:bg-slate-800 dark:border-slate-700"
                   onClick={() => setUseAI(!useAI)}
                 >
@@ -269,15 +265,12 @@ export default function Dashboard() {
                 <div className="grid md:grid-cols-3 gap-6 animate-fade-in-up">
                   
                   {/* 1. Card URL */}
-                  {/* AÑADIDO: dark:bg-slate-800 dark:border-slate-700 */}
                   <div className="bg-white p-6 rounded-3xl shadow-lg border-2 border-slate-200 hover:shadow-2xl hover:border-blue-300 hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden dark:bg-slate-800 dark:border-slate-700 dark:hover:border-blue-500/50">
                     <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl"></div>
                     <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-blue-500/30">
                       <Link2 size={24} />
                     </div>
-                    {/* AÑADIDO: dark:text-white */}
                     <h3 className="text-lg font-bold text-slate-800 mb-2 dark:text-white">Web en Vivo</h3>
-                    {/* AÑADIDO: dark:text-slate-400 */}
                     <p className="text-slate-500 text-sm mb-6 h-10 line-clamp-2 dark:text-slate-400">
                       {useAI ? 'La IA navegará y detectará errores.' : 'Guarda la URL para compartirla.'}
                     </p>
@@ -286,7 +279,6 @@ export default function Dashboard() {
                       <input 
                         type="url" 
                         placeholder="https://ejemplo.com" 
-                        // AÑADIDO: dark:bg-slate-900 dark:border-slate-600 dark:text-white dark:focus:border-blue-500
                         className="w-full border-2 border-slate-300 rounded-xl px-4 py-3 pr-12 text-sm focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all shadow-sm dark:bg-slate-900 dark:border-slate-600 dark:text-white"
                         value={url}
                         onChange={(e) => setUrl(e.target.value)}
@@ -302,7 +294,6 @@ export default function Dashboard() {
                   </div>
 
                   {/* 2. Card Diseño */}
-                  {/* AÑADIDO: dark:bg-slate-800 dark:border-slate-700 */}
                   <div className="bg-white p-6 rounded-3xl shadow-lg border-2 border-slate-200 hover:shadow-2xl hover:border-purple-300 hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden dark:bg-slate-800 dark:border-slate-700 dark:hover:border-purple-500/50">
                     <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/5 rounded-full blur-2xl"></div>
                     <div className="h-12 w-12 bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-purple-500/30">
@@ -313,7 +304,6 @@ export default function Dashboard() {
                       {useAI ? 'Sube una diseño (imagen o PDF) para análisis visual.' : 'Comparte un diseño (imagen o PDF) para feedback.'}
                     </p>
                     
-                    {/* AÑADIDO: dark:border-slate-600 dark:hover:bg-purple-900/20 */}
                     <label className={`border-2 border-dashed border-slate-300 rounded-xl h-[52px] flex items-center justify-center cursor-pointer transition-all group-hover:shadow-md dark:border-slate-600 ${useAI ? 'hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20' : 'hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'}`}>
                       <input type="file" className="hidden" onChange={(e) => handleFileUpload(e, 'image')} accept="image/*,application/pdf" />
                       <span className={`text-sm font-semibold flex items-center gap-2 ${useAI ? 'text-slate-600 group-hover:text-purple-700 dark:text-slate-300 dark:group-hover:text-purple-400' : 'text-slate-600 group-hover:text-emerald-700 dark:text-slate-300 dark:group-hover:text-emerald-400'}`}>
@@ -323,7 +313,6 @@ export default function Dashboard() {
                   </div>
 
                   {/* 3. Card CÓDIGO */}
-                  {/* AÑADIDO: dark:bg-slate-800 dark:border-slate-700 */}
                   <div className="bg-white p-6 rounded-3xl shadow-lg border-2 border-slate-200 hover:shadow-2xl hover:border-emerald-300 hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden dark:bg-slate-800 dark:border-slate-700 dark:hover:border-emerald-500/50">
                     <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl"></div>
                     <div className="h-12 w-12 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-emerald-500/30">
@@ -334,7 +323,6 @@ export default function Dashboard() {
                       {useAI ? 'Revisión de código automática.' : 'Comparte código a la comunidad.'}
                     </p>
                     
-                    {/* AÑADIDO: dark:border-slate-600 dark:hover:bg-blue-900/20 */}
                     <label className={`border-2 border-dashed border-slate-300 rounded-xl h-[52px] flex items-center justify-center cursor-pointer transition-all group-hover:shadow-md dark:border-slate-600 ${useAI ? 'hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20' : 'hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'}`}>
                       <input type="file" className="hidden" onChange={(e) => handleFileUpload(e, 'code')} accept=".html,.css,.js,.jsx,.ts,.tsx,.json" />
                       <span className={`text-sm font-semibold flex items-center gap-2 ${useAI ? 'text-slate-600 group-hover:text-blue-700 dark:text-slate-300 dark:group-hover:text-blue-400' : 'text-slate-600 group-hover:text-emerald-700 dark:text-slate-300 dark:group-hover:text-emerald-400'}`}>
@@ -387,7 +375,6 @@ export default function Dashboard() {
                     <Sparkles className="text-blue-600 animate-pulse" size={32} />
                   </div>
                 </div>
-                {/* AÑADIDO: dark:text-white */}
                 <h3 className="text-xl font-bold text-slate-800 mt-8 mb-2 dark:text-white">Procesando Proyecto</h3>
                 <p className="text-slate-500 animate-pulse dark:text-slate-400">
                     {useAI ? 'La IA está revisando la accesibilidad...' : 'Guardando en la base de datos...'}
@@ -410,7 +397,6 @@ export default function Dashboard() {
                   <span className="group-hover:-translate-x-1 transition-transform">←</span> Volver al inicio
                 </button>
 
-                {/* AÑADIDO: dark:bg-slate-800 dark:border-slate-700 */}
                 <div className="bg-white rounded-3xl shadow-2xl border-2 border-slate-200 overflow-hidden dark:bg-slate-800 dark:border-slate-700">
                   <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white p-8 relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl"></div>
@@ -450,7 +436,6 @@ export default function Dashboard() {
                     </div>
                   </div>
 
-                  {/* AÑADIDO: dark:from-slate-800 dark:to-slate-900 */}
                   <div className="p-8 bg-gradient-to-b from-slate-50 to-white dark:from-slate-800 dark:to-slate-900">
                     <div className="flex items-center gap-3 mb-6">
                       <div className="h-10 w-10 bg-orange-100 rounded-xl flex items-center justify-center dark:bg-orange-900/30">
@@ -463,7 +448,6 @@ export default function Dashboard() {
                     
                     <div className="grid gap-4">
                       {result.issues?.map((issue: any, index: number) => (
-                        // AÑADIDO: dark:bg-slate-800 dark:border-slate-700
                         <div key={index} className="bg-white border-2 border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all border-l-4 border-l-blue-500 dark:bg-slate-800 dark:border-slate-700">
                           <div className="flex flex-col md:flex-row justify-between mb-4 gap-3">
                             <span className="font-bold text-slate-800 text-lg dark:text-white">{issue.element || 'Elemento General'}</span>

@@ -143,7 +143,6 @@ export default function ProjectView() {
   const showEmpathy = project.type !== 'code';
   const visualPins = pins.filter(p => p.x >= 0 && p.y >= 0);
 
-  // CORRECCIÓN PRINCIPAL: Verificación de seguridad
   const canDelete = (pin: any) => {
     if (!user || !pin.author) return false;
     const authorId = pin.author._id || pin.author; 
@@ -153,7 +152,7 @@ export default function ProjectView() {
   return (
     <div className="h-screen bg-slate-900 text-white flex flex-col overflow-hidden">
       
-      {/* SVG Filters */}
+      {/* SVG Fitlros */}
       <svg style={{ display: 'none' }}>
         <defs>
           <filter id="protanopia-filter"><feColorMatrix type="matrix" values="0.567, 0.433, 0, 0, 0  0.558, 0.442, 0, 0, 0  0, 0.242, 0.758, 0, 0  0, 0, 0, 1, 0" /></filter>

@@ -21,7 +21,7 @@ export default function Settings() {
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState(false);
 
-  // Validación en tiempo real (NUEVA LÓGICA)
+  // Validación en tiempo real
   const hasMinLength = newPass.length >= 8;
   const hasUpperCase = /[A-Z]/.test(newPass);
   const hasLowerCase = /[a-z]/.test(newPass);
@@ -30,7 +30,7 @@ export default function Settings() {
 
   const isPasswordValid = hasMinLength && hasUpperCase && hasLowerCase && hasNumber;
 
-  // Sincronizar estado local si el usuario cambia externamente
+  // Sincronizo estado local si el usuario cambia externamente
   useEffect(() => {
     if (user?.username) setUsername(user.username);
   }, [user]);
@@ -60,7 +60,7 @@ export default function Settings() {
     }
   };
 
-  // --- 3. CAMBIAR CONTRASEÑA (Validación estricta) ---
+  // --- 3. CAMBIAR CONTRASEÑA ---
   const handleChangePassword = async () => {
     // Limpiar estados previos
     setPasswordError('');
@@ -84,7 +84,6 @@ export default function Settings() {
         newPassword: newPass 
       });
       
-      // Éxito visual
       setPasswordSuccess(true);
       
       // Resetear formulario tras 2 segundos
@@ -275,7 +274,7 @@ export default function Settings() {
                         />
                     </div>
 
-                    {/* Lista de Requisitos Proactiva Detallada */}
+                    {/* Lista de Requisitos */}
                     <div className="mt-2 p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700/50 shadow-sm">
                         <p className="text-xs text-slate-400 mb-2 font-medium">Requisitos de seguridad:</p>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom'; // Hook para navegar
+import { useNavigate } from 'react-router-dom'; 
 import api from '../services/api';
 import { 
   FolderOpen, 
@@ -13,7 +13,7 @@ import {
   Filter,
   Loader2,
   AlertCircle,
-  Trash2 // Nuevo icono para borrar
+  Trash2 
 } from 'lucide-react';
 
 export default function MyProjects() {
@@ -21,7 +21,7 @@ export default function MyProjects() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
-  const navigate = useNavigate(); // Ahora sí lo vamos a usar
+  const navigate = useNavigate(); 
 
   // Estado para el filtro
   const [filter, setFilter] = useState<'all' | 'url' | 'file' | 'code'>('all');
@@ -50,7 +50,7 @@ export default function MyProjects() {
 
     try {
       await api.delete(`/projects/${id}`);
-      // Actualizamos la lista visualmente quitando el borrado
+      // Actualizo la lista visualmente quitando el borrado
       setProjects(prev => prev.filter(p => p._id !== id));
     } catch (error) {
       console.error("Error borrando:", error);
@@ -58,9 +58,8 @@ export default function MyProjects() {
     }
   };
 
-  // --- FUNCIÓN VER REPORTE ACTUALIZADA ---
+  // --- FUNCIÓN VER REPORTE ---
   const handleViewReport = (id: string) => {
-    // Ahora sí navegamos a la página de detalle que creamos
     navigate(`/project/${id}`);
   };
 
@@ -96,7 +95,7 @@ export default function MyProjects() {
   return (
     <div className="p-8 max-w-7xl mx-auto min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-300">
       
-      {/* Header & Stats */}
+      {/* Header y Stats */}
       <div className="mb-10 animate-fade-in-up">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -208,7 +207,7 @@ export default function MyProjects() {
                   <Trash2 size={16} />
                 </button>
 
-                {/* Header with gradient bar based on score */}
+                {/* Header con puntuación */}
                 <div className={`h-2 ${
                   score >= 80 ? 'bg-gradient-to-r from-green-500 to-emerald-500' :
                   score >= 50 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' :
@@ -216,7 +215,7 @@ export default function MyProjects() {
                 }`}></div>
 
                 <div className="p-6">
-                  {/* Type Badge & Score */}
+                  {/* Type Badge y Score */}
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex items-center gap-2">
                       <div className={`p-2 rounded-lg bg-opacity-20 ${bgClass}`}>
@@ -236,7 +235,7 @@ export default function MyProjects() {
                     </div>
                   </div>
                   
-                  {/* Title */}
+                  {/* Titulo */}
                   <h3 className="font-bold text-slate-800 dark:text-white text-lg mb-1 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" title={project.title}>
                     {project.title}
                   </h3>
@@ -246,7 +245,7 @@ export default function MyProjects() {
                     {project.input}
                   </p>
 
-                  {/* Issues indicator */}
+                  {/* Indicador de problemas */}
                   <div className="flex items-center gap-2 mb-4">
                     <div className="h-2 flex-1 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
                       <div 
@@ -257,7 +256,7 @@ export default function MyProjects() {
                     <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">~{issuesCount} issues</span>
                   </div>
 
-                  {/* Date */}
+                  {/* Fecha */}
                   <div className="flex items-center gap-2 text-slate-400 dark:text-slate-500 text-sm mb-4 pb-4 border-b border-slate-100 dark:border-slate-700">
                     <Calendar size={14} />
                     <span>{new Date(project.createdAt).toLocaleDateString()}</span>

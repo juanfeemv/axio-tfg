@@ -1,11 +1,11 @@
 import axios, { InternalAxiosRequestConfig } from 'axios';
 
-// 1. Creamos una instancia de axios con la URL base
+// 1. Creo una instancia de axios con la URL base
 const api = axios.create({
-  baseURL: 'http://localhost:3000/api', // Tu backend
+  baseURL: 'http://localhost:3000/api', // Backend
 });
 
-// 2. El Interceptor (El "portero" que revisa cada petición antes de salir)
+// 2. El Interceptor (Es el "portero" que revisa cada petición antes de salir)
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   // Buscamos si hay un token guardado en el navegador
   const token = localStorage.getItem('token');

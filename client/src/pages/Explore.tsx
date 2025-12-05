@@ -48,7 +48,7 @@ export default function Explore() {
 
     if (!user) return; 
 
-    // Actualizamos visualmente antes de que responda el servidor
+    // Actualizo visualmente antes de que responda el servidor
     setProjects(prev => prev.map(p => {
         if (p._id === projectId) {
             const isLiked = p.likes.includes(user.id);
@@ -74,19 +74,18 @@ export default function Explore() {
     e.stopPropagation();
     if (!user) return;
 
-    // A) Optimistic Update: Actualizamos visualmente al instante
     setProjects(prev => prev.map(p => {
         if (p._id === projectId) {
-            return { ...p, myVote: rating }; // Marcamos visualmente tu voto
+            return { ...p, myVote: rating }; // Marco visualmente tu voto
         }
         return p;
     }));
 
     try {
-        // B) Guardamos en BD
+        // B) Guardo en BD
         const res = await api.put(`/projects/${projectId}/rate`, { rating });
         
-        // C) Actualizamos con los datos REALES calculados por el servidor (media exacta)
+        // C) Actualizo con los datos reales calculados por el servidor.
         setProjects(prev => prev.map(p => {
             if (p._id === projectId) {
                 return {
@@ -369,7 +368,7 @@ export default function Explore() {
         })}
       </div>
 
-      {/* Empty State */}
+      {/* Estado vacío */}
       {projects.length === 0 && !loading && (
          <div className="text-center py-20 text-slate-400 dark:text-slate-600">
             <Globe className="mx-auto mb-4 h-12 w-12 opacity-20" />

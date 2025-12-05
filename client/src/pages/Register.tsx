@@ -46,13 +46,13 @@ export default function Register() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50 p-4 relative overflow-hidden">
       
-      {/* Decorative elements */}
+      {/* Elementos decorativos */}
       <div className="absolute top-0 left-0 w-96 h-96 bg-purple-400/10 rounded-full blur-3xl"></div>
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-pink-400/10 rounded-full blur-3xl"></div>
       
       <div className="relative w-full max-w-md">
         
-        {/* Logo/Brand Section */}
+        {/* Sección de logo */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
             AXIO
@@ -131,7 +131,7 @@ export default function Register() {
                 />
               </div>
               
-              {/* Password Requirements Checklist */}
+              {/* Requisitos de contraseña */}
               {password && (
                 <div className="bg-slate-50 border-2 border-slate-200 rounded-xl p-4 space-y-2">
                   <p className="text-xs font-semibold text-slate-600 mb-2">Requisitos de seguridad:</p>
@@ -168,26 +168,6 @@ export default function Register() {
                   )}
                 </div>
               )}
-            </div>
-
-            {/* Terms checkbox */}
-            <div className="flex items-start gap-2">
-              <input 
-                type="checkbox" 
-                id="terms" 
-                className="h-4 w-4 rounded border-slate-300 text-purple-600 focus:ring-2 focus:ring-purple-500/20 mt-1"
-                required
-              />
-              <label htmlFor="terms" className="text-sm text-slate-600 cursor-pointer leading-relaxed">
-                Acepto los{' '}
-                <a href="#" className="text-purple-600 hover:underline font-medium">
-                  términos y condiciones
-                </a>
-                {' '}y la{' '}
-                <a href="#" className="text-purple-600 hover:underline font-medium">
-                  política de privacidad
-                </a>
-              </label>
             </div>
 
             {/* Submit Button */}

@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { MapPin, Send, X } from 'lucide-react';
 
-// Recibimos los pines y la función de guardar desde el padre (ProjectView)
+// Recibolos pines y la función de guardar desde el padre (ProjectView)
 interface PinLayerProps {
   pins: any[];
   onSavePin: (x: number, y: number, comment: string) => void;

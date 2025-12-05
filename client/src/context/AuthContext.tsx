@@ -25,7 +25,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   });
   
   const [user, setUser] = useState<User | null>(() => {
-    // Recuperamos el usuario al iniciar
+    // Recupero el usuario al iniciar
     const savedUser = localStorage.getItem('user');
     return savedUser ? JSON.parse(savedUser) : null;
   });
@@ -67,10 +67,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    sessionStorage.clear(); // ⬅️ LIMPIA TODO el sessionStorage
+    sessionStorage.clear(); // LIMPIA TODO el sessionStorage
     setUser(null);
     setIsAuthenticated(false);
-    window.location.href = '/login'; // ⬅️ Redirige con recarga completa
+    window.location.href = '/login'; // Redirige con recarga completa
   };
 
   const register = async (username: string, email: string, pass: string) => {

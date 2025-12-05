@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Lock, Mail, ArrowRight } from 'lucide-react';
+import { Lock, Mail, ArrowRight, Shield, CheckCircle } from 'lucide-react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -30,13 +30,13 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 p-4 relative overflow-hidden">
       
-      {/* Decorative elements */}
+      {/* Elementos decorativos */}
       <div className="absolute top-0 left-0 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl"></div>
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-400/10 rounded-full blur-3xl"></div>
       
       <div className="relative w-full max-w-md">
         
-        {/* Logo/Brand Section */}
+        {/* Logo Seccion */}
         <div className="text-center mb-8">      
           <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
             AXIO
@@ -80,7 +80,7 @@ export default function Login() {
               </div>
             </div>
 
-            {/* Password Input */}
+            {/* Contraseña Input */}
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <label className="block text-sm font-semibold text-slate-700">
@@ -103,7 +103,7 @@ export default function Login() {
               </div>
             </div>
 
-            {/* Submit Button */}
+            {/* Botón de enviar */}
             <button
               type="submit"
               disabled={isLoading}
@@ -123,7 +123,7 @@ export default function Login() {
             </button>
           </form>
 
-          {/* Register Link */}
+          {/* Link de registro */}
           <p className="mt-8 text-center text-sm text-slate-600">
             ¿Primera vez en Axio?{' '}
             <Link to="/register" className="text-blue-600 hover:text-blue-800 font-semibold hover:underline">
@@ -132,13 +132,17 @@ export default function Login() {
           </p>
         </div>
 
-        {/* Footer Info */}
-        <p className="text-center text-xs text-slate-500 mt-6">
-          Al continuar, aceptas nuestros{' '}
-          <a href="#" className="underline hover:text-slate-700">Términos de Servicio</a>
-          {' '}y{' '}
-          <a href="#" className="underline hover:text-slate-700">Política de Privacidad</a>
-        </p>
+        {/* Trust indicators */}
+        <div className="flex items-center justify-center gap-6 mt-6 text-xs text-slate-500">
+          <div className="flex items-center gap-1">
+            <Shield size={14} />
+            <span>Datos seguros</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <CheckCircle size={14} />
+            <span>WCAG Certified</span>
+          </div>
+        </div>
       </div>
     </div>
   );
