@@ -7,10 +7,9 @@ import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
 import Audit from '../models/Audit';
 import Project from '../models/Project';
-import User from '../models/User'; // 👈 NUEVO: Importar User
+import User from '../models/User';
 import { captureWebsite } from '../services/webScraper';
 
-// --- 2. Recreamos __dirname para ES Modules ---
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -21,7 +20,6 @@ if (!apiKey) console.error("❌ FATAL: No hay API Key en el .env");
 
 const genAI = new GoogleGenerativeAI(apiKey || "");
 
-// --- HELPER: Obtener ID del Usuario ---
 const getUserIdFromToken = (req: Request): string | null => {
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer')) {
@@ -35,7 +33,6 @@ const getUserIdFromToken = (req: Request): string | null => {
   return null;
 };
 
-// 🔔 NUEVO HELPER: Notificar a n8n
 const notifyN8n = async (project: any, userId: string) => {
   try {
     const n8nUrl = process.env.N8N_WEBHOOK_URL || 'http://n8n:5678/webhook/nuevo-proyecto';
@@ -53,7 +50,7 @@ const notifyN8n = async (project: any, userId: string) => {
         owner: userId,
         ownerName: userInfo?.username || userInfo?.email || 'Usuario Anónimo',
         createdAt: project.createdAt,
-        hasAI: true, // 👈 Indica que fue analizado con IA
+        hasAI: true,
         score: project.accessibilityScore
       })
     });
@@ -64,7 +61,6 @@ const notifyN8n = async (project: any, userId: string) => {
   }
 };
 
-// --- HELPER 1: Análisis VISUAL (Imágenes/PDF/URL) ---
 const analyzeVisual = async (imageBase64: string, mimeType: string) => {
   const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
   
@@ -94,7 +90,6 @@ const analyzeVisual = async (imageBase64: string, mimeType: string) => {
   }
 };
 
-// --- HELPER 2: Análisis de CÓDIGO (Texto) ---
 const analyzeCode = async (codeContent: string, filename: string) => {
   const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
   
@@ -127,9 +122,6 @@ const analyzeCode = async (codeContent: string, filename: string) => {
   }
 };
 
-// ==========================================
-// CONTROLADOR 1: Subida de Archivos (Imagen o Código)
-// ==========================================
 export const analyzeImage = async (req: Request, res: Response) => {
   try {
     if (!req.file) return res.status(400).json({ message: 'Falta archivo' });
@@ -143,7 +135,6 @@ export const analyzeImage = async (req: Request, res: Response) => {
     let resultIA;
     let projectType: 'file' | 'code' = 'file';
 
-    // A. Detectamos si es Código
     const isCode = 
       mimeType.includes('text') || 
       mimeType.includes('javascript') || 
@@ -157,7 +148,6 @@ export const analyzeImage = async (req: Request, res: Response) => {
       const codeContent = fs.readFileSync(filePath, 'utf-8');
       resultIA = await analyzeCode(codeContent, req.file.originalname);
     } else {
-      // B. Si no es código, es Visual (Imagen/PDF)
       projectType = 'file';
       const fileBuffer = fs.readFileSync(filePath);
       const imageBase64 = fileBuffer.toString('base64');
@@ -166,7 +156,6 @@ export const analyzeImage = async (req: Request, res: Response) => {
 
     const { json, raw } = resultIA;
 
-    // C. Guardar en Base de Datos
     const userId = getUserIdFromToken(req);
     let savedProjectId = null;
 
@@ -193,10 +182,8 @@ export const analyzeImage = async (req: Request, res: Response) => {
       
       console.log(`✅ Proyecto guardado: ${newProject.title}`);
       
-      // 🔔 NOTIFICAR A N8N
       await notifyN8n(newProject, userId);
     } else {
-       // Si es usuario anónimo, borramos el archivo para no llenar el disco
        try { fs.unlinkSync(filePath); } catch(e) {}
     }
 
@@ -207,9 +194,6 @@ export const analyzeImage = async (req: Request, res: Response) => {
   }
 };
 
-// ==========================================
-// CONTROLADOR 2: Análisis de URL
-// ==========================================
 export const analyzeUrl = async (req: Request, res: Response) => {
   try {
     const { url } = req.body;
@@ -217,20 +201,14 @@ export const analyzeUrl = async (req: Request, res: Response) => {
 
     console.log(`🌍 Visitando URL: ${url}`);
     
-    // 1. Sacar foto con Puppeteer
     const { imageBase64, pageTitle } = await captureWebsite(url);
-    
-    // 2. Analizar foto con IA
     const { json, raw } = await analyzeVisual(imageBase64, 'image/png');
 
     const userId = getUserIdFromToken(req);
     let savedProjectId = null;
 
     if (userId) {
-      // 3. IMPORTANTE: Guardar la captura en disco para el Sprint 4
       const filename = `url-${Date.now()}.png`;
-      
-      // Asegurarnos de que la carpeta uploads existe usando __dirname corregido
       const uploadDir = path.join(__dirname, '../../uploads'); 
       if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
       
@@ -253,7 +231,6 @@ export const analyzeUrl = async (req: Request, res: Response) => {
       
       console.log(`✅ URL guardada con captura: ${filename}`);
       
-      // 🔔 NOTIFICAR A N8N
       await notifyN8n(newProject, userId);
     }
 

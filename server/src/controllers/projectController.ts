@@ -131,6 +131,8 @@ export const createProject = async (req: AuthRequest, res: Response) => {
     try {
       const n8nUrl = process.env.N8N_WEBHOOK_URL || 'http://n8n:5678/webhook/nuevo-proyecto';
       
+      const userInfo = await User.findById(userId).select('username email');
+      
       await fetch(n8nUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -140,6 +142,7 @@ export const createProject = async (req: AuthRequest, res: Response) => {
           type: newProject.type,
           url: newProject.input,
           owner: userId,
+          ownerName: userInfo?.username || userInfo?.email || 'Usuario Anónimo',
           createdAt: newProject.createdAt
         })
       });

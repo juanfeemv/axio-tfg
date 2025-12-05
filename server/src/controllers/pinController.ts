@@ -2,7 +2,7 @@ import { Response } from 'express';
 import { AuthRequest } from '../middlewares/auth';
 import Pin from '../models/Pin';
 import Project from '../models/Project';
-import User from '../models/User'; // 👈 NUEVO
+import User from '../models/User';
 
 // GET /api/pins/:projectId -> Obtener todos los pines de un proyecto
 export const getProjectPins = async (req: AuthRequest, res: Response) => {
@@ -46,10 +46,7 @@ export const createPin = async (req: AuthRequest, res: Response) => {
     try {
       const n8nUrl = process.env.N8N_WEBHOOK_URL_COMMENT || 'http://n8n:5678/webhook/nuevo-comentario';
       
-      // Obtenemos info del autor del comentario
       const commentAuthor = await User.findById(userId).select('username email');
-      
-      // Obtenemos info del proyecto y su dueño
       const project = await Project.findById(projectId).populate('owner', 'username email');
       
       if (project) {
@@ -74,7 +71,6 @@ export const createPin = async (req: AuthRequest, res: Response) => {
       }
     } catch (webhookError) {
       console.error('❌ Error al notificar n8n:', webhookError);
-      // No bloqueamos la creación del pin si falla n8n
     }
 
     res.status(201).json({ success: true, data: newPin });
@@ -96,13 +92,11 @@ export const deletePin = async (req: AuthRequest, res: Response) => {
         return res.status(404).json({ message: 'Pin no encontrado' });
       }
   
-      // 1. Verificar si el usuario es el autor del pin
       if (pin.author.toString() === userId) {
         await pin.deleteOne();
         return res.json({ success: true, message: 'Pin eliminado correctamente' });
       }
   
-      // 2. Verificar si el usuario es el DUEÑO del proyecto (moderación)
       const project = await Project.findById(pin.project);
       if (project && project.owner.toString() === userId) {
         await pin.deleteOne();
