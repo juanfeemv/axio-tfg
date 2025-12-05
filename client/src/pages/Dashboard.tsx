@@ -171,7 +171,6 @@ export default function Dashboard() {
               <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent tracking-wider">
                 AXIO
               </h1>
-              <span className="text-[10px] text-slate-400 font-semibold tracking-widest">BETA v1.0</span>
             </div>
           </div>
         </div>
