@@ -247,7 +247,7 @@ export default function Explore() {
                             height: '140%', 
                             transform: 'scale(1)',
                             transformOrigin: 'top left',
-                            left: '-36%',
+                            left: '-33%',
                             top: '-35%'
                           }}
                         />
