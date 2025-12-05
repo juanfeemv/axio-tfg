@@ -4,7 +4,7 @@ export interface IAudit extends Document {
   score: number;
   issues: any[]; 
   rawResponse?: string; 
-  project?: mongoose.Types.ObjectId; // <--- CAMPO FALTANTE EN LA INTERFAZ
+  project?: mongoose.Types.ObjectId; 
   createdAt: Date;
 }
 

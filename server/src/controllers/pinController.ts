@@ -1,7 +1,8 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middlewares/auth';
 import Pin from '../models/Pin';
-import Project from '../models/Project'; // Importamos Project para verificar al dueño
+import Project from '../models/Project';
+import User from '../models/User';
 
 // GET /api/pins/:projectId -> Obtener todos los pines de un proyecto
 export const getProjectPins = async (req: AuthRequest, res: Response) => {
@@ -41,6 +42,37 @@ export const createPin = async (req: AuthRequest, res: Response) => {
     
     await newPin.populate('author', 'username');
 
+    // 🔔 NOTIFICAR A N8N (Nuevo comentario/pin)
+    try {
+      const n8nUrl = process.env.N8N_WEBHOOK_URL_COMMENT || 'http://n8n:5678/webhook/nuevo-comentario';
+      
+      const commentAuthor = await User.findById(userId).select('username email');
+      const project = await Project.findById(projectId).populate('owner', 'username email');
+      
+      if (project) {
+        await fetch(n8nUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            commentId: newPin._id,
+            content: newPin.content,
+            commentAuthor: commentAuthor?.username || commentAuthor?.email || 'Usuario',
+            commentAuthorId: userId,
+            projectId: project._id,
+            projectTitle: project.title,
+            projectOwner: (project.owner as any).username || (project.owner as any).email || 'Usuario',
+            projectOwnerId: (project.owner as any)._id,
+            createdAt: newPin.createdAt,
+            position: { x: newPin.x, y: newPin.y }
+          })
+        });
+        
+        console.log('✅ Webhook n8n notificado (nuevo comentario)');
+      }
+    } catch (webhookError) {
+      console.error('❌ Error al notificar n8n:', webhookError);
+    }
+
     res.status(201).json({ success: true, data: newPin });
 
   } catch (error) {
@@ -60,13 +92,11 @@ export const deletePin = async (req: AuthRequest, res: Response) => {
         return res.status(404).json({ message: 'Pin no encontrado' });
       }
   
-      // 1. Verificar si el usuario es el autor del pin
       if (pin.author.toString() === userId) {
         await pin.deleteOne();
         return res.json({ success: true, message: 'Pin eliminado correctamente' });
       }
   
-      // 2. Verificar si el usuario es el DUEÑO del proyecto (moderación)
       const project = await Project.findById(pin.project);
       if (project && project.owner.toString() === userId) {
         await pin.deleteOne();

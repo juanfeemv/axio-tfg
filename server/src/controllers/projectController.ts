@@ -2,14 +2,14 @@ import { Response } from 'express';
 import { AuthRequest } from '../middlewares/auth';
 import Project from '../models/Project';
 import Audit from '../models/Audit';
-import Pin from '../models/Pin'; // <--- IMPORTADO
-import { captureWebsite } from '../services/webScraper';
+import Pin from '../models/Pin';
+import User from '../models/User';
 
 // GET /api/projects (Mis Proyectos)
 export const getMyProjects = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user.id;
-    // Ordenamos por fecha de creación descendente (más nuevo primero)
+    // Ordeno por fecha de creación descendente (más nuevo primero)
     const projects = await Project.find({ owner: userId }).sort({ createdAt: -1 });
 
     res.json({
@@ -32,7 +32,7 @@ export const getCommunityProjects = async (req: AuthRequest, res: Response) => {
       .sort({ createdAt: -1 })
       .limit(20)
       .populate('owner', 'username')
-      .lean(); // Convertimos a objeto JS simple para poder inyectar propiedades
+      .lean(); // Convertimos a objeto JS simple 
 
     // Añadimos el campo "myVote" y contamos los PINES
     const projectsWithUserData = await Promise.all(projects.map(async (p: any) => {
@@ -45,7 +45,7 @@ export const getCommunityProjects = async (req: AuthRequest, res: Response) => {
             ...p,
             myVote: myRating ? myRating.value : 0, // 0 si no ha votado
             votesCount: p.ratings?.length || 0,     // Total de votos
-            commentsCount: commentsCount,           // <--- DATO NUEVO
+            commentsCount: commentsCount,          
             // Ocultamos el array de ratings por privacidad
             ratings: undefined 
         };
@@ -69,9 +69,6 @@ export const getProjectById = async (req: AuthRequest, res: Response) => {
     if (!project) {
       return res.status(404).json({ message: 'Proyecto no encontrado' });
     }
-
-    // Nota: Si en el futuro quieres hacer proyectos privados, aquí iría la comprobación de seguridad.
-    // Por ahora, permitimos verlos si tienes el enlace (para la comunidad).
     
     // Buscamos la última auditoría asociada a este proyecto (si existe)
     const audit = await Audit.findOne({ project: projectId }).sort({ createdAt: -1 });
@@ -107,9 +104,6 @@ export const createProject = async (req: AuthRequest, res: Response) => {
     // Intentar sacar captura si es URL (aunque no se use IA, para la portada)
     if (type === 'url' && url) {
         try {
-            // Opcional: Si quieres que tenga foto de portada aunque no se analice con IA
-            // const { imageBase64 } = await captureWebsite(url);
-            // ... lógica de guardado de imagen ...
         } catch (e) {
             console.log("No se pudo generar preview para el proyecto manual");
         }
@@ -126,6 +120,32 @@ export const createProject = async (req: AuthRequest, res: Response) => {
     });
 
     await newProject.save();
+
+    // 🔔 NOTIFICAR A N8N
+    try {
+      const n8nUrl = process.env.N8N_WEBHOOK_URL || 'http://n8n:5678/webhook/nuevo-proyecto';
+      
+      const userInfo = await User.findById(userId).select('username email');
+      
+      await fetch(n8nUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId: newProject._id,
+          title: newProject.title,
+          type: newProject.type,
+          url: newProject.input,
+          owner: userId,
+          ownerName: userInfo?.username || userInfo?.email || 'Usuario Anónimo',
+          createdAt: newProject.createdAt
+        })
+      });
+      
+      console.log('✅ Webhook n8n notificado correctamente');
+    } catch (webhookError) {
+      console.error('❌ Error al notificar n8n:', webhookError);
+      // No bloqueamos la creación del proyecto si falla n8n
+    }
 
     res.status(201).json({
       success: true,
@@ -175,7 +195,7 @@ export const toggleLike = async (req: AuthRequest, res: Response) => {
     const project = await Project.findById(projectId);
     if (!project) return res.status(404).json({ message: 'Proyecto no encontrado' });
 
-    // Comprobamos si el usuario ya está en la lista de likes
+    // Comprobar si el usuario ya está en la lista de likes
     // Convertimos a string para asegurar comparación correcta de ObjectId
     const index = project.likes.findIndex((id) => id.toString() === userId);
 
@@ -191,7 +211,7 @@ export const toggleLike = async (req: AuthRequest, res: Response) => {
 
     res.json({ 
       success: true, 
-      likes: project.likes.length, // Nuevo total
+      likes: project.likes.length, 
       liked: index === -1 // true si acabamos de dar like, false si lo quitamos
     });
 

@@ -8,7 +8,7 @@ interface SocketContextType {
 
 const SocketContext = createContext<SocketContextType | undefined>(undefined);
 
-// Conectamos con el servidor (puerto 3000)
+// Conecto con el servidor
 const SOCKET_URL = 'http://localhost:3000';
 
 export const SocketProvider = ({ children }: { children: ReactNode }) => {
@@ -42,7 +42,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       {children}
     </SocketContext.Provider>
   );
-}; // <--- ¡AQUÍ SE CIERRA EL COMPONENTE!
+}; 
 
 
 export const useSocket = () => {

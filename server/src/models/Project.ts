@@ -10,10 +10,9 @@ export interface IProject extends Document {
   accessibilityScore?: number;
   likes: mongoose.Types.ObjectId[];
   
-  // --- NUEVO: SISTEMA DE VOTACIÓN (Community Rating) ---
+  // --- SISTEMA DE VOTACIÓN ---
   ratings: { user: mongoose.Types.ObjectId; value: number }[]; // Array con quién votó y cuánto
   averageRating: number; // La nota media calculada (ej: 4.5)
-  // ----------------------------------------------------
   
   createdAt: Date;
 }
@@ -31,13 +30,12 @@ const ProjectSchema: Schema = new Schema(
     // Likes (Me gusta simples)
     likes: [{ type: Schema.Types.ObjectId, ref: 'User' }],
 
-    // --- NUEVO: VOTACIONES (Estrellas 1-5) ---
+    // --- VOTACIONES (Estrellas 1-5) ---
     ratings: [{
       user: { type: Schema.Types.ObjectId, ref: 'User' },
       value: { type: Number, min: 1, max: 5 }
     }],
     averageRating: { type: Number, default: 0 }
-    // -----------------------------------------
   },
   {
     timestamps: true

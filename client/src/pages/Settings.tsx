@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User, Shield, Bell, Mail, Lock, Palette, Zap, Save, Camera, Key, Check, AlertCircle } from 'lucide-react';
+import { User, Shield, Mail, Lock, Palette, Save, Key, Check, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';
@@ -10,8 +10,6 @@ export default function Settings() {
 
   // Estados de UI
   const [username, setUsername] = useState(user?.username || '');
-  const [emailNotifs, setEmailNotifs] = useState(true);
-  const [realTimeAlerts, setRealTimeAlerts] = useState(true);
   const [loading, setLoading] = useState(false);
   
   // Estados Contraseña
@@ -23,7 +21,7 @@ export default function Settings() {
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState(false);
 
-  // Validación en tiempo real (NUEVA LÓGICA)
+  // Validación en tiempo real
   const hasMinLength = newPass.length >= 8;
   const hasUpperCase = /[A-Z]/.test(newPass);
   const hasLowerCase = /[a-z]/.test(newPass);
@@ -32,7 +30,7 @@ export default function Settings() {
 
   const isPasswordValid = hasMinLength && hasUpperCase && hasLowerCase && hasNumber;
 
-  // Sincronizar estado local si el usuario cambia externamente
+  // Sincronizo estado local si el usuario cambia externamente
   useEffect(() => {
     if (user?.username) setUsername(user.username);
   }, [user]);
@@ -62,7 +60,7 @@ export default function Settings() {
     }
   };
 
-  // --- 3. CAMBIAR CONTRASEÑA (Validación estricta) ---
+  // --- 3. CAMBIAR CONTRASEÑA ---
   const handleChangePassword = async () => {
     // Limpiar estados previos
     setPasswordError('');
@@ -86,7 +84,6 @@ export default function Settings() {
         newPassword: newPass 
       });
       
-      // Éxito visual
       setPasswordSuccess(true);
       
       // Resetear formulario tras 2 segundos
@@ -149,12 +146,9 @@ export default function Settings() {
           <div className="p-6">
             <div className="flex flex-col md:flex-row gap-6 items-start">
               {/* Avatar */}
-              <div className="relative group cursor-pointer">
+              <div className="relative group">
                 <div className="h-24 w-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center text-4xl font-bold text-white shadow-lg uppercase">
                   {user?.username?.charAt(0) || 'U'}
-                </div>
-                <div className="absolute inset-0 bg-black/50 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Camera className="text-white" size={24} />
                 </div>
               </div>
 
@@ -277,7 +271,7 @@ export default function Settings() {
                         />
                     </div>
 
-                    {/* Lista de Requisitos Proactiva Detallada */}
+                    {/* Lista de Requisitos */}
                     <div className="mt-2 p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700/50 shadow-sm">
                         <p className="text-xs text-slate-400 mb-2 font-medium">Requisitos de seguridad:</p>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -307,34 +301,6 @@ export default function Settings() {
                 </div>
               </div>
             )}
-          </div>
-        </div>
-
-        {/* NOTIFICACIONES CARD */}
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-slate-700 dark:to-slate-800 p-6 border-b border-slate-200 dark:border-slate-700">
-            <h2 className="font-bold text-slate-800 dark:text-white text-lg flex items-center gap-2">
-              <Bell size={20} className="text-green-600 dark:text-green-400" />
-              Notificaciones
-            </h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Gestiona cómo y cuándo quieres recibir notificaciones</p>
-          </div>
-
-          <div className="p-6 space-y-5">
-            <ToggleOption
-              icon={<Mail size={20} />}
-              title="Notificaciones por Email"
-              description="Recibe el informe PDF automáticamente al completar una auditoría"
-              checked={emailNotifs}
-              onChange={setEmailNotifs}
-            />
-            <ToggleOption
-              icon={<Zap size={20} />}
-              title="Alertas en Tiempo Real"
-              description="Notificaciones instantáneas sobre el progreso de tus auditorías"
-              checked={realTimeAlerts}
-              onChange={setRealTimeAlerts}
-            />
           </div>
         </div>
 
@@ -386,25 +352,6 @@ function RequirementItem({ met, text }: { met: boolean; text: string }) {
         {met ? <Check size={12} strokeWidth={3} /> : <div className="h-1.5 w-1.5 rounded-full bg-slate-300" />}
       </div>
       <span>{text}</span>
-    </div>
-  );
-}
-
-function ToggleOption({ icon, title, description, checked, onChange }: any) {
-  return (
-    <div className="flex items-start justify-between p-4 bg-slate-50 dark:bg-slate-900 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
-      <div className="flex gap-4 flex-1">
-        <div className="h-10 w-10 bg-white dark:bg-slate-800 rounded-xl flex items-center justify-center text-slate-600 dark:text-slate-400 flex-shrink-0 shadow-sm border border-slate-100 dark:border-slate-700">
-          {icon}
-        </div>
-        <div className="flex-1">
-          <p className="font-semibold text-slate-800 dark:text-white">{title}</p>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{description}</p>
-        </div>
-      </div>
-      <button onClick={() => onChange(!checked)} className={`relative w-12 h-6 rounded-full transition-colors duration-300 flex-shrink-0 mt-1 ${checked ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-600'}`}>
-        <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-300 ${checked ? 'translate-x-7' : 'translate-x-1'}`}></div>
-      </button>
     </div>
   );
 }

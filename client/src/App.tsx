@@ -2,11 +2,11 @@ import { ReactNode } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
-// Importamos las páginas
+// Importo las páginas
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
-import ProjectView from './pages/ProjectView'; // <--- Importamos la nueva página
+import ProjectView from './pages/ProjectView'; 
 
 // Componente para proteger rutas (Si no estás logueado, te echa al Login)
 const PrivateRoute = ({ children }: { children: ReactNode }) => {
@@ -33,7 +33,7 @@ function App() {
             } 
           />
 
-          {/* NUEVA RUTA: Ver un proyecto específico por su ID */}
+          {/* Ver un proyecto específico por su ID */}
           <Route 
             path="/project/:id" 
             element={

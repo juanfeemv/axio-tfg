@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { analyzeImage, analyzeUrl } from '../controllers/analyzeController'; // Importamos ambas funciones
+import { analyzeImage, analyzeUrl } from '../controllers/analyzeController'; 
 import { upload } from '../middlewares/upload'; // El "portero" de Multer
 
 const router = Router();

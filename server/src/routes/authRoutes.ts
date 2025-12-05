@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { register, login, updateProfile, changePassword, deleteUser } from '../controllers/authController'; // Importar deleteUser
-import { protect } from '../middlewares/auth'; // Necesitamos proteger estas rutas
+import { register, login, updateProfile, changePassword, deleteUser } from '../controllers/authController'; 
+import { protect } from '../middlewares/auth'; // Necesito proteger estas rutas
 
 const router = Router();
 
@@ -11,7 +11,7 @@ router.post('/login', login);
 router.put('/profile', protect, updateProfile);
 router.put('/password', protect, changePassword);
 
-// DELETE /api/auth/me -> Borrar mi cuenta (NUEVA)
+// DELETE /api/auth/me -> Borrar mi cuenta 
 router.delete('/me', protect, deleteUser); 
 
 export default router;

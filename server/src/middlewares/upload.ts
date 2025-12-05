@@ -2,7 +2,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 
-// 1. Configurar DÓNDE se guardan los archivos
+// 1. Configurar dónde se guardan los archivos
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadPath = 'uploads/';
@@ -23,7 +23,7 @@ const storage = multer.diskStorage({
 // 2. Filtro Híbrido: Acepta Imágenes, PDF y Código Fuente
 const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   
-  // Lista blanca de tipos MIME permitidos
+  // Lista blanca de los tipos de archivo permitidos
   const allowedMimes = [
     // Imágenes
     'image/jpeg', 'image/png', 'image/webp', 'image/gif',

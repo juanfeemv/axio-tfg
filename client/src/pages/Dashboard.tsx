@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import api from '../services/api';
 
-// Importamos las otras vistas
+// Importo las otras vistas
 import MyProjects from './MyProjects';
 import Settings from './Settings';
 import Explore from './Explore';
@@ -129,7 +129,6 @@ export default function Dashboard() {
   };
 
   return (
-    // AÑADIDO: dark:from-slate-900 dark:to-slate-950
     <div className="flex h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-950 overflow-hidden relative transition-colors duration-300">
       
       {/* --- HEADER MÓVIL --- */}
@@ -151,7 +150,7 @@ export default function Dashboard() {
         />
       )}
 
-      {/* 1. SIDEBAR LATERAL (Responsive) */}
+      {/* 1. SIDEBAR LATERAL */}
       <aside className={`
         fixed left-0 z-40 w-64 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white flex flex-col shadow-2xl 
         transform transition-transform duration-300 ease-in-out
@@ -171,7 +170,6 @@ export default function Dashboard() {
               <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent tracking-wider">
                 AXIO
               </h1>
-              <span className="text-[10px] text-slate-400 font-semibold tracking-widest">BETA v1.0</span>
             </div>
           </div>
         </div>
@@ -212,7 +210,6 @@ export default function Dashboard() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-sm truncate">{user?.username}</p>
-              <p className="text-xs text-slate-400">Plan Gratuito</p>
             </div>
           </div>
           <button 
@@ -235,22 +232,11 @@ export default function Dashboard() {
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-3xl md:text-4xl">👋</span>
-                  {/* AÑADIDO: dark:text-white */}
                   <h2 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-white">
                     Hola, <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">{user?.username}</span>
                   </h2>
                 </div>
-                {/* AÑADIDO: dark:text-slate-400 */}
                 <p className="text-slate-500 text-base md:text-lg dark:text-slate-400">¿Qué quieres subir hoy?</p>
-              </div>
-              <div className="hidden md:flex items-center gap-3">
-                <div className="text-right">
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Plan Gratuito</p>
-                  <p className="text-sm text-blue-600 font-medium cursor-pointer hover:underline flex items-center gap-1">
-                    <Zap size={14} />
-                    Actualizar a Pro
-                  </p>
-                </div>
               </div>
             </header>
 
@@ -258,7 +244,6 @@ export default function Dashboard() {
             {!result && !loading && (
               <div className="mb-8 flex justify-center md:justify-start animate-fade-in">
                 <div 
-                  // AÑADIDO: dark:bg-slate-800 dark:border-slate-700
                   className="bg-white p-1.5 rounded-full border border-slate-200 shadow-sm flex items-center gap-1 cursor-pointer select-none overflow-hidden dark:bg-slate-800 dark:border-slate-700"
                   onClick={() => setUseAI(!useAI)}
                 >
@@ -276,84 +261,109 @@ export default function Dashboard() {
 
             {/* SECCIÓN INPUTS */}
             {!result && !loading && (
-              <div className="grid md:grid-cols-3 gap-6 animate-fade-in-up">
-                
-                {/* 1. Card URL */}
-                {/* AÑADIDO: dark:bg-slate-800 dark:border-slate-700 */}
-                <div className="bg-white p-6 rounded-3xl shadow-lg border-2 border-slate-200 hover:shadow-2xl hover:border-blue-300 hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden dark:bg-slate-800 dark:border-slate-700 dark:hover:border-blue-500/50">
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl"></div>
-                  <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-blue-500/30">
-                    <Link2 size={24} />
-                  </div>
-                  {/* AÑADIDO: dark:text-white */}
-                  <h3 className="text-lg font-bold text-slate-800 mb-2 dark:text-white">Web en Vivo</h3>
-                  {/* AÑADIDO: dark:text-slate-400 */}
-                  <p className="text-slate-500 text-sm mb-6 h-10 line-clamp-2 dark:text-slate-400">
-                    {useAI ? 'La IA navegará y detectará errores.' : 'Guarda la URL para compartirla.'}
-                  </p>
+              <>
+                <div className="grid md:grid-cols-3 gap-6 animate-fade-in-up">
                   
-                  <form onSubmit={handleUrlAnalyze} className="relative">
-                    <input 
-                      type="url" 
-                      placeholder="https://ejemplo.com" 
-                      // AÑADIDO: dark:bg-slate-900 dark:border-slate-600 dark:text-white dark:focus:border-blue-500
-                      className="w-full border-2 border-slate-300 rounded-xl px-4 py-3 pr-12 text-sm focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all shadow-sm dark:bg-slate-900 dark:border-slate-600 dark:text-white"
-                      value={url}
-                      onChange={(e) => setUrl(e.target.value)}
-                      required
-                    />
-                    <button 
-                      type="submit"
-                      className={`absolute right-2 top-2 bottom-2 text-white px-3 rounded-lg font-semibold transition-all shadow-lg hover:scale-105 ${useAI ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/30' : 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/30'}`}
-                    >
-                      →
-                    </button>
-                  </form>
+                  {/* 1. Card URL */}
+                  <div className="bg-white p-6 rounded-3xl shadow-lg border-2 border-slate-200 hover:shadow-2xl hover:border-blue-300 hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden dark:bg-slate-800 dark:border-slate-700 dark:hover:border-blue-500/50">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl"></div>
+                    <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-blue-500/30">
+                      <Link2 size={24} />
+                    </div>
+                    <h3 className="text-lg font-bold text-slate-800 mb-2 dark:text-white">Web en Vivo</h3>
+                    <p className="text-slate-500 text-sm mb-6 h-10 line-clamp-2 dark:text-slate-400">
+                      {useAI ? 'La IA navegará y detectará errores.' : 'Guarda la URL para compartirla.'}
+                    </p>
+                    
+                    <form onSubmit={handleUrlAnalyze} className="relative">
+                      <input 
+                        type="url" 
+                        placeholder="https://ejemplo.com" 
+                        className="w-full border-2 border-slate-300 rounded-xl px-4 py-3 pr-12 text-sm focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all shadow-sm dark:bg-slate-900 dark:border-slate-600 dark:text-white"
+                        value={url}
+                        onChange={(e) => setUrl(e.target.value)}
+                        required
+                      />
+                      <button 
+                        type="submit"
+                        className={`absolute right-2 top-2 bottom-2 text-white px-3 rounded-lg font-semibold transition-all shadow-lg hover:scale-105 ${useAI ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/30' : 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/30'}`}
+                      >
+                        →
+                      </button>
+                    </form>
+                  </div>
+
+                  {/* 2. Card Diseño */}
+                  <div className="bg-white p-6 rounded-3xl shadow-lg border-2 border-slate-200 hover:shadow-2xl hover:border-purple-300 hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden dark:bg-slate-800 dark:border-slate-700 dark:hover:border-purple-500/50">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/5 rounded-full blur-2xl"></div>
+                    <div className="h-12 w-12 bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-purple-500/30">
+                      <Upload size={24} />
+                    </div>
+                    <h3 className="text-lg font-bold text-slate-800 mb-2 dark:text-white">Diseño Visual</h3>
+                    <p className="text-slate-500 text-sm mb-6 h-10 line-clamp-2 dark:text-slate-400">
+                      {useAI ? 'Sube una diseño (imagen o PDF) para análisis visual.' : 'Comparte un diseño (imagen o PDF) para feedback.'}
+                    </p>
+                    
+                    <label className={`border-2 border-dashed border-slate-300 rounded-xl h-[52px] flex items-center justify-center cursor-pointer transition-all group-hover:shadow-md dark:border-slate-600 ${useAI ? 'hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20' : 'hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'}`}>
+                      <input type="file" className="hidden" onChange={(e) => handleFileUpload(e, 'image')} accept="image/*,application/pdf" />
+                      <span className={`text-sm font-semibold flex items-center gap-2 ${useAI ? 'text-slate-600 group-hover:text-purple-700 dark:text-slate-300 dark:group-hover:text-purple-400' : 'text-slate-600 group-hover:text-emerald-700 dark:text-slate-300 dark:group-hover:text-emerald-400'}`}>
+                        <Upload size={16} /> {useAI ? 'Analizar' : 'Subir'}
+                      </span>
+                    </label>
+                  </div>
+
+                  {/* 3. Card CÓDIGO */}
+                  <div className="bg-white p-6 rounded-3xl shadow-lg border-2 border-slate-200 hover:shadow-2xl hover:border-emerald-300 hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden dark:bg-slate-800 dark:border-slate-700 dark:hover:border-emerald-500/50">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl"></div>
+                    <div className="h-12 w-12 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-emerald-500/30">
+                      <FileCode size={24} />
+                    </div>
+                    <h3 className="text-lg font-bold text-slate-800 mb-2 dark:text-white">Código Fuente</h3>
+                    <p className="text-slate-500 text-sm mb-6 h-10 line-clamp-2 dark:text-slate-400">
+                      {useAI ? 'Revisión de código automática.' : 'Comparte código a la comunidad.'}
+                    </p>
+                    
+                    <label className={`border-2 border-dashed border-slate-300 rounded-xl h-[52px] flex items-center justify-center cursor-pointer transition-all group-hover:shadow-md dark:border-slate-600 ${useAI ? 'hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20' : 'hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'}`}>
+                      <input type="file" className="hidden" onChange={(e) => handleFileUpload(e, 'code')} accept=".html,.css,.js,.jsx,.ts,.tsx,.json" />
+                      <span className={`text-sm font-semibold flex items-center gap-2 ${useAI ? 'text-slate-600 group-hover:text-blue-700 dark:text-slate-300 dark:group-hover:text-blue-400' : 'text-slate-600 group-hover:text-emerald-700 dark:text-slate-300 dark:group-hover:text-emerald-400'}`}>
+                        <FileCode size={16} /> {useAI ? 'Analizar' : 'Subir'}
+                      </span>
+                    </label>
+                  </div>
                 </div>
 
-                {/* 2. Card Diseño */}
-                {/* AÑADIDO: dark:bg-slate-800 dark:border-slate-700 */}
-                <div className="bg-white p-6 rounded-3xl shadow-lg border-2 border-slate-200 hover:shadow-2xl hover:border-purple-300 hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden dark:bg-slate-800 dark:border-slate-700 dark:hover:border-purple-500/50">
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/5 rounded-full blur-2xl"></div>
-                  <div className="h-12 w-12 bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-purple-500/30">
-                    <Upload size={24} />
-                  </div>
-                  <h3 className="text-lg font-bold text-slate-800 mb-2 dark:text-white">Diseño Visual</h3>
-                  <p className="text-slate-500 text-sm mb-6 h-10 line-clamp-2 dark:text-slate-400">
-                    {useAI ? 'Sube una diseño (imagen o PDF) para análisis visual.' : 'Comparte un diseño (imagen o PDF) para feedback.'}
-                  </p>
-                  
-                  {/* AÑADIDO: dark:border-slate-600 dark:hover:bg-purple-900/20 */}
-                  <label className={`border-2 border-dashed border-slate-300 rounded-xl h-[52px] flex items-center justify-center cursor-pointer transition-all group-hover:shadow-md dark:border-slate-600 ${useAI ? 'hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20' : 'hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'}`}>
-                    <input type="file" className="hidden" onChange={(e) => handleFileUpload(e, 'image')} accept="image/*,application/pdf" />
-                    <span className={`text-sm font-semibold flex items-center gap-2 ${useAI ? 'text-slate-600 group-hover:text-purple-700 dark:text-slate-300 dark:group-hover:text-purple-400' : 'text-slate-600 group-hover:text-emerald-700 dark:text-slate-300 dark:group-hover:text-emerald-400'}`}>
-                      <Upload size={16} /> {useAI ? 'Analizar' : 'Subir'}
-                    </span>
-                  </label>
+                {/* --- SECCIÓN DISCORD COMUNIDAD --- */}
+                <div className="mt-8 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+                  <a 
+                    href="https://discord.gg/zh78ZtSF" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="block w-full bg-[#5865F2] hover:bg-[#4752C4] rounded-2xl p-6 shadow-lg hover:shadow-[#5865F2]/40 hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group"
+                  >
+                    {/* Decoración de fondo */}
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/4 blur-3xl group-hover:bg-white/20 transition-all"></div>
+                    
+                    <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
+                      <div className="flex items-center gap-5">
+                        <div className="bg-white/20 p-4 rounded-xl backdrop-blur-sm shrink-0">
+                          {/* Logo de Discord SVG */}
+                          <svg width="32" height="32" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M20.317 4.3698a19.7913 19.7913 0 0 0-4.8851-1.5152.0741.0741 0 0 0-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 0 0-.0785-.037 19.7363 19.7363 0 0 0-4.8852 1.515.0699.0699 0 0 0-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 0 0 .0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 0 0 .0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 0 0-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 0 1-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 0 1 .0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 0 1 .0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 0 1-.0066.1276 12.2986 12.2986 0 0 1-1.873.8914.0766.0766 0 0 0-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 0 0 .0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 0 0 .0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 0 0-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.419-2.1568 2.419zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.419-2.1568 2.419z"/>
+                          </svg>
+                        </div>
+                        <div className="text-white">
+                          <h3 className="text-xl font-bold">Únete a la Comunidad</h3>
+                          <p className="text-blue-100/90 text-sm mt-1 max-w-lg">Recibe notificaciones sobre tus proyectos y conecta con otros creadores en nuestro Discord.</p>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-white text-[#5865F2] px-6 py-2.5 rounded-xl font-bold text-sm shadow-md group-hover:scale-105 transition-transform whitespace-nowrap">
+                        Unirse Ahora →
+                      </div>
+                    </div>
+                  </a>
                 </div>
-
-                {/* 3. Card CÓDIGO */}
-                {/* AÑADIDO: dark:bg-slate-800 dark:border-slate-700 */}
-                <div className="bg-white p-6 rounded-3xl shadow-lg border-2 border-slate-200 hover:shadow-2xl hover:border-emerald-300 hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden dark:bg-slate-800 dark:border-slate-700 dark:hover:border-emerald-500/50">
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl"></div>
-                  <div className="h-12 w-12 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-emerald-500/30">
-                    <FileCode size={24} />
-                  </div>
-                  <h3 className="text-lg font-bold text-slate-800 mb-2 dark:text-white">Código Fuente</h3>
-                  <p className="text-slate-500 text-sm mb-6 h-10 line-clamp-2 dark:text-slate-400">
-                    {useAI ? 'Revisión de código automática.' : 'Comparte código a la comunidad.'}
-                  </p>
-                  
-                  {/* AÑADIDO: dark:border-slate-600 dark:hover:bg-blue-900/20 */}
-                  <label className={`border-2 border-dashed border-slate-300 rounded-xl h-[52px] flex items-center justify-center cursor-pointer transition-all group-hover:shadow-md dark:border-slate-600 ${useAI ? 'hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20' : 'hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'}`}>
-                    <input type="file" className="hidden" onChange={(e) => handleFileUpload(e, 'code')} accept=".html,.css,.js,.jsx,.ts,.tsx,.json" />
-                    <span className={`text-sm font-semibold flex items-center gap-2 ${useAI ? 'text-slate-600 group-hover:text-blue-700 dark:text-slate-300 dark:group-hover:text-blue-400' : 'text-slate-600 group-hover:text-emerald-700 dark:text-slate-300 dark:group-hover:text-emerald-400'}`}>
-                      <FileCode size={16} /> {useAI ? 'Analizar' : 'Subir'}
-                    </span>
-                  </label>
-                </div>
-
-              </div>
+              </>
             )}
 
             {/* SECCIÓN LOADER */}
@@ -365,7 +375,6 @@ export default function Dashboard() {
                     <Sparkles className="text-blue-600 animate-pulse" size={32} />
                   </div>
                 </div>
-                {/* AÑADIDO: dark:text-white */}
                 <h3 className="text-xl font-bold text-slate-800 mt-8 mb-2 dark:text-white">Procesando Proyecto</h3>
                 <p className="text-slate-500 animate-pulse dark:text-slate-400">
                     {useAI ? 'La IA está revisando la accesibilidad...' : 'Guardando en la base de datos...'}
@@ -388,7 +397,6 @@ export default function Dashboard() {
                   <span className="group-hover:-translate-x-1 transition-transform">←</span> Volver al inicio
                 </button>
 
-                {/* AÑADIDO: dark:bg-slate-800 dark:border-slate-700 */}
                 <div className="bg-white rounded-3xl shadow-2xl border-2 border-slate-200 overflow-hidden dark:bg-slate-800 dark:border-slate-700">
                   <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white p-8 relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl"></div>
@@ -428,7 +436,6 @@ export default function Dashboard() {
                     </div>
                   </div>
 
-                  {/* AÑADIDO: dark:from-slate-800 dark:to-slate-900 */}
                   <div className="p-8 bg-gradient-to-b from-slate-50 to-white dark:from-slate-800 dark:to-slate-900">
                     <div className="flex items-center gap-3 mb-6">
                       <div className="h-10 w-10 bg-orange-100 rounded-xl flex items-center justify-center dark:bg-orange-900/30">
@@ -441,7 +448,6 @@ export default function Dashboard() {
                     
                     <div className="grid gap-4">
                       {result.issues?.map((issue: any, index: number) => (
-                        // AÑADIDO: dark:bg-slate-800 dark:border-slate-700
                         <div key={index} className="bg-white border-2 border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all border-l-4 border-l-blue-500 dark:bg-slate-800 dark:border-slate-700">
                           <div className="flex flex-col md:flex-row justify-between mb-4 gap-3">
                             <span className="font-bold text-slate-800 text-lg dark:text-white">{issue.element || 'Elemento General'}</span>

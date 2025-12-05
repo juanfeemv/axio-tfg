@@ -7,7 +7,6 @@ import {
   Heart, 
   MessageSquare, 
   TrendingUp, 
-  Sparkles, 
   Loader2,
   Link2,
   FileText,
@@ -48,7 +47,7 @@ export default function Explore() {
 
     if (!user) return; 
 
-    // Actualizamos visualmente antes de que responda el servidor
+    // Actualizo visualmente antes de que responda el servidor
     setProjects(prev => prev.map(p => {
         if (p._id === projectId) {
             const isLiked = p.likes.includes(user.id);
@@ -74,19 +73,18 @@ export default function Explore() {
     e.stopPropagation();
     if (!user) return;
 
-    // A) Optimistic Update: Actualizamos visualmente al instante
     setProjects(prev => prev.map(p => {
         if (p._id === projectId) {
-            return { ...p, myVote: rating }; // Marcamos visualmente tu voto
+            return { ...p, myVote: rating }; // Marco visualmente tu voto
         }
         return p;
     }));
 
     try {
-        // B) Guardamos en BD
+        // B) Guardo en BD
         const res = await api.put(`/projects/${projectId}/rate`, { rating });
         
-        // C) Actualizamos con los datos REALES calculados por el servidor (media exacta)
+        // C) Actualizo con los datos reales calculados por el servidor.
         setProjects(prev => prev.map(p => {
             if (p._id === projectId) {
                 return {
@@ -145,8 +143,7 @@ export default function Explore() {
           <div className="flex items-center gap-3 mb-4">
             <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
               <Globe className="text-white" size={24} />
-            </div>
-            <Sparkles className="text-purple-500 dark:text-purple-400 animate-pulse" size={20} />
+            </div> 
           </div>
           <h1 className="text-4xl font-bold text-slate-800 dark:text-white mb-3">
             Explora la Comunidad
@@ -246,10 +243,10 @@ export default function Explore() {
                           style={{ 
                             width: '140%', 
                             height: '140%', 
-                            transform: 'scale(1.15)',
+                            transform: 'scale(1)',
                             transformOrigin: 'top left',
-                            left: '-20%',
-                            top: '-10%'
+                            left: '-33%',
+                            top: '-35%'
                           }}
                         />
                       </div>
@@ -358,7 +355,6 @@ export default function Explore() {
                         {project.likes?.length || 0}
                       </button>
                       
-                      {/* --- AQUI ESTA EL CAMBIO: NUMERO DE COMENTARIOS --- */}
                       <div className="flex items-center gap-1 hover:text-blue-500 dark:hover:text-blue-400 transition">
                         <MessageSquare size={14} /> {project.commentsCount || 0}
                       </div>
@@ -370,7 +366,7 @@ export default function Explore() {
         })}
       </div>
 
-      {/* Empty State */}
+      {/* Estado vacío */}
       {projects.length === 0 && !loading && (
          <div className="text-center py-20 text-slate-400 dark:text-slate-600">
             <Globe className="mx-auto mb-4 h-12 w-12 opacity-20" />

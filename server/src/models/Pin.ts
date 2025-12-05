@@ -3,8 +3,8 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface IPin extends Document {
   project: mongoose.Types.ObjectId; // A qué proyecto pertenece
   author: mongoose.Types.ObjectId;  // Quién lo escribió
-  x: number;       // Posición horizontal en % (0-100)
-  y: number;       // Posición vertical en % (0-100)
+  x: number;       
+  y: number;       
   content: string; // El comentario
   createdAt: Date;
 }

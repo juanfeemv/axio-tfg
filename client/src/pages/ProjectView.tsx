@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../services/api';
 import { useSocket } from '../context/SocketContext';
-import { useAuth } from '../context/AuthContext'; // Asumimos que tienes este contexto
+import { useAuth } from '../context/AuthContext';
 import PinLayer from '../components/collaboration/PinLayer';
 import { 
   ArrowLeft, Sparkles, FileCode, Copy, 
@@ -14,7 +14,7 @@ export default function ProjectView() {
   const navigate = useNavigate();
   const location = useLocation();
   const { socket } = useSocket();
-  const { user } = useAuth(); // Obtenemos usuario actual para validar permisos UI
+  const { user } = useAuth();
   
   const previousTab = location.state?.from || 'projects';
 
@@ -72,11 +72,10 @@ export default function ProjectView() {
             if (exists) return prev;
             return [...prev, newPin];
         });
-        // Opcional: Auto-scroll al chat si llega mensaje
         if(sidebarTab !== 'chat') setSidebarTab('chat');
     };
 
-    // Pin Borrado (Nuevo Listener)
+    // Pin Borrado
     const handlePinDeleted = ({ pinId }: { pinId: string }) => {
         setPins(prev => prev.filter(p => p._id !== pinId));
     };
@@ -105,12 +104,9 @@ export default function ProjectView() {
 
   // Función Borrar Pin
   const handleDeletePin = async (pinId: string) => {
-    // Optimistic UI update (opcional, aquí esperamos confirmación API para ser seguros)
     try {
         await api.delete(`/pins/${pinId}`);
-        // Actualizamos estado local
         setPins(prev => prev.filter(p => p._id !== pinId));
-        // Avisamos a los demás
         socket?.emit('delete_pin', { projectId: id, pinId });
     } catch (error) {
         console.error("Error deleting pin:", error);
@@ -147,10 +143,8 @@ export default function ProjectView() {
   const showEmpathy = project.type !== 'code';
   const visualPins = pins.filter(p => p.x >= 0 && p.y >= 0);
 
-  // Helper para saber si puedo borrar (Soy autor OR Soy dueño del proyecto)
   const canDelete = (pin: any) => {
-    if (!user) return false;
-    // Asumiendo que pin.author es un objeto poblado con _id o string
+    if (!user || !pin.author) return false;
     const authorId = pin.author._id || pin.author; 
     return authorId === user.id || project.owner === user.id;
   };
@@ -158,7 +152,7 @@ export default function ProjectView() {
   return (
     <div className="h-screen bg-slate-900 text-white flex flex-col overflow-hidden">
       
-      {/* SVG Filters */}
+      {/* SVG Fitlros */}
       <svg style={{ display: 'none' }}>
         <defs>
           <filter id="protanopia-filter"><feColorMatrix type="matrix" values="0.567, 0.433, 0, 0, 0  0.558, 0.442, 0, 0, 0  0, 0.242, 0.758, 0, 0  0, 0, 0, 1, 0" /></filter>
@@ -225,7 +219,7 @@ export default function ProjectView() {
                                 <Copy size={16}/>
                             </button>
                         </div>
-                         
+                          
                         <div className="flex-1 overflow-auto custom-scrollbar relative">
                             <div className="relative min-h-full min-w-max inline-block">
                                 <PinLayer pins={visualPins} onSavePin={handleSavePin} />
@@ -297,16 +291,15 @@ export default function ProjectView() {
                             pins.map((pin, idx) => (
                                 <div key={idx} className="group bg-slate-800 p-3 rounded-xl border border-slate-700 flex gap-3 animate-fade-in-up hover:border-slate-600 transition-colors">
                                     <div className="h-8 w-8 rounded-full bg-purple-900/50 text-purple-200 flex items-center justify-center text-xs font-bold shrink-0 border border-purple-500/30">
-                                        {pin.author?.username?.charAt(0).toUpperCase()}
+                                        {pin.author?.username?.charAt(0).toUpperCase() || '?'}
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center justify-between mb-1">
                                             <div className="flex items-center gap-2">
-                                                <span className="text-sm font-bold text-slate-200">@{pin.author?.username}</span>
+                                                <span className="text-sm font-bold text-slate-200">@{pin.author?.username || 'Usuario desconocido'}</span>
                                                 <span className="text-[10px] text-slate-500">{new Date(pin.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                                             </div>
                                             
-                                            {/* BOTÓN BORRAR: Visible solo para autor o dueño */}
                                             {canDelete(pin) && (
                                                 <button 
                                                     onClick={() => handleDeletePin(pin._id)}

@@ -13,7 +13,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const [theme, setTheme] = useState<Theme>('light');
 
   useEffect(() => {
-    // 1. Al arrancar, miramos si hay preferencia guardada o del sistema
+    // 1. Al arrancar, miro si hay preferencia guardada o del sistema
     const savedTheme = localStorage.getItem('theme') as Theme;
     const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
