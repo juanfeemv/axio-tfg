@@ -7,7 +7,6 @@ import {
   Heart, 
   MessageSquare, 
   TrendingUp, 
-  Sparkles, 
   Loader2,
   Link2,
   FileText,
@@ -144,8 +143,7 @@ export default function Explore() {
           <div className="flex items-center gap-3 mb-4">
             <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
               <Globe className="text-white" size={24} />
-            </div>
-            <Sparkles className="text-purple-500 dark:text-purple-400 animate-pulse" size={20} />
+            </div> 
           </div>
           <h1 className="text-4xl font-bold text-slate-800 dark:text-white mb-3">
             Explora la Comunidad
