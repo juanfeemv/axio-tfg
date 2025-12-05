@@ -1,20 +1,41 @@
-# Directorios de dependencias
+# ----------------------------------------
+# 1. DEPENDENCIAS (EXCLUIDAS DE GIT/DOCKER)
+# ----------------------------------------
 /client/node_modules
 /server/node_modules
 
-# Archivos con variables de entorno/claves (CRÍTICO)
+# ----------------------------------------
+# 2. ARCHIVOS DE COMPILACIÓN Y CACHÉ
+# ----------------------------------------
+/client/dist
+/server/dist
+/server/build
+/server/*.tsbuildinfo
+/.idea
+.vscode/
+
+# ----------------------------------------
+# 3. ARCHIVOS CRÍTICOS Y LOCALES
+# ----------------------------------------
 .env
-/server/.env 
+/server/.env
 /client/.env
+/infra/docker/.env
 
-# Archivos de build (compilación)
-/client/dist 
-
-# Archivos subidos por usuarios
+# ----------------------------------------
+# 4. ARCHIVOS GENERADOS POR USUARIO (UPLOADS)
+# ----------------------------------------
+# EXCLUIMOS todos los archivos en uploads, pero mantenemos el .gitkeep
 /server/uploads/*
 !/server/uploads/.gitkeep
 
-# Otros del sistema
+# ----------------------------------------
+# 5. LOGS Y CACHÉ DEL SISTEMA
+# ----------------------------------------
 *.log
+npm-debug.log*
+yarn-error.log*
 .DS_Store
 Thumbs.db
+*.zip
+*.tar.gz
