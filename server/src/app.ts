@@ -2,43 +2,84 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
+
+// Rutas
+import authRoutes from './routes/authRoutes';
+import analyzeRoutes from './routes/analyzeRoutes';
+import projectRoutes from './routes/projectRoutes';
+import pinRoutes from './routes/pinRoutes';
+import statsRoutes from './routes/statsRoutes'; 
 
 // --- CONFIGURACIÓN ---
-dotenv.config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const envPath = path.resolve(__dirname, '../.env');
+dotenv.config({ path: envPath });
+
+console.log("\n🔵 [DEBUG] Iniciando app.ts...");
+
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// --- CREAMOS EL SERVIDOR HTTP Y SOCKET.IO ---
+const httpServer = createServer(app); 
+const io = new Server(httpServer, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
+});
+
+// --- LÓGICA DE TIEMPO REAL (SOCKETS) ---
+io.on('connection', (socket) => {
+  console.log('🔌 Nuevo cliente conectado por Socket:', socket.id);
+
+  socket.on('join_project', (projectId) => {
+    socket.join(projectId);
+    console.log(`👥 Usuario unido a la sala del proyecto: ${projectId}`);
+  });
+
+  socket.on('send_pin', (data) => {
+    io.to(data.projectId).emit('new_pin', data.pin);
+    console.log(`📍 Nuevo Pin en proyecto ${data.projectId}`);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('❌ Cliente desconectado');
+  });
+});
 
 // --- MIDDLEWARES ---
 app.use(cors());
 app.use(express.json());
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// --- RUTA DE PRUEBA ---
-// Fíjate aquí: añadimos :Request y :Response para que TS nos ayude
+// --- RUTAS API ---
+app.use('/api/auth', authRoutes);
+app.use('/api/analyze', analyzeRoutes);
+app.use('/api/projects', projectRoutes);
+app.use('/api/pins', pinRoutes);
+app.use('/api/stats', statsRoutes); 
+
 app.get('/', (req: Request, res: Response) => {
-  res.json({ 
-    status: 'online',
-    project: 'Axio API (TypeScript)',
-    version: '1.0.0' 
-  });
+  res.json({ status: 'online', mode: 'real-time' });
 });
 
-// --- CONEXIÓN BASE DE DATOS ---
+// --- CONEXIÓN BD Y ARRANQUE ---
 const connectDB = async () => {
   try {
-    const mongoURI = process.env.MONGO_URI || ''; // TS nos obliga a asegurar que existe
-    if (!mongoURI) {
-        throw new Error("MONGO_URI no está definido en el .env");
-    }
-    await mongoose.connect(mongoURI);
-    console.log('🟢 MongoDB conectado correctamente');
+    await mongoose.connect(process.env.MONGO_URI || '');
+    console.log('🟢 [ÉXITO] MongoDB conectado');
   } catch (error: any) {
-    console.log('🔴 Error conectando a MongoDB');
-    console.log('   Mensaje:', error.message);
+    console.log('🔴 [ERROR] Fallo al conectar a MongoDB:', error.message);
   }
 };
 
-// --- ARRANCAR SERVIDOR ---
-app.listen(PORT, () => {
-  console.log(`\n🚀 Servidor AXIO (TS) escuchando en http://localhost:${PORT}`);
+httpServer.listen(PORT, () => {
+  console.log(`\n🚀 Servidor AXIO (Sockets + API) escuchando en http://localhost:${PORT}`);
   connectDB();
 });
