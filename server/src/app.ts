@@ -12,7 +12,8 @@ import authRoutes from './routes/authRoutes';
 import analyzeRoutes from './routes/analyzeRoutes';
 import projectRoutes from './routes/projectRoutes';
 import pinRoutes from './routes/pinRoutes';
-import statsRoutes from './routes/statsRoutes'; 
+import statsRoutes from './routes/statsRoutes';
+import adminRoutes from './routes/adminRoutes';
 
 // --- CONFIGURACIÓN ---
 const __filename = fileURLToPath(import.meta.url);
@@ -26,7 +27,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // --- CREAMOS EL SERVIDOR HTTP Y SOCKET.IO ---
-const httpServer = createServer(app); 
+const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
     origin: "*",
@@ -63,7 +64,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/analyze', analyzeRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/pins', pinRoutes);
-app.use('/api/stats', statsRoutes); 
+app.use('/api/stats', statsRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.get('/', (req: Request, res: Response) => {
   res.json({ status: 'online', mode: 'real-time' });

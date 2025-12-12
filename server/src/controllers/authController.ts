@@ -48,9 +48,9 @@ export const register = async (req: Request, res: Response) => {
     const newUser = new User({ username, email, password: hashedPassword });
     await newUser.save();
 
-    res.status(201).json({ 
-      message: 'Usuario registrado', 
-      user: { id: newUser._id, username: newUser.username, email: newUser.email } 
+    res.status(201).json({
+      message: 'Usuario registrado',
+      user: { id: newUser._id, username: newUser.username, email: newUser.email }
     });
   } catch (error) {
     res.status(500).json({ message: 'Error en registro' });
@@ -73,10 +73,10 @@ export const login = async (req: Request, res: Response) => {
     const secret = process.env.JWT_SECRET || 'palabrasecretaparaeltoken';
     const token = jwt.sign({ id: user._id }, secret, { expiresIn: '7d' });
 
-    res.json({ 
-      message: 'Login exitoso', 
-      token, 
-      user: { id: user._id, username: user.username, email: user.email, avatar: user.avatar } 
+    res.json({
+      message: 'Login exitoso',
+      token,
+      user: { id: user._id, username: user.username, email: user.email, avatar: user.avatar, role: user.role }
     });
   } catch (error) {
     res.status(500).json({ message: 'Error en login' });
@@ -95,12 +95,12 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
     }
 
     if (username) user.username = username;
-    
+
     await user.save();
 
-    res.json({ 
-      success: true, 
-      user: { id: user._id, username: user.username, email: user.email, avatar: user.avatar } 
+    res.json({
+      success: true,
+      user: { id: user._id, username: user.username, email: user.email, avatar: user.avatar, role: user.role }
     });
   } catch (error) {
     res.status(500).json({ message: 'Error actualizando perfil' });
@@ -178,10 +178,10 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
     // Generar token único
     const resetToken = crypto.randomBytes(32).toString('hex');
-    
+
     // Guardar token hasheado en BD (más seguro)
     const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-    
+
     user.resetPasswordToken = hashedToken;
     user.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
     await user.save();
@@ -189,9 +189,9 @@ export const forgotPassword = async (req: Request, res: Response) => {
     // 🔔 NOTIFICAR A N8N para enviar email
     try {
       const n8nUrl = process.env.N8N_WEBHOOK_URL_RESET || 'http://n8n:5678/webhook/reset-password';
-      
+
       const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
-      
+
       await fetch(n8nUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -202,7 +202,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
           expiresIn: '1 hora'
         })
       });
-      
+
       console.log('✅ Email de recuperación enviado via n8n');
     } catch (webhookError) {
       console.error('❌ Error al notificar n8n:', webhookError);
@@ -248,11 +248,11 @@ export const resetPassword = async (req: Request, res: Response) => {
     // Actualizar contraseña
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(newPassword, salt);
-    
+
     // Limpiar campos de reset
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
-    
+
     await user.save();
 
     res.json({ success: true, message: 'Contraseña actualizada correctamente' });
