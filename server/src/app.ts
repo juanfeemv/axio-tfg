@@ -6,6 +6,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
+import helmet from 'helmet';
 
 // Rutas
 import authRoutes from './routes/authRoutes';
@@ -25,13 +26,15 @@ console.log("\n🔵 [DEBUG] Iniciando app.ts...");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173').split(',').map((o) => o.trim());
 
 // --- CREAMOS EL SERVIDOR HTTP Y SOCKET.IO ---
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
+    origin: allowedOrigins,
+    methods: ["GET", "POST"],
+    credentials: true
   }
 });
 
@@ -56,7 +59,10 @@ io.on('connection', (socket) => {
 
 // --- MIDDLEWARES ---
 app.use(cors());
-app.use(express.json());
+app.disable('x-powered-by');
+app.use(helmet());
+app.use(cors({ origin: allowedOrigins, credentials: true }));
+app.use(express.json({ limit: '1mb' }));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // --- RUTAS API ---
