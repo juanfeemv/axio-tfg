@@ -1,9 +1,16 @@
 import { Response } from 'express';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { AuthRequest } from '../middlewares/auth';
 import Project from '../models/Project';
 import Audit from '../models/Audit';
 import Pin from '../models/Pin';
 import User from '../models/User';
+import { captureWebsite } from '../services/webScraper';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // GET /api/projects (Mis Proyectos)
 export const getMyProjects = async (req: AuthRequest, res: Response) => {
@@ -96,6 +103,7 @@ export const createProject = async (req: AuthRequest, res: Response) => {
     }
 
     let inputData = url;
+    let imageFilename: string | undefined;
     if (type === 'file' || type === 'code') {
       if (!req.file) return res.status(400).json({ message: 'Falta el archivo' });
       inputData = req.file.filename;
@@ -104,8 +112,14 @@ export const createProject = async (req: AuthRequest, res: Response) => {
     // Intentar sacar captura si es URL (aunque no se use IA, para la portada)
     if (type === 'url' && url) {
         try {
+          const { imageBase64 } = await captureWebsite(url);
+          const filename = `url-${Date.now()}.png`;
+          const uploadDir = path.join(__dirname, '../../uploads');
+          if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+          fs.writeFileSync(path.join(uploadDir, filename), Buffer.from(imageBase64, 'base64'));
+          imageFilename = filename;
         } catch (e) {
-            console.log("No se pudo generar preview para el proyecto manual");
+            console.log("No se pudo generar preview para el proyecto manual", e);
         }
     }
 
@@ -114,7 +128,7 @@ export const createProject = async (req: AuthRequest, res: Response) => {
       owner: userId,
       type: type,
       input: inputData,
-      image: type === 'file' ? req.file?.filename : undefined, // Guardamos imagen si es archivo visual
+      image: type === 'file' ? req.file?.filename : imageFilename, // Guardamos imagen si es archivo visual o captura de URL
       status: 'pending',
       accessibilityScore: 0
     });
