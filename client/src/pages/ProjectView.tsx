@@ -16,7 +16,7 @@ export default function ProjectView() {
   const { socket } = useSocket();
   const { user } = useAuth();
   
-  const previousTab = location.state?.from || 'projects';
+    const previousTab = location.state?.from || 'projects';
 
   // Estados de Datos
   const [project, setProject] = useState<any>(null);
@@ -131,9 +131,13 @@ export default function ProjectView() {
     }
   };
 
-  const handleBack = () => {
-    navigate('/dashboard', { state: { tab: previousTab } });
-  };
+    const handleBack = () => {
+        if (previousTab === 'admin') {
+            navigate('/admin');
+        } else {
+            navigate('/dashboard', { state: { tab: previousTab } });
+        }
+    };
 
   if (loading) return <div className="flex h-screen items-center justify-center bg-slate-900 text-white"><Loader2 className="animate-spin" /></div>;
   if (!project) return <div className="p-10 text-center text-red-500">Proyecto no encontrado</div>;

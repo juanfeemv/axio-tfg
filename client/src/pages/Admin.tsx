@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Shield, Users, FolderOpen, FileText, MapPin, BarChart3, Plus, Edit2, Trash2, Search, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Shield, Users, FolderOpen, FileText, MapPin, BarChart3, Plus, Edit2, Trash2, Search, X, Eye, LogOut } from 'lucide-react';
 import * as adminService from '../services/adminService';
+import { useAuth } from '../context/AuthContext';
 
 type TabType = 'overview' | 'users' | 'projects' | 'audits' | 'pins';
 
 export default function Admin() {
+    const navigate = useNavigate();
+    const { logout } = useAuth();
     const [activeTab, setActiveTab] = useState<TabType>('overview');
     const [stats, setStats] = useState<any>(null);
     const [loading, setLoading] = useState(false);
@@ -157,14 +161,22 @@ export default function Admin() {
     return (
         <div className="p-4 md:p-8 max-w-7xl mx-auto min-h-screen">
             {/* Header */}
-            <div className="flex items-center gap-3 mb-8">
-                <div className="h-12 w-12 bg-gradient-to-br from-red-500 to-pink-600 rounded-xl flex items-center justify-center shadow-lg">
-                    <Shield className="text-white" size={24} />
+            <div className="flex items-center justify-between gap-3 mb-8">
+                <div className="flex items-center gap-3">
+                    <div className="h-12 w-12 bg-gradient-to-br from-red-500 to-pink-600 rounded-xl flex items-center justify-center shadow-lg">
+                        <Shield className="text-white" size={24} />
+                    </div>
+                    <div>
+                        <h1 className="text-3xl font-bold text-slate-800 dark:text-white">Panel de Administración</h1>
+                        <p className="text-slate-500 dark:text-slate-400">Gestiona usuarios, proyectos y contenido</p>
+                    </div>
                 </div>
-                <div>
-                    <h1 className="text-3xl font-bold text-slate-800 dark:text-white">Panel de Administración</h1>
-                    <p className="text-slate-500 dark:text-slate-400">Gestiona usuarios, proyectos y contenido</p>
-                </div>
+                <button
+                    onClick={() => { logout(); navigate('/login'); }}
+                    className="flex items-center gap-2 px-4 py-2 bg-slate-200 dark:bg-slate-800 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-700 transition-all"
+                >
+                    <LogOut size={18} /> Cerrar sesión admin
+                </button>
             </div>
 
             {/* Tabs */}
@@ -312,7 +324,11 @@ export default function Admin() {
                                     </thead>
                                     <tbody>
                                         {projects.map((project) => (
-                                            <tr key={project._id} className="border-t border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700">
+                                            <tr
+                                                key={project._id}
+                                                className="border-t border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer"
+                                                onClick={() => navigate(`/project/${project._id}`, { state: { from: 'admin' } })}
+                                            >
                                                 <td className="p-4 font-medium text-slate-800 dark:text-white">{project.title}</td>
                                                 <td className="p-4 text-slate-600 dark:text-slate-400">{project.owner?.username || 'N/A'}</td>
                                                 <td className="p-4 text-slate-600 dark:text-slate-400">{project.type}</td>
@@ -327,7 +343,14 @@ export default function Admin() {
                                                 <td className="p-4">
                                                     <div className="flex justify-end gap-2">
                                                         <button
-                                                            onClick={() => handleDeleteProject(project._id)}
+                                                            onClick={(e) => { e.stopPropagation(); navigate(`/project/${project._id}`, { state: { from: 'admin' } }); }}
+                                                            className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                                                            title="Ver proyecto"
+                                                        >
+                                                            <Eye size={16} />
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); handleDeleteProject(project._id); }}
                                                             className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
                                                         >
                                                             <Trash2 size={16} />
