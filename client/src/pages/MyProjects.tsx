@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom'; 
-import api from '../services/api';
+import api, { uploadsUrl } from '../services/api';
 import { 
   FolderOpen, 
   Calendar, 
@@ -176,9 +176,12 @@ export default function MyProjects() {
         </div>
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 pb-20">
-          {filteredProjects.map((project) => {
-            const score = project.accessibilityScore || 0;
-            const issuesCount = Math.round((100 - score) / 5);
+					{filteredProjects.map((project) => {
+						const score = project.accessibilityScore || 0;
+						const issuesCount = Math.round((100 - score) / 5);
+						const mediaSource = project.image || (project.type !== 'code' ? project.input : null);
+						const imageUrl = mediaSource ? uploadsUrl(mediaSource) : null;
+						const isPdf = mediaSource?.toLowerCase().endsWith('.pdf');
             
             // Lógica de estilos según tipo
             let TypeIcon = Link2;
@@ -198,13 +201,25 @@ export default function MyProjects() {
             const [bgClass, textClass] = typeStyle.split(' ').map(c => c.replace(/-\d{2,3}/g, ''));
 
 
-            return (
-              <div 
-                key={project._id} 
-                onClick={() => handleViewReport(project._id)}
-                className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden group cursor-pointer relative"
-              >
-                {/* BOTÓN BORRAR FLOTANTE */}
+						return (
+							<div 
+								key={project._id} 
+								onClick={() => handleViewReport(project._id)}
+								className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden group cursor-pointer relative"
+							>
+								{/* Preview de imagen si existe */}
+								{imageUrl && !isPdf && (
+									<div className="relative h-40 bg-slate-100 dark:bg-slate-900 overflow-hidden">
+										<img
+											src={imageUrl}
+											alt={project.title}
+											className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+											loading="lazy"
+										/>
+									</div>
+								)}
+
+								{/* BOTÓN BORRAR FLOTANTE */}
                 <button 
                   onClick={(e) => handleDelete(project._id, e)}
                   className="absolute top-3 right-3 p-2 bg-white/90 dark:bg-slate-700/90 hover:bg-red-50 dark:hover:bg-red-900/50 text-slate-400 hover:text-red-500 rounded-full transition-colors z-10 shadow-sm border border-slate-100 dark:border-slate-600 opacity-0 group-hover:opacity-100"

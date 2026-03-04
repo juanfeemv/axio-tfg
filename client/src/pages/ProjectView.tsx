@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import api from '../services/api';
+import api, { uploadsUrl } from '../services/api';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 import PinLayer from '../components/collaboration/PinLayer';
@@ -46,7 +46,7 @@ export default function ProjectView() {
 
         if (resProject.data.project.type === 'code' && resProject.data.project.input) {
             try {
-                const fileRes = await fetch(`http://localhost:3000/uploads/${resProject.data.project.input}`);
+                const fileRes = await fetch(uploadsUrl(resProject.data.project.input));
                 if (fileRes.ok) setCodeContent(await fileRes.text());
             } catch (err) { console.error(err); }
         }
@@ -142,8 +142,9 @@ export default function ProjectView() {
   if (loading) return <div className="flex h-screen items-center justify-center bg-slate-900 text-white"><Loader2 className="animate-spin" /></div>;
   if (!project) return <div className="p-10 text-center text-red-500">Proyecto no encontrado</div>;
 
-  const imageUrl = project.image ? `http://localhost:3000/uploads/${project.image}` : undefined;
-  const isPdf = project.image?.toLowerCase().endsWith('.pdf');
+        const mediaSource = project.image || (project.type !== 'code' ? project.input : undefined);
+        const imageUrl = mediaSource ? uploadsUrl(mediaSource) : undefined;
+    const isPdf = mediaSource?.toLowerCase().endsWith('.pdf');
   const showEmpathy = project.type !== 'code';
   const visualPins = pins.filter(p => p.x >= 0 && p.y >= 0);
 

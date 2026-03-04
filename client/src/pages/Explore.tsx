@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../services/api';
+import api, { uploadsUrl } from '../services/api';
 import { useAuth } from '../context/AuthContext'; 
 import { 
   Globe, 
@@ -191,12 +191,11 @@ export default function Explore() {
       {/* Grid */}
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 pb-20">
         {filteredProjects.map((project) => {
-            const imageUrl = project.image 
-                ? `http://localhost:3000/uploads/${project.image}`
-                : null;
+            const mediaSource = project.image || (project.type !== 'code' ? project.input : null);
+            const imageUrl = mediaSource ? uploadsUrl(mediaSource) : null;
             
             // Detección de PDF
-            const isPdf = project.image?.toLowerCase().endsWith('.pdf');
+            const isPdf = mediaSource?.toLowerCase().endsWith('.pdf');
 
             const authorName = project.owner?.username || 'Anónimo';
             const initial = authorName.charAt(0).toUpperCase();

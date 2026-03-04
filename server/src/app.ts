@@ -6,7 +6,6 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
-import helmet from 'helmet';
 
 // Rutas
 import authRoutes from './routes/authRoutes';
@@ -26,7 +25,7 @@ console.log("\n🔵 [DEBUG] Iniciando app.ts...");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173').split(',').map((o) => o.trim());
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || '*').split(',').map((o) => o.trim());
 
 // --- CREAMOS EL SERVIDOR HTTP Y SOCKET.IO ---
 const httpServer = createServer(app);
@@ -58,11 +57,28 @@ io.on('connection', (socket) => {
 });
 
 // --- MIDDLEWARES ---
-app.use(cors());
 app.disable('x-powered-by');
-app.use(helmet());
-app.use(cors({ origin: allowedOrigins, credentials: true }));
+// CORS permitido para cualquier origen en dev
+app.use(cors({ origin: (origin, cb) => cb(null, origin || '*'), credentials: true }));
 app.use(express.json({ limit: '1mb' }));
+
+// Cabeceras permisivas para TODAS las respuestas (incluye static y sockets)
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Headers', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  res.setHeader('Cross-Origin-Embedder-Policy', 'unsafe-none');
+  res.setHeader('Cross-Origin-Opener-Policy', 'unsafe-none');
+  res.setHeader('Content-Security-Policy', "");
+  res.removeHeader('X-Frame-Options');
+  res.removeHeader('Strict-Transport-Security');
+  res.removeHeader('Origin-Agent-Cluster');
+  next();
+});
+
+// Static uploads
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // --- RUTAS API ---
