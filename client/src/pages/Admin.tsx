@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, FolderOpen, FileText, MapPin, BarChart3, Plus, Edit2, Trash2, Search, X, Eye, LogOut } from 'lucide-react';
 import brandLogo from '../assets/logo.png';
@@ -36,9 +36,24 @@ export default function Admin() {
     const [pinPage, setPinPage] = useState(1);
     const [totalPins, setTotalPins] = useState(0);
 
+    const userSearchRef = useRef<HTMLInputElement>(null);
+    const projectSearchRef = useRef<HTMLInputElement>(null);
+
     // Modal states
     const [showUserModal, setShowUserModal] = useState(false);
     const [editingUser, setEditingUser] = useState<any>(null);
+
+    const handleUserSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        setUserPage(1);
+        loadUsers(userSearch, 1);
+    };
+
+    const handleProjectSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        setProjectPage(1);
+        loadProjects(projectSearch, 1);
+    };
 
     // Load stats
     const loadStats = async () => {
@@ -51,29 +66,25 @@ export default function Admin() {
     };
 
     // Load users
-    const loadUsers = async () => {
-        setLoading(true);
+    const loadUsers = async (search = userSearch, page = userPage) => {
         try {
-            const data = await adminService.getAllUsers(userSearch, userPage, 10);
+            const data = await adminService.getAllUsers(search, page, 10);
             setUsers(data.users);
             setTotalUsers(data.pagination.total);
         } catch (error) {
             console.error('Error loading users:', error);
         }
-        setLoading(false);
     };
 
     // Load projects
-    const loadProjects = async () => {
-        setLoading(true);
+    const loadProjects = async (search = projectSearch, page = projectPage) => {
         try {
-            const data = await adminService.getAllProjects(projectSearch, projectPage, 10);
+            const data = await adminService.getAllProjects(search, page, 10);
             setProjects(data.projects);
             setTotalProjects(data.pagination.total);
         } catch (error) {
             console.error('Error loading projects:', error);
         }
-        setLoading(false);
     };
 
     // Load audits
@@ -153,11 +164,41 @@ export default function Admin() {
     // Load data based on active tab
     useEffect(() => {
         if (activeTab === 'overview') loadStats();
-        else if (activeTab === 'users') loadUsers();
-        else if (activeTab === 'projects') loadProjects();
+        else if (activeTab === 'users') loadUsers(userSearch, userPage);
+        else if (activeTab === 'projects') loadProjects(projectSearch, projectPage);
         else if (activeTab === 'audits') loadAudits();
         else if (activeTab === 'pins') loadPins();
-    }, [activeTab, userSearch, userPage, projectSearch, projectPage, auditPage, pinPage]);
+    }, [activeTab]);
+
+    // Usuario: recarga al cambiar de página
+    useEffect(() => {
+        if (activeTab === 'users') loadUsers(userSearch, userPage);
+    }, [userPage, activeTab, userSearch]);
+
+    // Proyecto: recarga al cambiar de página
+    useEffect(() => {
+        if (activeTab === 'projects') loadProjects(projectSearch, projectPage);
+    }, [projectPage, activeTab, projectSearch]);
+
+    // Usuario: recarga al tipear (simple debounce corto) y reinicia a página 1
+    useEffect(() => {
+        if (activeTab !== 'users') return;
+        if (userPage !== 1) setUserPage(1);
+        const id = setTimeout(() => {
+            loadUsers(userSearch, 1);
+        }, 250);
+        return () => clearTimeout(id);
+    }, [userSearch, activeTab]);
+
+    // Proyecto: recarga al tipear (simple debounce corto) y reinicia a página 1
+    useEffect(() => {
+        if (activeTab !== 'projects') return;
+        if (projectPage !== 1) setProjectPage(1);
+        const id = setTimeout(() => {
+            loadProjects(projectSearch, 1);
+        }, 250);
+        return () => clearTimeout(id);
+    }, [projectSearch, activeTab]);
 
     return (
         <div className="p-4 md:p-8 max-w-7xl mx-auto min-h-screen">
@@ -210,7 +251,7 @@ export default function Admin() {
                     {activeTab === 'users' && (
                         <div>
                             <div className="flex justify-between items-center mb-6">
-                                <div className="relative flex-1 max-w-md">
+                                <form className="relative flex-1 max-w-md" onSubmit={handleUserSearch}>
                                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
                                     <input
                                         type="text"
@@ -218,8 +259,9 @@ export default function Admin() {
                                         className="w-full pl-10 pr-4 py-2 border-2 border-slate-200 rounded-xl focus:border-blue-500 outline-none dark:bg-slate-800 dark:border-slate-700 dark:text-white"
                                         value={userSearch}
                                         onChange={(e) => setUserSearch(e.target.value)}
+                                        ref={userSearchRef}
                                     />
-                                </div>
+                                </form>
                                 <button
                                     onClick={() => { setEditingUser(null); setShowUserModal(true); }}
                                     className="ml-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-xl flex items-center gap-2 hover:shadow-lg transition-all"
@@ -300,7 +342,7 @@ export default function Admin() {
                     {activeTab === 'projects' && (
                         <div>
                             <div className="mb-6">
-                                <div className="relative max-w-md">
+                                <form className="relative max-w-md" onSubmit={handleProjectSearch}>
                                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
                                     <input
                                         type="text"
@@ -308,8 +350,9 @@ export default function Admin() {
                                         className="w-full pl-10 pr-4 py-2 border-2 border-slate-200 rounded-xl focus:border-blue-500 outline-none dark:bg-slate-800 dark:border-slate-700 dark:text-white"
                                         value={projectSearch}
                                         onChange={(e) => setProjectSearch(e.target.value)}
+                                        ref={projectSearchRef}
                                     />
-                                </div>
+                                </form>
                             </div>
 
                             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg overflow-hidden">
