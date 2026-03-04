@@ -129,10 +129,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div
-      className="flex h-screen overflow-hidden relative transition-colors duration-300"
-      style={{ backgroundColor: '#ffffff' }}
-    >
+    <div className="flex h-screen overflow-hidden relative transition-colors duration-300 bg-white dark:bg-slate-900">
       
       {/* --- HEADER MÓVIL --- */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-slate-900 text-white flex items-center justify-between px-4 z-50 shadow-md">

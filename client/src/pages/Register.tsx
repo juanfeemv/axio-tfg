@@ -44,7 +44,7 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white p-4 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-white dark:bg-slate-900 p-4 relative overflow-hidden transition-colors">
       
       <div className="relative w-full max-w-md">
         
