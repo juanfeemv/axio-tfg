@@ -93,7 +93,7 @@ export default function MyProjects() {
   );
 
   return (
-    <div className="p-8 max-w-7xl mx-auto min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-300">
+    <div className="p-8 max-w-7xl mx-auto min-h-screen bg-white dark:bg-slate-900 transition-colors duration-300">
       
       {/* Header y Stats */}
       <div className="mb-10 animate-fade-in-up">

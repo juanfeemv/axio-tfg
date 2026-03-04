@@ -44,17 +44,13 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50 p-4 relative overflow-hidden">
-      
-      {/* Elementos decorativos */}
-      <div className="absolute top-0 left-0 w-96 h-96 bg-purple-400/10 rounded-full blur-3xl"></div>
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-pink-400/10 rounded-full blur-3xl"></div>
+    <div className="min-h-screen flex items-center justify-center bg-white p-4 relative overflow-hidden">
       
       <div className="relative w-full max-w-md">
         
         {/* Sección de logo */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-[#3d9171] to-[#23638a] bg-clip-text text-transparent mb-2">
             AXIO
           </h1>
         </div>
@@ -87,7 +83,7 @@ export default function Register() {
                 <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-purple-600 transition-colors" />
                 <input
                   type="text"
-                  className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all text-slate-800 placeholder:text-slate-400"
+                  className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-[#23638a]/20 focus:border-[#23638a] outline-none transition-all text-slate-800 placeholder:text-slate-400"
                   placeholder="JuanDev"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
@@ -105,7 +101,7 @@ export default function Register() {
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-purple-600 transition-colors" />
                 <input
                   type="email"
-                  className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all text-slate-800 placeholder:text-slate-400"
+                  className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-[#23638a]/20 focus:border-[#23638a] outline-none transition-all text-slate-800 placeholder:text-slate-400"
                   placeholder="tu@email.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -123,7 +119,7 @@ export default function Register() {
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-purple-600 transition-colors" />
                 <input
                   type="password"
-                  className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all text-slate-800 placeholder:text-slate-400"
+                  className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-[#23638a]/20 focus:border-[#23638a] outline-none transition-all text-slate-800 placeholder:text-slate-400"
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -174,7 +170,7 @@ export default function Register() {
             <button
               type="submit"
               disabled={isLoading || !isPasswordValid}
-              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-slate-400 disabled:to-slate-400 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-xl transition-all shadow-lg shadow-purple-500/30 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 group"
+              className="w-full bg-gradient-to-r from-[#3d9171] to-[#23638a] hover:from-[#338066] hover:to-[#1f577a] disabled:from-slate-400 disabled:to-slate-400 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-xl transition-all shadow-lg shadow-[#23638a]/30 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 group"
             >
               {isLoading ? (
                 <>
@@ -193,7 +189,7 @@ export default function Register() {
           {/* Login Link */}
           <p className="mt-8 text-center text-sm text-slate-600">
             ¿Ya tienes cuenta?{' '}
-            <Link to="/login" className="text-purple-600 hover:text-purple-800 font-semibold hover:underline">
+            <Link to="/login" className="text-[#23638a] hover:text-[#1d4f72] font-semibold hover:underline">
               Inicia Sesión
             </Link>
           </p>

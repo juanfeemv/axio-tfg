@@ -131,12 +131,7 @@ export default function Dashboard() {
   return (
     <div
       className="flex h-screen overflow-hidden relative transition-colors duration-300"
-      style={{
-        backgroundImage:
-          "linear-gradient(135deg, rgba(248,250,252,0.9), rgba(226,232,240,0.92)), url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22 viewBox=%220 0 40 40%22%3E%3Cg fill=%22none%22 stroke=%22%23cbd5e1%22 stroke-width=%220.5%22 opacity=%220.25%22%3E%3Cpath d=%27M0 20h40M20 0v40%27/%3E%3Ccircle cx=%2220%22 cy=%2220%22 r=%2219%22/%3E%3C/g%3E%3C/svg%3E')",
-        backgroundSize: 'cover, 360px 360px',
-        backgroundBlendMode: 'overlay',
-      }}
+      style={{ backgroundColor: '#ffffff' }}
     >
       
       {/* --- HEADER MÓVIL --- */}
@@ -238,7 +233,7 @@ export default function Dashboard() {
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <h2 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-white">
-                    Hola, <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">{user?.username}</span>
+                    Hola, <span className="bg-gradient-to-r from-[#23638a] via-[#2f7d62] to-[#3d9171] bg-clip-text text-transparent">{user?.username}</span>
                   </h2>
                 </div>
                 <p className="text-slate-500 text-base md:text-lg dark:text-slate-400">¿Qué quieres subir hoy?</p>
@@ -252,10 +247,10 @@ export default function Dashboard() {
                   className="bg-white/80 dark:bg-slate-800/70 backdrop-blur-md p-2 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-md flex items-center gap-2 cursor-pointer select-none overflow-hidden"
                   onClick={() => setUseAI(!useAI)}
                 >
-                  <div className={`px-5 md:px-6 py-2.5 rounded-xl text-xs md:text-sm font-bold flex items-center gap-2 transition-all duration-300 ${useAI ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md scale-105' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700'}`}>
+                  <div className={`px-5 md:px-6 py-2.5 rounded-xl text-xs md:text-sm font-bold flex items-center gap-2 transition-all duration-300 ${useAI ? 'bg-gradient-to-r from-[#23638a] via-[#2f7d62] to-[#3d9171] text-white shadow-md scale-105' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700'}`}>
                     <span className="hidden sm:inline">Analizar con</span> IA
                   </div>
-                  <div className={`px-5 md:px-6 py-2.5 rounded-xl text-xs md:text-sm font-bold flex items-center gap-2 transition-all duration-300 ${!useAI ? 'bg-emerald-500 text-white shadow-md scale-105' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700'}`}>
+                  <div className={`px-5 md:px-6 py-2.5 rounded-xl text-xs md:text-sm font-bold flex items-center gap-2 transition-all duration-300 ${!useAI ? 'bg-[#3d9171] text-white shadow-md scale-105' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700'}`}>
                     <Save size={14} />
                     Solo Subir
                   </div>
@@ -283,7 +278,7 @@ export default function Dashboard() {
                       <input 
                         type="url" 
                         placeholder="https://ejemplo.com" 
-                        className="w-full border-2 border-slate-300 rounded-xl px-4 py-3 pr-12 text-sm focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all shadow-sm dark:bg-slate-900 dark:border-slate-600 dark:text-white"
+                        className="w-full border-2 border-slate-300 rounded-xl px-4 py-3 pr-12 text-sm focus:ring-4 focus:ring-[#23638a]/20 focus:border-[#23638a] outline-none transition-all shadow-sm dark:bg-slate-900 dark:border-slate-600 dark:text-white"
                         value={url}
                         onChange={(e) => setUrl(e.target.value)}
                         required

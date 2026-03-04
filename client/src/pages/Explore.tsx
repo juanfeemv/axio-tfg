@@ -128,13 +128,13 @@ export default function Explore() {
   };
 
   if (loading) return (
-    <div className="flex h-screen items-center justify-center p-8 bg-slate-50 dark:bg-slate-900">
+    <div className="flex h-screen items-center justify-center p-8 bg-white dark:bg-slate-900">
       <Loader2 className="animate-spin text-purple-600 h-10 w-10" />
     </div>
   );
 
   return (
-    <div className="p-8 max-w-7xl mx-auto min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-300 font-sans">
+    <div className="p-8 max-w-7xl mx-auto min-h-screen bg-white dark:bg-slate-900 transition-colors duration-300 font-sans">
        
       {/* Header */}
       <div className="relative mb-12 overflow-hidden rounded-3xl shadow-sm border border-purple-100 dark:border-purple-900/50 animate-fade-in-up">

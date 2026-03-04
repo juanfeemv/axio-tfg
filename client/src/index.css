@@ -7,6 +7,12 @@
 @layer base {
 	:root {
 		font-family: 'Plus Jakarta Sans', Inter, system-ui, -apple-system, sans-serif;
+		--brand-green: #3d9171;
+		--brand-green-2: #2f7d62;
+		--brand-blue: #23638a;
+		--brand-blue-2: #1e5273;
+		--brand-foam: #eaf5f0;
+		--brand-mist: #e1edf6;
 	}
 	body {
 		@apply font-sans bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100;
