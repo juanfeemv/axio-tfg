@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Users, FolderOpen, FileText, MapPin, BarChart3, Plus, Edit2, Trash2, Search, X, Eye, LogOut } from 'lucide-react';
+import { Users, FolderOpen, FileText, MapPin, BarChart3, Plus, Edit2, Trash2, Search, X, Eye, LogOut } from 'lucide-react';
+import brandLogo from '../assets/logo.png';
 import * as adminService from '../services/adminService';
 import { useAuth } from '../context/AuthContext';
 
@@ -163,8 +164,8 @@ export default function Admin() {
             {/* Header */}
             <div className="flex items-center justify-between gap-3 mb-8">
                 <div className="flex items-center gap-3">
-                    <div className="h-12 w-12 bg-gradient-to-br from-red-500 to-pink-600 rounded-xl flex items-center justify-center shadow-lg">
-                        <Shield className="text-white" size={24} />
+                    <div className="h-12 w-12 rounded-xl flex items-center justify-center shadow-lg overflow-hidden bg-slate-900/10">
+                        <img src={brandLogo} alt="Logo" className="h-full w-full object-cover" />
                     </div>
                     <div>
                         <h1 className="text-3xl font-bold text-slate-800 dark:text-white">Panel de Administración</h1>

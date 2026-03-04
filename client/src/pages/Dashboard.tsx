@@ -11,13 +11,13 @@ import {
   FolderOpen, 
   Globe, 
   Settings as SettingsIcon,
-  Sparkles,
   Zap, 
   FileCode, 
   Save,
   Menu, 
   X      
 } from 'lucide-react';
+import brandLogo from '../assets/logo.png';
 import api from '../services/api';
 
 // Importo las otras vistas
@@ -134,8 +134,8 @@ export default function Dashboard() {
       {/* --- HEADER MÓVIL --- */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-slate-900 text-white flex items-center justify-between px-4 z-50 shadow-md">
          <div className="flex items-center gap-2">
-            <Sparkles className="text-blue-400" size={20} />
-            <span className="font-bold text-lg tracking-wider">AXIO</span>
+          <img src={brandLogo} alt="AXIO" className="h-8 w-8 rounded-lg object-cover" />
+          <span className="font-bold text-lg tracking-wider">AXIO</span>
          </div>
          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 text-slate-300 hover:text-white">
             {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
@@ -152,7 +152,7 @@ export default function Dashboard() {
 
       {/* 1. SIDEBAR LATERAL */}
       <aside className={`
-        fixed left-0 z-40 w-64 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white flex flex-col shadow-2xl 
+        fixed left-0 z-40 w-80 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white flex flex-col shadow-2xl 
         transform transition-transform duration-300 ease-in-out
         top-16 bottom-0
         md:top-0 md:relative
@@ -163,8 +163,8 @@ export default function Dashboard() {
         
         <div className="p-6 relative hidden md:block">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-              <Sparkles className="text-white" size={20} />
+            <div className="h-10 w-10 rounded-xl flex items-center justify-center shadow-lg overflow-hidden bg-slate-900/10">
+              <img src={brandLogo} alt="AXIO" className="h-full w-full object-cover" />
             </div>
             <div>
               <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent tracking-wider">
@@ -223,7 +223,7 @@ export default function Dashboard() {
       </aside>
 
       {/* 2. ÁREA PRINCIPAL */}
-      <main className="flex-1 overflow-y-auto relative pt-16 md:pt-0 transition-all duration-300">
+      <main className="flex-1 overflow-y-auto relative pt-16 md:pt-8 transition-all duration-300">
         
         {activeTab === 'new' && (
           <div className="p-4 md:p-8 max-w-7xl mx-auto min-h-full">
@@ -231,7 +231,6 @@ export default function Dashboard() {
             <header className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="text-3xl md:text-4xl">👋</span>
                   <h2 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-white">
                     Hola, <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">{user?.username}</span>
                   </h2>
@@ -248,7 +247,7 @@ export default function Dashboard() {
                   onClick={() => setUseAI(!useAI)}
                 >
                   <div className={`px-4 md:px-5 py-2 md:py-2.5 rounded-full text-xs md:text-sm font-bold flex items-center gap-2 transition-all duration-300 ${useAI ? 'bg-blue-600 text-white shadow-md transform scale-105' : 'text-slate-500 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-700'}`}>
-                    <Sparkles size={14} />
+                    <img src={brandLogo} alt="AXIO" className="h-4 w-4 rounded object-cover" />
                     <span className="hidden sm:inline">Analizar con</span> IA
                   </div>
                   <div className={`px-4 md:px-5 py-2 md:py-2.5 rounded-full text-xs md:text-sm font-bold flex items-center gap-2 transition-all duration-300 ${!useAI ? 'bg-emerald-500 text-white shadow-md transform scale-105' : 'text-slate-500 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-700'}`}>
@@ -372,7 +371,7 @@ export default function Dashboard() {
                 <div className="relative">
                   <div className="h-24 w-24 rounded-full border-4 border-slate-200 border-t-blue-600 animate-spin dark:border-slate-700"></div>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <Sparkles className="text-blue-600 animate-pulse" size={32} />
+                    <img src={brandLogo} alt="AXIO" className="h-10 w-10 rounded-lg animate-pulse object-cover" />
                   </div>
                 </div>
                 <h3 className="text-xl font-bold text-slate-800 mt-8 mb-2 dark:text-white">Procesando Proyecto</h3>
@@ -403,8 +402,8 @@ export default function Dashboard() {
                     <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                       <div>
                         <div className="flex items-center gap-3 mb-3">
-                          <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                            <Sparkles className="text-white" size={24} />
+                          <div className="h-12 w-12 rounded-xl flex items-center justify-center shadow-lg overflow-hidden bg-slate-900/10">
+                            <img src={brandLogo} alt="AXIO" className="h-full w-full object-cover" />
                           </div>
                           <h2 className="text-3xl font-bold">Resultado de Auditoría</h2>
                         </div>
