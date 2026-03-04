@@ -6,7 +6,11 @@ export default {
   ],
   darkMode: 'class', // <--- ¡ESTA LÍNEA ES LA CLAVE!
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        sans: ['"Plus Jakarta Sans"', 'Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+      },
+    },
   },
   plugins: [],
 }

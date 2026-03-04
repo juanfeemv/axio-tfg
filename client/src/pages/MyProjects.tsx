@@ -112,32 +112,32 @@ export default function MyProjects() {
         <div className="grid md:grid-cols-3 gap-4 mb-8">
           {/* Card 1 */}
           <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-slate-700 dark:to-slate-800 p-6 rounded-2xl border border-blue-200 dark:border-slate-700">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-blue-700 dark:text-blue-400">Total</span>
-              <BarChart3 className="text-blue-600 dark:text-blue-400" size={20} />
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-semibold text-blue-800 dark:text-blue-300">Total</span>
+              <BarChart3 className="text-blue-600 dark:text-blue-400" size={24} />
             </div>
             <div className="text-3xl font-bold text-blue-900 dark:text-white">{totalProjects}</div>
-            <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">Auditorías realizadas</div>
+            <div className="text-xs text-blue-700 dark:text-blue-300 mt-1">Auditorías realizadas</div>
           </div>
 
           {/* Card 2 */}
           <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-slate-700 dark:to-slate-800 p-6 rounded-2xl border border-green-200 dark:border-slate-700">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-green-700 dark:text-green-400">Calidad Media</span>
-              <TrendingUp className="text-green-600 dark:text-green-400" size={20} />
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">Calidad Media</span>
+              <TrendingUp className="text-emerald-600 dark:text-emerald-400" size={24} />
             </div>
-            <div className="text-3xl font-bold text-green-900 dark:text-white">{avgScore}/100</div>
-            <div className="text-xs text-green-600 dark:text-green-400 mt-1">Puntuación global</div>
+            <div className="text-3xl font-bold text-emerald-900 dark:text-white">{avgScore}/100</div>
+             <div className="text-xs text-emerald-700 dark:text-emerald-300 mt-1">Puntuación global</div>
           </div>
 
           {/* Card 3 */}
           <div className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-slate-700 dark:to-slate-800 p-6 rounded-2xl border border-orange-200 dark:border-slate-700">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-orange-700 dark:text-orange-400">Issues Estimados</span>
-              <Filter className="text-orange-600 dark:text-orange-400" size={20} />
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-semibold text-orange-800 dark:text-orange-300">Issues Estimados</span>
+              <Filter className="text-orange-600 dark:text-orange-400" size={24} />
             </div>
             <div className="text-3xl font-bold text-orange-900 dark:text-white">{estimatedIssues}</div>
-            <div className="text-xs text-orange-600 dark:text-orange-400 mt-1">Problemas detectados</div>
+            <div className="text-xs text-orange-700 dark:text-orange-300 mt-1">Problemas detectados</div>
           </div>
         </div>
       </div>
@@ -161,12 +161,18 @@ export default function MyProjects() {
 
       {/* Grid de Proyectos */}
       {filteredProjects.length === 0 ? (
-        <div className="flex flex-col items-center justify-center text-center p-12 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-3xl bg-slate-50/50 dark:bg-slate-800/50">
-          <FolderOpen className="text-slate-400 dark:text-slate-600 mb-4" size={40} />
-          <h3 className="text-xl font-bold text-slate-700 dark:text-white mb-2">No se encontraron proyectos</h3>
-          <p className="text-slate-500 dark:text-slate-400">
-            {filter === 'all' ? 'Aún no has guardado ninguna auditoría.' : `No hay proyectos de tipo "${filter}" guardados.`}
+        <div className="flex flex-col items-center justify-center text-center p-12 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-3xl bg-slate-50/50 dark:bg-slate-800/50 gap-3">
+          <FolderOpen className="text-slate-400 dark:text-slate-600" size={52} />
+          <h3 className="text-2xl font-bold text-slate-700 dark:text-white">Sin proyectos aún</h3>
+          <p className="text-slate-500 dark:text-slate-400 max-w-md">
+            {filter === 'all' ? 'Crea tu primera auditoría para ver el resumen aquí.' : `No hay proyectos de tipo "${filter}". Sube uno para empezar.`}
           </p>
+          <button
+            onClick={() => navigate('/dashboard', { state: { tab: 'new' } })}
+            className="mt-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold shadow-lg hover:-translate-y-0.5 transition"
+          >
+            Crear primer proyecto
+          </button>
         </div>
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 pb-20">

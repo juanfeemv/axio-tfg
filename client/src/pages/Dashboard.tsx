@@ -203,18 +203,18 @@ export default function Dashboard() {
           </div>
         </nav>
         
-        <div className="p-4 border-t border-slate-700/50 relative bg-slate-900/50">
-          <div className="flex items-center gap-3 mb-3 p-3 bg-slate-800/50 rounded-xl border border-slate-700/50">
-            <div className="h-10 w-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-sm font-bold shadow-inner">
+        <div className="p-4 border-t border-slate-700/50 relative bg-slate-900/60">
+          <div className="flex items-center gap-3 mb-3 p-3 bg-slate-800/70 rounded-xl border border-slate-700 shadow-sm">
+            <div className="h-10 w-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-sm font-bold shadow-inner text-white">
               {user?.username.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-sm truncate">{user?.username}</p>
+              <p className="font-semibold text-sm truncate text-white">{user?.username}</p>
             </div>
           </div>
           <button 
             onClick={logout} 
-            className="flex items-center gap-3 text-slate-400 hover:text-red-400 hover:bg-slate-800 w-full p-3 rounded-xl transition-all text-sm font-medium group"
+            className="flex items-center gap-3 text-slate-300 hover:text-red-400 hover:bg-slate-800 w-full p-3 rounded-xl transition-all text-sm font-semibold group"
           >
             <LogOut size={18} className="group-hover:translate-x-0.5 transition-transform" /> 
             Cerrar Sesión
@@ -243,14 +243,14 @@ export default function Dashboard() {
             {!result && !loading && (
               <div className="mb-8 flex justify-center md:justify-start animate-fade-in">
                 <div 
-                  className="bg-white p-1.5 rounded-full border border-slate-200 shadow-sm flex items-center gap-1 cursor-pointer select-none overflow-hidden dark:bg-slate-800 dark:border-slate-700"
+                  className="bg-white p-2 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-2 cursor-pointer select-none overflow-hidden dark:bg-slate-800 dark:border-slate-700"
                   onClick={() => setUseAI(!useAI)}
                 >
-                  <div className={`px-4 md:px-5 py-2 md:py-2.5 rounded-full text-xs md:text-sm font-bold flex items-center gap-2 transition-all duration-300 ${useAI ? 'bg-blue-600 text-white shadow-md transform scale-105' : 'text-slate-500 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-700'}`}>
+                  <div className={`px-5 md:px-6 py-2.5 rounded-xl text-xs md:text-sm font-bold flex items-center gap-2 transition-all duration-300 ${useAI ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md scale-105' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700'}`}>
                     <img src={brandLogo} alt="AXIO" className="h-4 w-4 rounded object-cover" />
                     <span className="hidden sm:inline">Analizar con</span> IA
                   </div>
-                  <div className={`px-4 md:px-5 py-2 md:py-2.5 rounded-full text-xs md:text-sm font-bold flex items-center gap-2 transition-all duration-300 ${!useAI ? 'bg-emerald-500 text-white shadow-md transform scale-105' : 'text-slate-500 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-700'}`}>
+                  <div className={`px-5 md:px-6 py-2.5 rounded-xl text-xs md:text-sm font-bold flex items-center gap-2 transition-all duration-300 ${!useAI ? 'bg-emerald-500 text-white shadow-md scale-105' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700'}`}>
                     <Save size={14} />
                     Solo Subir
                   </div>
@@ -264,7 +264,7 @@ export default function Dashboard() {
                 <div className="grid md:grid-cols-3 gap-6 animate-fade-in-up">
                   
                   {/* 1. Card URL */}
-                  <div className="bg-white p-6 rounded-3xl shadow-lg border-2 border-slate-200 hover:shadow-2xl hover:border-blue-300 hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden dark:bg-slate-800 dark:border-slate-700 dark:hover:border-blue-500/50">
+                  <div className="bg-white p-6 rounded-3xl shadow-lg border-2 border-slate-200 hover:shadow-2xl hover:border-blue-300 hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden dark:bg-slate-800 dark:border-slate-700 dark:hover:border-blue-500/50 min-h-[280px] flex flex-col">
                     <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl"></div>
                     <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-blue-500/30">
                       <Link2 size={24} />
@@ -293,7 +293,7 @@ export default function Dashboard() {
                   </div>
 
                   {/* 2. Card Diseño */}
-                  <div className="bg-white p-6 rounded-3xl shadow-lg border-2 border-slate-200 hover:shadow-2xl hover:border-purple-300 hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden dark:bg-slate-800 dark:border-slate-700 dark:hover:border-purple-500/50">
+                  <div className="bg-white p-6 rounded-3xl shadow-lg border-2 border-slate-200 hover:shadow-2xl hover:border-purple-300 hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden dark:bg-slate-800 dark:border-slate-700 dark:hover:border-purple-500/50 min-h-[280px] flex flex-col">
                     <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/5 rounded-full blur-2xl"></div>
                     <div className="h-12 w-12 bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-purple-500/30">
                       <Upload size={24} />
@@ -312,7 +312,7 @@ export default function Dashboard() {
                   </div>
 
                   {/* 3. Card CÓDIGO */}
-                  <div className="bg-white p-6 rounded-3xl shadow-lg border-2 border-slate-200 hover:shadow-2xl hover:border-emerald-300 hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden dark:bg-slate-800 dark:border-slate-700 dark:hover:border-emerald-500/50">
+                  <div className="bg-white p-6 rounded-3xl shadow-lg border-2 border-slate-200 hover:shadow-2xl hover:border-emerald-300 hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden dark:bg-slate-800 dark:border-slate-700 dark:hover:border-emerald-500/50 min-h-[280px] flex flex-col">
                     <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl"></div>
                     <div className="h-12 w-12 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-emerald-500/30">
                       <FileCode size={24} />
@@ -501,8 +501,10 @@ function SidebarItem({ icon, label, active, onClick }: { icon: any, label: strin
       `}
     >
       {active && <div className="absolute inset-0 bg-white/10"></div>}
-      <span className={`relative z-10 ${active ? '' : 'group-hover:scale-110'} transition-transform`}>{icon}</span>
-      <span className="relative z-10">{label}</span>
+      <span className={`relative z-10 flex h-10 w-10 items-center justify-center rounded-lg ${active ? 'bg-white/15 text-white' : 'text-slate-400 group-hover:text-white group-hover:bg-slate-800/60'} transition-all`}>
+        {icon}
+      </span>
+      <span className="relative z-10 font-semibold">{label}</span>
       {active && <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-white rounded-l-full"></div>}
     </button>
   );
