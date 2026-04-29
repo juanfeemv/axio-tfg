@@ -327,14 +327,18 @@ export default function Explore() {
 
                   {/* Footer */}
                   <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-700">
-                    <div className="flex items-center gap-2">
-                      <div className="h-7 w-7 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm">
-                        {initial}
+                      <div className="flex items-center gap-2 cursor-pointer" onClick={(e) => { e.stopPropagation(); navigate(`/u/${project.owner?.username || authorName}`); }}>
+                        <div className="h-7 w-7 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm overflow-hidden">
+                          {project.owner?.avatar ? (
+                            <img src={uploadsUrl(project.owner.avatar)} alt={authorName} className="w-full h-full object-cover" />
+                          ) : (
+                            initial
+                          )}
+                        </div>
+                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                          @{authorName}
+                        </span>
                       </div>
-                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                        @{authorName}
-                      </span>
-                    </div>
 
                     <div className="flex items-center gap-3 text-slate-400 text-xs">
                       <button 

@@ -174,8 +174,13 @@ export default function ProjectView() {
                 <h1 className="font-bold text-lg">{project.title}</h1>
                 <div className="flex items-center gap-2 text-xs text-slate-400">
                    <span className="uppercase font-bold">{project.type}</span> • {new Date(project.createdAt).toLocaleDateString()}
-                </div>
-            </div>
+                </div>                {project.owner && (
+                  <div className="text-xs text-slate-400 mt-1">
+                    <button onClick={(e) => { e.stopPropagation(); navigate(`/u/${project.owner.username || project.owner}`); }} className="text-slate-300 hover:text-white font-semibold">
+                      @{project.owner.username || project.owner}
+                    </button>
+                  </div>
+                )}            </div>
         </div>
         
         {showEmpathy && (

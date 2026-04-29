@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { User, Shield, Mail, Lock, Palette, Save, Key, Check, AlertCircle } from 'lucide-react';
+import { User, Shield, Mail, Lock, Palette, Save, Key, Check, AlertCircle, Upload } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import api from '../services/api';
+import { useDropzone } from 'react-dropzone';
+import api, { uploadsUrl } from '../services/api';
 
 export default function Settings() {
   const { user, updateUser, logout } = useAuth();
@@ -11,6 +12,8 @@ export default function Settings() {
   // Estados de UI
   const [username, setUsername] = useState(user?.username || '');
   const [loading, setLoading] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   
   // Estados Contraseña
   const [showPasswordForm, setShowPasswordForm] = useState(false);
@@ -33,7 +36,50 @@ export default function Settings() {
   // Sincronizo estado local si el usuario cambia externamente
   useEffect(() => {
     if (user?.username) setUsername(user.username);
+    if (user?.avatar) setAvatarPreview(uploadsUrl(user.avatar));
   }, [user]);
+
+  // --- DRAG & DROP AVATAR ---
+  const onDrop = async (acceptedFiles: File[]) => {
+    if (acceptedFiles.length === 0) return;
+    
+    const file = acceptedFiles[0];
+    if (!file.type.startsWith('image/')) {
+      alert('Por favor sube una imagen válida');
+      return;
+    }
+
+    // Preview local
+    const reader = new FileReader();
+    reader.onload = (e) => setAvatarPreview(e.target?.result as string);
+    reader.readAsDataURL(file);
+
+    // Subir al servidor
+    setUploadingAvatar(true);
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    try {
+      const res = await api.post('/auth/avatar', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      if (res.data.success) {
+        updateUser(res.data.user);
+        alert('✅ Avatar actualizado');
+      }
+    } catch (error: any) {
+      console.error(error);
+      alert(error.response?.data?.message || 'Error al subir avatar');
+      setAvatarPreview(user?.avatar ? uploadsUrl(user.avatar) : null);
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: { 'image/*': ['.jpeg', '.jpg', '.png', '.webp', '.gif'] }
+  });
 
   // --- 1. CAMBIAR TEMA ---
   const handleThemeChange = (mode: 'light' | 'dark') => {
@@ -145,10 +191,23 @@ export default function Settings() {
 
           <div className="p-6">
             <div className="flex flex-col md:flex-row gap-6 items-start">
-              {/* Avatar */}
-              <div className="relative group">
-                <div className="h-24 w-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center text-4xl font-bold text-white shadow-lg uppercase">
-                  {user?.username?.charAt(0) || 'U'}
+              {/* Avatar - Drag & Drop */}
+              <div {...getRootProps()} className="relative group cursor-pointer">
+                <div className={`h-24 w-24 rounded-2xl flex items-center justify-center text-4xl font-bold text-white shadow-lg uppercase transition-all ${isDragActive ? 'ring-4 ring-blue-500' : ''} ${avatarPreview ? 'overflow-hidden' : 'bg-gradient-to-br from-blue-500 to-purple-600'}`}>
+                  {avatarPreview ? (
+                    <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    user?.username?.charAt(0) || 'U'
+                  )}
+                </div>
+                <input {...getInputProps()} />
+                {uploadingAvatar && (
+                  <div className="absolute inset-0 bg-black/50 rounded-2xl flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent"></div>
+                  </div>
+                )}
+                <div className="absolute -bottom-1 -right-1 h-8 w-8 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Upload size={16} />
                 </div>
               </div>
 
@@ -178,6 +237,7 @@ export default function Settings() {
                     />
                   </div>
                 </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400">💡 Arrastra una imagen o haz clic en el avatar para cambiar</p>
               </div>
             </div>
 

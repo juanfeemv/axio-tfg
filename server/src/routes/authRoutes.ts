@@ -6,9 +6,11 @@ import {
   changePassword, 
   deleteUser,
   forgotPassword,    
-  resetPassword      
+  resetPassword,
+  uploadAvatar      
 } from '../controllers/authController'; 
 import { protect } from '../middlewares/auth';
+import { upload } from '../middlewares/upload';
 
 const router = Router();
 
@@ -23,5 +25,6 @@ router.post('/reset-password/:token', resetPassword);
 router.put('/profile', protect, updateProfile);
 router.put('/password', protect, changePassword);
 router.delete('/me', protect, deleteUser);
+router.post('/avatar', protect, upload.single('avatar'), uploadAvatar);
 
 export default router;

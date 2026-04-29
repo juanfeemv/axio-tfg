@@ -3,13 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
 // Importo las páginas
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Dashboard from './pages/Dashboard';
-import ProjectView from './pages/ProjectView';
-import ForgotPassword from './pages/ForgotPassword';
-import ResetPassword from './pages/ResetPassword';
-import Admin from './pages/Admin';
+import { Login, Register, Dashboard, ProjectView, Profile, ForgotPassword, ResetPassword, Admin } from './pages';
 
 // Componente para proteger rutas (Si no estás logueado, te echa al Login)
 const PrivateRoute = ({ children }: { children: ReactNode }) => {
@@ -57,6 +51,9 @@ function App() {
               </PrivateRoute>
             }
           />
+
+          {/* Perfil público de usuario */}
+          <Route path="/u/:username" element={<Profile />} />
 
           {/* Ruta SOLO para Admins */}
           <Route

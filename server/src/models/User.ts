@@ -18,6 +18,7 @@ const UserSchema: Schema = new Schema(
       type: String,
       required: [true, 'El nombre de usuario es obligatorio'],
       trim: true,
+      unique: true,
       minlength: [3, 'El nombre debe tener al menos 3 caracteres']
     },
     email: {

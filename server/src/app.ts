@@ -14,6 +14,7 @@ import projectRoutes from './routes/projectRoutes';
 import pinRoutes from './routes/pinRoutes';
 import statsRoutes from './routes/statsRoutes';
 import adminRoutes from './routes/adminRoutes';
+import userRoutes from './routes/userRoutes';
 
 // --- CONFIGURACIÓN ---
 const __filename = fileURLToPath(import.meta.url);
@@ -25,15 +26,21 @@ console.log("\n🔵 [DEBUG] Iniciando app.ts...");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || '*').split(',').map((o) => o.trim());
+const rawOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').map((o) => o.trim()).filter(Boolean);
+const allowedOrigins = rawOrigins.length ? rawOrigins : ['http://localhost:5173'];
+const allowAnyOrigin = allowedOrigins.includes('*');
+const corsOrigin = (origin: string | undefined, cb: (err: Error | null, allow?: boolean | string) => void) => {
+  if (!origin || allowAnyOrigin) return cb(null, true);
+  return cb(null, allowedOrigins.includes(origin));
+};
 
 // --- CREAMOS EL SERVIDOR HTTP Y SOCKET.IO ---
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: allowedOrigins,
+    origin: corsOrigin,
     methods: ["GET", "POST"],
-    credentials: true
+    credentials: !allowAnyOrigin
   }
 });
 
@@ -58,14 +65,20 @@ io.on('connection', (socket) => {
 
 // --- MIDDLEWARES ---
 app.disable('x-powered-by');
-// CORS permitido para cualquier origen en dev
-app.use(cors({ origin: (origin, cb) => cb(null, origin || '*'), credentials: true }));
+// CORS controlado por lista de orígenes permitidos
+app.use(cors({ origin: corsOrigin, credentials: !allowAnyOrigin }));
 app.use(express.json({ limit: '1mb' }));
 
 // Cabeceras permisivas para TODAS las respuestas (incluye static y sockets)
 app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  const origin = req.headers.origin as string | undefined;
+  const allowOrigin = allowAnyOrigin ? '*' : (origin && allowedOrigins.includes(origin) ? origin : allowedOrigins[0]);
+  res.setHeader('Access-Control-Allow-Origin', allowOrigin);
+  if (!allowAnyOrigin) {
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  } else {
+    res.removeHeader('Access-Control-Allow-Credentials');
+  }
   res.setHeader('Access-Control-Allow-Headers', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
   res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
@@ -88,6 +101,7 @@ app.use('/api/projects', projectRoutes);
 app.use('/api/pins', pinRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/users', userRoutes);
 
 app.get('/', (req: Request, res: Response) => {
   res.json({ status: 'online', mode: 'real-time' });

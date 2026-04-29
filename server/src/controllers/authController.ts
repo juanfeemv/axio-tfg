@@ -37,9 +37,15 @@ export const register = async (req: Request, res: Response) => {
       return res.status(400).json({ message: passwordValidation.message });
     }
 
-    const userExists = await User.findOne({ email });
-    if (userExists) {
+    // Verificar email y username únicos
+    const emailExists = await User.findOne({ email });
+    if (emailExists) {
       return res.status(400).json({ message: 'Email ya registrado' });
+    }
+
+    const usernameExists = await User.findOne({ username });
+    if (usernameExists) {
+      return res.status(400).json({ message: 'Nombre de usuario ya en uso' });
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -94,7 +100,14 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
-    if (username) user.username = username;
+    if (username) {
+      // Verificar unicidad del username al actualizar
+      const taken = await User.findOne({ username });
+      if (taken && taken._id.toString() !== userId) {
+        return res.status(400).json({ message: 'Nombre de usuario ya en uso' });
+      }
+      user.username = username;
+    }
 
     await user.save();
 
@@ -260,5 +273,34 @@ export const resetPassword = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error reset password:', error);
     res.status(500).json({ message: 'Error al resetear contraseña' });
+  }
+};
+
+// --- SUBIR AVATAR ---
+export const uploadAvatar = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user.id;
+    if (!req.file) {
+      return res.status(400).json({ message: 'No se envió archivo' });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+
+    // Guardar nombre del archivo como avatar
+    user.avatar = req.file.filename;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Avatar actualizado',
+      avatar: req.file.filename,
+      user: { id: user._id, username: user.username, email: user.email, avatar: user.avatar, role: user.role }
+    });
+  } catch (error) {
+    console.error('Error uploading avatar:', error);
+    res.status(500).json({ message: 'Error al subir avatar' });
   }
 };
