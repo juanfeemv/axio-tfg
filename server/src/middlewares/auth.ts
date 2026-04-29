@@ -23,6 +23,11 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
       // 3. Guardamos los datos del usuario en la petición
       req.user = decoded;
 
+      const dbUser = await User.findById((decoded as any).id).select('isSuspended');
+      if (dbUser?.isSuspended) {
+        return res.status(403).json({ message: 'Cuenta suspendida. Contacta con soporte' });
+      }
+
       next();
     } catch (error) {
       console.error(error);
@@ -56,10 +61,24 @@ export const requireAdmin = async (req: AuthRequest, res: Response, next: NextFu
     }
 
     // Verificamos que exista y esté activo en la tabla Admin (USA Admin)
-    const adminRecord = await Admin.findOne({ user: user._id, isActive: true });
+    let adminRecord = await Admin.findOne({ user: user._id });
 
     if (!adminRecord) {
-      return res.status(403).json({ message: 'Acceso denegado. Registro de administrador no encontrado o inactivo.' });
+      adminRecord = new Admin({
+        user: user._id,
+        permissions: {
+          manageUsers: true,
+          manageProjects: true,
+          manageAudits: true,
+          managePins: true,
+          viewStats: true
+        },
+        isActive: true
+      });
+      await adminRecord.save();
+    } else if (!adminRecord.isActive) {
+      adminRecord.isActive = true;
+      await adminRecord.save();
     }
 
     // Guardamos el registro de admin en la request para uso posterior

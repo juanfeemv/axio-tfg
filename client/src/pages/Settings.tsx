@@ -6,7 +6,7 @@ import { useDropzone } from 'react-dropzone';
 import api, { uploadsUrl } from '../services/api';
 
 export default function Settings() {
-  const { user, updateUser, logout } = useAuth();
+  const { user, updateUser, logout, isAdmin } = useAuth();
   const { theme, toggleTheme } = useTheme();
 
   // Estados de UI
@@ -394,6 +394,23 @@ export default function Settings() {
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Esta acción no se puede deshacer</p>
           </div>
         </div>
+
+        {isAdmin && (
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div className="bg-gradient-to-r from-slate-50 to-blue-50 dark:from-slate-700 dark:to-slate-800 p-6 border-b border-slate-200 dark:border-slate-700">
+              <h2 className="font-bold text-slate-800 dark:text-white text-lg">Panel de Administracion</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Acceso a la seccion dedicada de admin</p>
+            </div>
+            <div className="p-6">
+              <a
+                href="/admin"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold shadow-lg shadow-blue-500/30 transition-all"
+              >
+                Ir al Panel
+              </a>
+            </div>
+          </div>
+        )}
 
       </div>
     </div>

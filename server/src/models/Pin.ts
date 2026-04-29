@@ -6,6 +6,9 @@ export interface IPin extends Document {
   x: number;       
   y: number;       
   content: string; // El comentario
+  isHidden?: boolean;
+  hiddenAt?: Date;
+  hiddenReason?: string;
   createdAt: Date;
 }
 
@@ -32,6 +35,17 @@ const PinSchema: Schema = new Schema(
     content: {
       type: String,
       required: true,
+      trim: true
+    },
+    isHidden: {
+      type: Boolean,
+      default: false
+    },
+    hiddenAt: {
+      type: Date
+    },
+    hiddenReason: {
+      type: String,
       trim: true
     }
   },

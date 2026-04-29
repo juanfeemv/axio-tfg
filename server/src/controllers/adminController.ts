@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { AuthRequest } from '../middlewares/auth';
 import User from '../models/User';
@@ -6,6 +7,7 @@ import Project from '../models/Project';
 import Audit from '../models/Audit';
 import Pin from '../models/Pin';
 import Admin from '../models/Admin';
+import { getSiteConfig } from '../utils/siteConfig';
 
 // Helper function to log admin activity
 const logActivity = async (admin: any, action: string, targetType: string, targetId?: any, details?: string) => {
@@ -267,6 +269,81 @@ export const deleteUserById = async (req: AuthRequest, res: Response) => {
     }
 };
 
+// PUT /api/admin/users/:id/suspend - Suspend user
+export const suspendUser = async (req: AuthRequest, res: Response) => {
+    try {
+        const userId = req.params.id;
+        const { reason } = req.body;
+
+        if (req.user.id === userId) {
+            return res.status(400).json({ message: 'No puedes suspender tu propia cuenta' });
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+
+        user.isSuspended = true;
+        user.suspendedAt = new Date();
+        user.suspensionReason = reason || 'Suspendido por administracion';
+        await user.save();
+
+        await logActivity(req.admin, 'update', 'user', user._id, `Suspended user: ${user.username}`);
+
+        res.json({ message: 'Usuario suspendido', user: { id: user._id, isSuspended: user.isSuspended } });
+    } catch (error) {
+        console.error('Error suspending user:', error);
+        res.status(500).json({ message: 'Error al suspender usuario' });
+    }
+};
+
+// PUT /api/admin/users/:id/unsuspend - Unsuspend user
+export const unsuspendUser = async (req: AuthRequest, res: Response) => {
+    try {
+        const userId = req.params.id;
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+
+        user.isSuspended = false;
+        user.suspendedAt = undefined;
+        user.suspensionReason = undefined;
+        await user.save();
+
+        await logActivity(req.admin, 'update', 'user', user._id, `Unsuspended user: ${user.username}`);
+
+        res.json({ message: 'Usuario reactivado', user: { id: user._id, isSuspended: user.isSuspended } });
+    } catch (error) {
+        console.error('Error unsuspending user:', error);
+        res.status(500).json({ message: 'Error al reactivar usuario' });
+    }
+};
+
+// POST /api/admin/users/:id/reset-password - Reset user password (returns temp)
+export const resetUserPassword = async (req: AuthRequest, res: Response) => {
+    try {
+        const userId = req.params.id;
+        const user = await User.findById(userId).select('+password');
+        if (!user) {
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+
+        const tempPassword = crypto.randomBytes(4).toString('hex');
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(tempPassword, salt);
+        await user.save();
+
+        await logActivity(req.admin, 'update', 'user', user._id, `Reset password for user: ${user.username}`);
+
+        res.json({ message: 'Contrasena reseteada', tempPassword });
+    } catch (error) {
+        console.error('Error resetting user password:', error);
+        res.status(500).json({ message: 'Error al resetear la contrasena' });
+    }
+};
+
 // ==================== PROJECT MANAGEMENT ====================
 
 // GET /api/admin/projects - Get all projects
@@ -333,7 +410,7 @@ export const getProjectByIdAdmin = async (req: AuthRequest, res: Response) => {
 // PUT /api/admin/projects/:id - Update project
 export const updateProject = async (req: AuthRequest, res: Response) => {
     try {
-        const { title, status, accessibilityScore } = req.body;
+        const { title, status, accessibilityScore, isHidden, hiddenReason, isFeatured, tags, category } = req.body;
         const projectId = req.params.id;
 
         const project = await Project.findById(projectId);
@@ -348,8 +425,25 @@ export const updateProject = async (req: AuthRequest, res: Response) => {
         if (accessibilityScore !== undefined) {
             project.accessibilityScore = accessibilityScore;
         }
+        if (isHidden !== undefined) {
+            project.isHidden = !!isHidden;
+            project.hiddenAt = project.isHidden ? new Date() : undefined;
+            project.hiddenReason = project.isHidden ? (hiddenReason || project.hiddenReason || 'Oculto por administracion') : undefined;
+        }
+        if (isFeatured !== undefined) {
+            project.isFeatured = !!isFeatured;
+            project.featuredAt = project.isFeatured ? new Date() : undefined;
+        }
+        if (Array.isArray(tags)) {
+            project.tags = tags.map((t) => String(t).trim()).filter(Boolean);
+        }
+        if (category !== undefined) {
+            project.category = String(category).trim();
+        }
 
         await project.save();
+
+        await logActivity(req.admin, 'update', 'project', project._id, `Updated project: ${project.title}`);
 
         res.json({
             message: 'Proyecto actualizado exitosamente',
@@ -500,6 +594,31 @@ export const deletePinById = async (req: AuthRequest, res: Response) => {
     }
 };
 
+// PUT /api/admin/pins/:id/visibility - Hide/unhide pin
+export const updatePinVisibility = async (req: AuthRequest, res: Response) => {
+    try {
+        const pinId = req.params.id;
+        const { isHidden, reason } = req.body;
+
+        const pin = await Pin.findById(pinId);
+        if (!pin) {
+            return res.status(404).json({ message: 'Pin no encontrado' });
+        }
+
+        pin.isHidden = !!isHidden;
+        pin.hiddenAt = pin.isHidden ? new Date() : undefined;
+        pin.hiddenReason = pin.isHidden ? (reason || pin.hiddenReason || 'Oculto por administracion') : undefined;
+        await pin.save();
+
+        await logActivity(req.admin, 'update', 'pin', pin._id, `Updated pin visibility: ${pin._id}`);
+
+        res.json({ message: 'Pin actualizado', pin });
+    } catch (error) {
+        console.error('Error updating pin visibility:', error);
+        res.status(500).json({ message: 'Error al actualizar pin' });
+    }
+};
+
 // ==================== STATISTICS ====================
 
 // GET /api/admin/stats - Get admin dashboard statistics
@@ -509,6 +628,11 @@ export const getAdminStats = async (req: AuthRequest, res: Response) => {
         const totalProjects = await Project.countDocuments();
         const totalAudits = await Audit.countDocuments();
         const totalPins = await Pin.countDocuments();
+
+        const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        const newUsers7d = await User.countDocuments({ createdAt: { $gte: since } });
+        const newProjects7d = await Project.countDocuments({ createdAt: { $gte: since } });
+        const newAudits7d = await Audit.countDocuments({ createdAt: { $gte: since } });
 
         // Count users by role
         const adminCount = await User.countDocuments({ role: 'admin' });
@@ -537,6 +661,11 @@ export const getAdminStats = async (req: AuthRequest, res: Response) => {
                 audits: totalAudits,
                 pins: totalPins
             },
+            last7Days: {
+                users: newUsers7d,
+                projects: newProjects7d,
+                audits: newAudits7d
+            },
             usersByRole: {
                 admin: adminCount,
                 user: userCount
@@ -554,5 +683,100 @@ export const getAdminStats = async (req: AuthRequest, res: Response) => {
     } catch (error) {
         console.error('Error getting stats:', error);
         res.status(500).json({ message: 'Error al obtener estadísticas' });
+    }
+};
+
+// GET /api/admin/activity - Get admin activity log
+export const getAdminActivity = async (req: AuthRequest, res: Response) => {
+    try {
+        if (!req.admin) {
+            return res.status(403).json({ message: 'No hay registro de admin en la solicitud' });
+        }
+
+        const { page = 1, limit = 20 } = req.query;
+        const pageNum = parseInt(page as string);
+        const limitNum = parseInt(limit as string);
+
+        const sorted = [...req.admin.activityLog].sort((a, b) => {
+            return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+        });
+        const start = (pageNum - 1) * limitNum;
+        const items = sorted.slice(start, start + limitNum);
+
+        res.json({
+            activity: items,
+            pagination: {
+                total: sorted.length,
+                page: pageNum,
+                pages: Math.ceil(sorted.length / limitNum)
+            }
+        });
+    } catch (error) {
+        console.error('Error getting admin activity:', error);
+        res.status(500).json({ message: 'Error al obtener actividad' });
+    }
+};
+
+// GET /api/admin/config - Get site config
+export const getConfig = async (req: AuthRequest, res: Response) => {
+    try {
+        const config = await getSiteConfig();
+        res.json(config);
+    } catch (error) {
+        console.error('Error getting config:', error);
+        res.status(500).json({ message: 'Error al obtener configuracion' });
+    }
+};
+
+// PUT /api/admin/config - Update site config
+export const updateConfig = async (req: AuthRequest, res: Response) => {
+    try {
+        const { allowRegistration, maintenanceMode, maxPinsPerProject, maxUploadMb } = req.body;
+        const config = await getSiteConfig();
+
+        if (allowRegistration !== undefined) config.allowRegistration = !!allowRegistration;
+        if (maintenanceMode !== undefined) config.maintenanceMode = !!maintenanceMode;
+        if (maxPinsPerProject !== undefined) config.maxPinsPerProject = Number(maxPinsPerProject) || config.maxPinsPerProject;
+        if (maxUploadMb !== undefined) config.maxUploadMb = Number(maxUploadMb) || config.maxUploadMb;
+
+        await config.save();
+
+        await logActivity(req.admin, 'update', 'audit', undefined, 'Updated site config');
+
+        res.json({ message: 'Configuracion actualizada', config });
+    } catch (error) {
+        console.error('Error updating config:', error);
+        res.status(500).json({ message: 'Error al actualizar configuracion' });
+    }
+};
+
+// GET /api/admin/audits/export - Export audits CSV
+export const exportAudits = async (req: AuthRequest, res: Response) => {
+    try {
+        const audits = await Audit.find()
+            .populate({ path: 'project', populate: { path: 'owner', select: 'username email' } })
+            .sort({ createdAt: -1 });
+
+        const header = ['projectTitle', 'owner', 'score', 'issuesCount', 'createdAt'];
+        const rows = audits.map((audit: any) => {
+            const projectTitle = audit.project?.title || '';
+            const owner = audit.project?.owner?.username || audit.project?.owner?.email || '';
+            return [
+                projectTitle,
+                owner,
+                audit.score,
+                audit.issues?.length || 0,
+                new Date(audit.createdAt).toISOString()
+            ];
+        });
+
+        const csv = [header.join(','), ...rows.map((r) => r.map((v: any) => `"${String(v).replace(/"/g, '""')}"`).join(','))].join('\n');
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename="audits.csv"');
+        res.send(csv);
+    } catch (error) {
+        console.error('Error exporting audits:', error);
+        res.status(500).json({ message: 'Error al exportar auditorias' });
     }
 };

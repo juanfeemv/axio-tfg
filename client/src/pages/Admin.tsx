@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, FolderOpen, FileText, MapPin, BarChart3, Plus, Edit2, Trash2, Search, X, Eye, LogOut } from 'lucide-react';
+import { Users, FolderOpen, FileText, MapPin, BarChart3, Plus, Edit2, Trash2, Search, X, Eye, EyeOff, LogOut, Ban, Unlock, KeyRound, Star, StarOff, Activity, Settings, Tag } from 'lucide-react';
 import brandLogo from '../assets/logo.png';
 import * as adminService from '../services/adminService';
 import { useAuth } from '../context/AuthContext';
 
-type TabType = 'overview' | 'users' | 'projects' | 'audits' | 'pins';
+type TabType = 'overview' | 'users' | 'projects' | 'audits' | 'pins' | 'activity' | 'config';
 
 export default function Admin() {
     const navigate = useNavigate();
@@ -35,6 +35,15 @@ export default function Admin() {
     const [pins, setPins] = useState<any[]>([]);
     const [pinPage, setPinPage] = useState(1);
     const [totalPins, setTotalPins] = useState(0);
+
+    // Activity state
+    const [activity, setActivity] = useState<any[]>([]);
+    const [activityPage, setActivityPage] = useState(1);
+    const [totalActivity, setTotalActivity] = useState(0);
+
+    // Config state
+    const [config, setConfig] = useState<any>(null);
+    const [configSaving, setConfigSaving] = useState(false);
 
     const userSearchRef = useRef<HTMLInputElement>(null);
     const projectSearchRef = useRef<HTMLInputElement>(null);
@@ -161,6 +170,136 @@ export default function Admin() {
         }
     };
 
+    const handleSuspendUser = async (id: string) => {
+        const reason = prompt('Motivo de suspension (opcional):') || undefined;
+        try {
+            await adminService.suspendUser(id, reason);
+            loadUsers();
+            loadStats();
+        } catch (error: any) {
+            alert(error.response?.data?.message || 'Error al suspender usuario');
+        }
+    };
+
+    const handleUnsuspendUser = async (id: string) => {
+        try {
+            await adminService.unsuspendUser(id);
+            loadUsers();
+            loadStats();
+        } catch (error: any) {
+            alert(error.response?.data?.message || 'Error al reactivar usuario');
+        }
+    };
+
+    const handleResetPassword = async (id: string) => {
+        if (!confirm('¿Resetear la contraseña de este usuario?')) return;
+        try {
+            const res = await adminService.resetUserPassword(id);
+            alert(`Nueva contraseña temporal: ${res.tempPassword}`);
+        } catch (error: any) {
+            alert(error.response?.data?.message || 'Error al resetear contraseña');
+        }
+    };
+
+    const handleToggleProjectVisibility = async (project: any) => {
+        const nextHidden = !project.isHidden;
+        const reason = nextHidden ? (prompt('Motivo para ocultar (opcional):') || undefined) : undefined;
+        try {
+            await adminService.updateProject(project._id, { isHidden: nextHidden, hiddenReason: reason });
+            loadProjects();
+            loadStats();
+        } catch (error: any) {
+            alert(error.response?.data?.message || 'Error al actualizar proyecto');
+        }
+    };
+
+    const handleToggleProjectFeatured = async (project: any) => {
+        const nextFeatured = !project.isFeatured;
+        try {
+            await adminService.updateProject(project._id, { isFeatured: nextFeatured });
+            loadProjects();
+        } catch (error: any) {
+            alert(error.response?.data?.message || 'Error al actualizar destacado');
+        }
+    };
+
+    const handleEditProjectMeta = async (project: any) => {
+        const category = prompt('Categoria (opcional):', project.category || '') ?? project.category;
+        const tagsInput = prompt('Etiquetas separadas por coma:', (project.tags || []).join(', '));
+        if (tagsInput === null) return;
+        const tags = tagsInput.split(',').map((t: string) => t.trim()).filter(Boolean);
+        try {
+            await adminService.updateProject(project._id, { category, tags });
+            loadProjects();
+        } catch (error: any) {
+            alert(error.response?.data?.message || 'Error al actualizar etiquetas');
+        }
+    };
+
+    const handleTogglePinVisibility = async (pin: any) => {
+        const nextHidden = !pin.isHidden;
+        const reason = nextHidden ? (prompt('Motivo para ocultar (opcional):') || undefined) : undefined;
+        try {
+            await adminService.updatePinVisibility(pin._id, nextHidden, reason);
+            loadPins();
+        } catch (error: any) {
+            alert(error.response?.data?.message || 'Error al actualizar pin');
+        }
+    };
+
+    const loadActivity = async () => {
+        try {
+            const data = await adminService.getAdminActivity(activityPage, 20);
+            setActivity(data.activity || []);
+            setTotalActivity(data.pagination?.total || 0);
+        } catch (error) {
+            console.error('Error loading activity:', error);
+        }
+    };
+
+    const loadConfig = async () => {
+        try {
+            const data = await adminService.getConfig();
+            setConfig(data);
+        } catch (error) {
+            console.error('Error loading config:', error);
+        }
+    };
+
+    const handleSaveConfig = async () => {
+        if (!config) return;
+        setConfigSaving(true);
+        try {
+            await adminService.updateConfig({
+                allowRegistration: config.allowRegistration,
+                maintenanceMode: config.maintenanceMode,
+                maxPinsPerProject: Number(config.maxPinsPerProject) || 0,
+                maxUploadMb: Number(config.maxUploadMb) || 0
+            });
+            alert('Configuracion actualizada');
+        } catch (error: any) {
+            alert(error.response?.data?.message || 'Error al guardar configuracion');
+        } finally {
+            setConfigSaving(false);
+        }
+    };
+
+    const handleExportAudits = async () => {
+        try {
+            const blob = await adminService.exportAudits();
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'audits.csv';
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (error: any) {
+            alert(error.response?.data?.message || 'Error al exportar auditorias');
+        }
+    };
+
     // Load data based on active tab
     useEffect(() => {
         if (activeTab === 'overview') loadStats();
@@ -168,6 +307,8 @@ export default function Admin() {
         else if (activeTab === 'projects') loadProjects(projectSearch, projectPage);
         else if (activeTab === 'audits') loadAudits();
         else if (activeTab === 'pins') loadPins();
+        else if (activeTab === 'activity') loadActivity();
+        else if (activeTab === 'config') loadConfig();
     }, [activeTab]);
 
     // Usuario: recarga al cambiar de página
@@ -179,6 +320,10 @@ export default function Admin() {
     useEffect(() => {
         if (activeTab === 'projects') loadProjects(projectSearch, projectPage);
     }, [projectPage, activeTab, projectSearch]);
+
+    useEffect(() => {
+        if (activeTab === 'activity') loadActivity();
+    }, [activityPage, activeTab]);
 
     // Usuario: recarga al tipear (simple debounce corto) y reinicia a página 1
     useEffect(() => {
@@ -228,6 +373,8 @@ export default function Admin() {
                 <TabButton icon={<FolderOpen size={18} />} label="Proyectos" active={activeTab === 'projects'} onClick={() => setActiveTab('projects')} />
                 <TabButton icon={<FileText size={18} />} label="Auditorías" active={activeTab === 'audits'} onClick={() => setActiveTab('audits')} />
                 <TabButton icon={<MapPin size={18} />} label="Pines" active={activeTab === 'pins'} onClick={() => setActiveTab('pins')} />
+                <TabButton icon={<Activity size={18} />} label="Actividad" active={activeTab === 'activity'} onClick={() => setActiveTab('activity')} />
+                <TabButton icon={<Settings size={18} />} label="Configuración" active={activeTab === 'config'} onClick={() => setActiveTab('config')} />
             </div>
 
             {/* Content */}
@@ -244,6 +391,14 @@ export default function Admin() {
                             <StatCard title="Proyectos" value={stats.totals.projects} subtitle={`${stats.projectsByStatus.analyzed} analizados`} color="from-purple-500 to-purple-600" />
                             <StatCard title="Auditorías" value={stats.totals.audits} subtitle="Total de análisis" color="from-emerald-500 to-emerald-600" />
                             <StatCard title="Pines" value={stats.totals.pins} subtitle="Comentarios totales" color="from-orange-500 to-orange-600" />
+                            <div className="md:col-span-2 lg:col-span-4 bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-lg border-2 border-slate-100 dark:border-slate-700">
+                                <div className="text-sm font-semibold text-slate-600 dark:text-slate-300 mb-3">Ultimos 7 dias</div>
+                                <div className="flex flex-wrap gap-3">
+                                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">Usuarios: {stats.last7Days?.users || 0}</span>
+                                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">Proyectos: {stats.last7Days?.projects || 0}</span>
+                                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">Auditorías: {stats.last7Days?.audits || 0}</span>
+                                </div>
+                            </div>
                         </div>
                     )}
 
@@ -277,6 +432,7 @@ export default function Admin() {
                                             <th className="text-left p-4 font-semibold text-slate-700 dark:text-slate-300">Usuario</th>
                                             <th className="text-left p-4 font-semibold text-slate-700 dark:text-slate-300">Email</th>
                                             <th className="text-left p-4 font-semibold text-slate-700 dark:text-slate-300">Rol</th>
+                                            <th className="text-left p-4 font-semibold text-slate-700 dark:text-slate-300">Estado</th>
                                             <th className="text-left p-4 font-semibold text-slate-700 dark:text-slate-300">Proyectos</th>
                                             <th className="text-right p-4 font-semibold text-slate-700 dark:text-slate-300">Acciones</th>
                                         </tr>
@@ -291,6 +447,11 @@ export default function Admin() {
                                                         {user.role}
                                                     </span>
                                                 </td>
+                                                <td className="p-4">
+                                                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${user.isSuspended ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'}`}>
+                                                        {user.isSuspended ? 'Suspendido' : 'Activo'}
+                                                    </span>
+                                                </td>
                                                 <td className="p-4 text-slate-600 dark:text-slate-400">{user.projectCount || 0}</td>
                                                 <td className="p-4">
                                                     <div className="flex justify-end gap-2">
@@ -300,6 +461,30 @@ export default function Admin() {
                                                         >
                                                             <Edit2 size={16} />
                                                         </button>
+                                                        <button
+                                                            onClick={() => handleResetPassword(user._id)}
+                                                            className="p-2 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-lg transition-colors"
+                                                            title="Resetear contraseña"
+                                                        >
+                                                            <KeyRound size={16} />
+                                                        </button>
+                                                        {user.isSuspended ? (
+                                                            <button
+                                                                onClick={() => handleUnsuspendUser(user._id)}
+                                                                className="p-2 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-lg transition-colors"
+                                                                title="Reactivar usuario"
+                                                            >
+                                                                <Unlock size={16} />
+                                                            </button>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => handleSuspendUser(user._id)}
+                                                                className="p-2 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded-lg transition-colors"
+                                                                title="Suspender usuario"
+                                                            >
+                                                                <Ban size={16} />
+                                                            </button>
+                                                        )}
                                                         <button
                                                             onClick={() => handleDeleteUser(user._id)}
                                                             className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
@@ -373,7 +558,15 @@ export default function Admin() {
                                                 className="border-t border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer"
                                                 onClick={() => navigate(`/project/${project._id}`, { state: { from: 'admin' } })}
                                             >
-                                                <td className="p-4 font-medium text-slate-800 dark:text-white">{project.title}</td>
+                                                <td className="p-4 font-medium text-slate-800 dark:text-white">
+                                                    <div>{project.title}</div>
+                                                    {(project.category || (project.tags && project.tags.length > 0)) && (
+                                                        <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                                            {project.category && <span className="mr-2">Categoria: {project.category}</span>}
+                                                            {project.tags && project.tags.length > 0 && <span>Etiquetas: {project.tags.join(', ')}</span>}
+                                                        </div>
+                                                    )}
+                                                </td>
                                                 <td className="p-4 text-slate-600 dark:text-slate-400">{project.owner?.username || 'N/A'}</td>
                                                 <td className="p-4 text-slate-600 dark:text-slate-400">{project.type}</td>
                                                 <td className="p-4">
@@ -383,6 +576,16 @@ export default function Admin() {
                                                         }`}>
                                                         {project.status}
                                                     </span>
+                                                    {project.isHidden && (
+                                                        <span className="ml-2 px-2 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+                                                            Oculto
+                                                        </span>
+                                                    )}
+                                                    {project.isFeatured && (
+                                                        <span className="ml-2 px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                                                            Destacado
+                                                        </span>
+                                                    )}
                                                 </td>
                                                 <td className="p-4">
                                                     <div className="flex justify-end gap-2">
@@ -392,6 +595,27 @@ export default function Admin() {
                                                             title="Ver proyecto"
                                                         >
                                                             <Eye size={16} />
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); handleToggleProjectFeatured(project); }}
+                                                            className="p-2 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-colors"
+                                                            title={project.isFeatured ? 'Quitar destacado' : 'Destacar proyecto'}
+                                                        >
+                                                            {project.isFeatured ? <StarOff size={16} /> : <Star size={16} />}
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); handleEditProjectMeta(project); }}
+                                                            className="p-2 text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                                                            title="Editar etiquetas y categoria"
+                                                        >
+                                                            <Tag size={16} />
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); handleToggleProjectVisibility(project); }}
+                                                            className="p-2 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded-lg transition-colors"
+                                                            title={project.isHidden ? 'Mostrar proyecto' : 'Ocultar proyecto'}
+                                                        >
+                                                            {project.isHidden ? <Eye size={16} /> : <EyeOff size={16} />}
                                                         </button>
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); handleDeleteProject(project._id); }}
@@ -434,6 +658,14 @@ export default function Admin() {
                     {/* Audits Tab */}
                     {activeTab === 'audits' && (
                         <div>
+                            <div className="flex justify-end mb-4">
+                                <button
+                                    onClick={handleExportAudits}
+                                    className="px-4 py-2 bg-slate-200 dark:bg-slate-700 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-600 transition-all"
+                                >
+                                    Exportar CSV
+                                </button>
+                            </div>
                             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg overflow-hidden">
                                 <table className="w-full">
                                     <thead className="bg-slate-50 dark:bg-slate-900">
@@ -520,6 +752,13 @@ export default function Admin() {
                                                 <td className="p-4">
                                                     <div className="flex justify-end gap-2">
                                                         <button
+                                                            onClick={() => handleTogglePinVisibility(pin)}
+                                                            className="p-2 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded-lg transition-colors"
+                                                            title={pin.isHidden ? 'Mostrar pin' : 'Ocultar pin'}
+                                                        >
+                                                            {pin.isHidden ? <Eye size={16} /> : <EyeOff size={16} />}
+                                                        </button>
+                                                        <button
                                                             onClick={() => handleDeletePin(pin._id)}
                                                             className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
                                                         >
@@ -554,6 +793,130 @@ export default function Admin() {
                                     </button>
                                 </div>
                             </div>
+                        </div>
+                    )}
+
+                    {/* Activity Tab */}
+                    {activeTab === 'activity' && (
+                        <div>
+                            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg overflow-hidden">
+                                <table className="w-full">
+                                    <thead className="bg-slate-50 dark:bg-slate-900">
+                                        <tr>
+                                            <th className="text-left p-4 font-semibold text-slate-700 dark:text-slate-300">Accion</th>
+                                            <th className="text-left p-4 font-semibold text-slate-700 dark:text-slate-300">Tipo</th>
+                                            <th className="text-left p-4 font-semibold text-slate-700 dark:text-slate-300">Detalle</th>
+                                            <th className="text-left p-4 font-semibold text-slate-700 dark:text-slate-300">Fecha</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {activity.map((item) => (
+                                            <tr key={item.timestamp} className="border-t border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700">
+                                                <td className="p-4 font-medium text-slate-800 dark:text-white">{item.action}</td>
+                                                <td className="p-4 text-slate-600 dark:text-slate-400">{item.targetType}</td>
+                                                <td className="p-4 text-slate-600 dark:text-slate-400 max-w-md truncate">{item.details || '-'}</td>
+                                                <td className="p-4 text-slate-600 dark:text-slate-400">
+                                                    {new Date(item.timestamp).toLocaleString()}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div className="mt-4 flex justify-between items-center">
+                                <div className="text-sm text-slate-600 dark:text-slate-400">
+                                    Total: {totalActivity} acciones
+                                </div>
+                                <div className="flex gap-2">
+                                    <button
+                                        disabled={activityPage === 1}
+                                        onClick={() => setActivityPage(activityPage - 1)}
+                                        className="px-4 py-2 bg-slate-200 dark:bg-slate-700 rounded-lg disabled:opacity-50"
+                                    >
+                                        Anterior
+                                    </button>
+                                    <button
+                                        disabled={activityPage * 20 >= totalActivity}
+                                        onClick={() => setActivityPage(activityPage + 1)}
+                                        className="px-4 py-2 bg-slate-200 dark:bg-slate-700 rounded-lg disabled:opacity-50"
+                                    >
+                                        Siguiente
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Config Tab */}
+                    {activeTab === 'config' && (
+                        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 space-y-6">
+                            {!config ? (
+                                <div className="text-slate-500 dark:text-slate-400">Cargando configuracion...</div>
+                            ) : (
+                                <>
+                            <div className="grid md:grid-cols-2 gap-6">
+                                <label className="flex items-center justify-between gap-4">
+                                    <div>
+                                        <div className="font-semibold text-slate-800 dark:text-white">Registro de usuarios</div>
+                                        <div className="text-sm text-slate-500 dark:text-slate-400">Permitir nuevos registros</div>
+                                    </div>
+                                    <input
+                                        type="checkbox"
+                                        checked={!!config?.allowRegistration}
+                                        onChange={(e) => setConfig({ ...config, allowRegistration: e.target.checked })}
+                                        className="h-5 w-5"
+                                    />
+                                </label>
+
+                                <label className="flex items-center justify-between gap-4">
+                                    <div>
+                                        <div className="font-semibold text-slate-800 dark:text-white">Modo mantenimiento</div>
+                                        <div className="text-sm text-slate-500 dark:text-slate-400">Bloquea nuevas acciones</div>
+                                    </div>
+                                    <input
+                                        type="checkbox"
+                                        checked={!!config?.maintenanceMode}
+                                        onChange={(e) => setConfig({ ...config, maintenanceMode: e.target.checked })}
+                                        className="h-5 w-5"
+                                    />
+                                </label>
+                            </div>
+
+                            <div className="grid md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Max. pines por proyecto</label>
+                                    <input
+                                        type="number"
+                                        min={1}
+                                        value={config?.maxPinsPerProject ?? 100}
+                                        onChange={(e) => setConfig({ ...config, maxPinsPerProject: Number(e.target.value) })}
+                                        className="w-full border-2 border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 focus:border-blue-500 outline-none dark:bg-slate-900 dark:text-white"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Max. upload (MB)</label>
+                                    <input
+                                        type="number"
+                                        min={1}
+                                        value={config?.maxUploadMb ?? 10}
+                                        onChange={(e) => setConfig({ ...config, maxUploadMb: Number(e.target.value) })}
+                                        className="w-full border-2 border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 focus:border-blue-500 outline-none dark:bg-slate-900 dark:text-white"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end">
+                                <button
+                                    onClick={handleSaveConfig}
+                                    disabled={configSaving}
+                                    className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:shadow-lg transition-all disabled:opacity-50"
+                                >
+                                    {configSaving ? 'Guardando...' : 'Guardar configuracion'}
+                                </button>
+                            </div>
+                                </>
+                            )}
                         </div>
                     )}
                 </>

@@ -8,6 +8,7 @@ import Audit from '../models/Audit';
 import Pin from '../models/Pin';
 import User from '../models/User';
 import { captureWebsite } from '../services/webScraper';
+import { getSiteConfig } from '../utils/siteConfig';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -35,8 +36,8 @@ export const getMyProjects = async (req: AuthRequest, res: Response) => {
 export const getCommunityProjects = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user.id;
-    const projects = await Project.find()
-      .sort({ createdAt: -1 })
+    const projects = await Project.find({ isHidden: { $ne: true } })
+      .sort({ isFeatured: -1, createdAt: -1 })
       .limit(20)
       .populate('owner', 'username')
       .lean(); // Convertimos a objeto JS simple 
@@ -76,6 +77,9 @@ export const getProjectById = async (req: AuthRequest, res: Response) => {
     if (!project) {
       return res.status(404).json({ message: 'Proyecto no encontrado' });
     }
+    if (project.isHidden && project.owner.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Proyecto no disponible' });
+    }
     
     // Buscamos la última auditoría asociada a este proyecto (si existe)
     const audit = await Audit.findOne({ project: projectId }).sort({ createdAt: -1 });
@@ -97,6 +101,10 @@ export const createProject = async (req: AuthRequest, res: Response) => {
   try {
     const { title, type, url } = req.body;
     const userId = req.user.id;
+    const config = await getSiteConfig();
+    if (config.maintenanceMode) {
+      return res.status(503).json({ message: 'Plataforma en mantenimiento' });
+    }
 
     if (!title || !type) {
       return res.status(400).json({ message: 'Faltan datos obligatorios' });
@@ -106,6 +114,12 @@ export const createProject = async (req: AuthRequest, res: Response) => {
     let imageFilename: string | undefined;
     if (type === 'file' || type === 'code') {
       if (!req.file) return res.status(400).json({ message: 'Falta el archivo' });
+      if (req.file.size > config.maxUploadMb * 1024 * 1024) {
+        const uploadDir = path.join(__dirname, '../../uploads');
+        const filePath = path.join(uploadDir, req.file.filename);
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        return res.status(400).json({ message: `Archivo supera el maximo de ${config.maxUploadMb}MB` });
+      }
       inputData = req.file.filename;
     }
     

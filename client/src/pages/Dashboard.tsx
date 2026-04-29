@@ -11,6 +11,7 @@ import {
   FolderOpen, 
   Globe, 
   Settings as SettingsIcon,
+  Shield,
   Zap, 
   FileCode, 
   Save,
@@ -24,17 +25,18 @@ import api from '../services/api';
 import MyProjects from './MyProjects';
 import Settings from './Settings';
 import Explore from './Explore';
+import Admin from './Admin';
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
   const location = useLocation();
   
-  const [activeTab, setActiveTab] = useState<'new' | 'projects' | 'explore' | 'settings'>(() => {
+  const [activeTab, setActiveTab] = useState<'new' | 'projects' | 'explore' | 'settings' | 'admin'>(() => {
     if (location.state && location.state.tab) {
         return location.state.tab;
     }
     const savedTab = sessionStorage.getItem('dashboard_active_tab');
-    return (savedTab as 'new' | 'projects' | 'explore' | 'settings') || 'new';
+    return (savedTab as 'new' | 'projects' | 'explore' | 'settings' | 'admin') || 'new';
   });
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -198,6 +200,14 @@ export default function Dashboard() {
               active={activeTab === 'settings'} 
               onClick={() => handleTabChange('settings')} 
             />
+            {user?.role === 'admin' && (
+              <SidebarItem
+                icon={<Shield size={20} />}
+                label="Panel Admin"
+                active={activeTab === 'admin'}
+                onClick={() => handleTabChange('admin')}
+              />
+            )}
           </div>
         </nav>
         
@@ -482,6 +492,7 @@ export default function Dashboard() {
         {activeTab === 'projects' && <MyProjects />}
         {activeTab === 'explore' && <Explore />}
         {activeTab === 'settings' && <Settings />}
+        {activeTab === 'admin' && user?.role === 'admin' && <Admin />}
 
       </main>
     </div>

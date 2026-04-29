@@ -24,6 +24,21 @@ export const updateUser = async (id: string, userData: { username?: string; emai
     return res.data;
 };
 
+export const suspendUser = async (id: string, reason?: string) => {
+    const res = await api.put(`/admin/users/${id}/suspend`, { reason });
+    return res.data;
+};
+
+export const unsuspendUser = async (id: string) => {
+    const res = await api.put(`/admin/users/${id}/unsuspend`);
+    return res.data;
+};
+
+export const resetUserPassword = async (id: string) => {
+    const res = await api.post(`/admin/users/${id}/reset-password`);
+    return res.data;
+};
+
 export const deleteUser = async (id: string) => {
     const res = await api.delete(`/admin/users/${id}`);
     return res.data;
@@ -43,7 +58,7 @@ export const getProjectById = async (id: string) => {
     return res.data;
 };
 
-export const updateProject = async (id: string, projectData: { title?: string; status?: string; accessibilityScore?: number }) => {
+export const updateProject = async (id: string, projectData: { title?: string; status?: string; accessibilityScore?: number; isHidden?: boolean; hiddenReason?: string; isFeatured?: boolean; tags?: string[]; category?: string }) => {
     const res = await api.put(`/admin/projects/${id}`, projectData);
     return res.data;
 };
@@ -81,9 +96,34 @@ export const deletePin = async (id: string) => {
     return res.data;
 };
 
+export const updatePinVisibility = async (id: string, isHidden: boolean, reason?: string) => {
+    const res = await api.put(`/admin/pins/${id}/visibility`, { isHidden, reason });
+    return res.data;
+};
+
 // ==================== STATISTICS ====================
 
 export const getAdminStats = async () => {
     const res = await api.get('/admin/stats');
+    return res.data;
+};
+
+export const getAdminActivity = async (page = 1, limit = 20) => {
+    const res = await api.get('/admin/activity', { params: { page, limit } });
+    return res.data;
+};
+
+export const getConfig = async () => {
+    const res = await api.get('/admin/config');
+    return res.data;
+};
+
+export const updateConfig = async (config: { allowRegistration?: boolean; maintenanceMode?: boolean; maxPinsPerProject?: number; maxUploadMb?: number }) => {
+    const res = await api.put('/admin/config', config);
+    return res.data;
+};
+
+export const exportAudits = async () => {
+    const res = await api.get('/admin/audits/export', { responseType: 'blob' });
     return res.data;
 };

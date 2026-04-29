@@ -7,6 +7,9 @@ import {
     createUser,
     updateUser,
     deleteUserById,
+    suspendUser,
+    unsuspendUser,
+    resetUserPassword,
     // Project management
     getAllProjects,
     getProjectByIdAdmin,
@@ -15,11 +18,16 @@ import {
     // Audit management
     getAllAudits,
     deleteAuditById,
+    exportAudits,
     // Pin management
     getAllPins,
     deletePinById,
+    updatePinVisibility,
     // Statistics
-    getAdminStats
+    getAdminStats,
+    getAdminActivity,
+    getConfig,
+    updateConfig
 } from '../controllers/adminController';
 
 const router = Router();
@@ -32,6 +40,9 @@ router.get('/users', getAllUsers);
 router.get('/users/:id', getUserById);
 router.post('/users', createUser);
 router.put('/users/:id', updateUser);
+router.put('/users/:id/suspend', suspendUser);
+router.put('/users/:id/unsuspend', unsuspendUser);
+router.post('/users/:id/reset-password', resetUserPassword);
 router.delete('/users/:id', deleteUserById);
 
 // ==================== PROJECT ROUTES ====================
@@ -42,13 +53,18 @@ router.delete('/projects/:id', deleteProjectById);
 
 // ==================== AUDIT ROUTES ====================
 router.get('/audits', getAllAudits);
+router.get('/audits/export', exportAudits);
 router.delete('/audits/:id', deleteAuditById);
 
 // ==================== PIN ROUTES ====================
 router.get('/pins', getAllPins);
+router.put('/pins/:id/visibility', updatePinVisibility);
 router.delete('/pins/:id', deletePinById);
 
 // ==================== STATISTICS ROUTES ====================
 router.get('/stats', getAdminStats);
+router.get('/activity', getAdminActivity);
+router.get('/config', getConfig);
+router.put('/config', updateConfig);
 
 export default router;

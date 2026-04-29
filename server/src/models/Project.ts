@@ -9,6 +9,13 @@ export interface IProject extends Document {
   status: 'pending' | 'analyzed' | 'failed';
   accessibilityScore?: number;
   likes: mongoose.Types.ObjectId[];
+  isHidden?: boolean;
+  hiddenAt?: Date;
+  hiddenReason?: string;
+  isFeatured?: boolean;
+  featuredAt?: Date;
+  tags?: string[];
+  category?: string;
   
   // --- SISTEMA DE VOTACIÓN ---
   ratings: { user: mongoose.Types.ObjectId; value: number }[]; // Array con quién votó y cuánto
@@ -26,6 +33,14 @@ const ProjectSchema: Schema = new Schema(
     image: { type: String },
     status: { type: String, enum: ['pending', 'analyzed', 'failed'], default: 'pending' },
     accessibilityScore: { type: Number, min: 0, max: 100 },
+
+    isHidden: { type: Boolean, default: false },
+    hiddenAt: { type: Date },
+    hiddenReason: { type: String, trim: true },
+    isFeatured: { type: Boolean, default: false },
+    featuredAt: { type: Date },
+    tags: [{ type: String, trim: true }],
+    category: { type: String, trim: true },
     
     // Likes (Me gusta simples)
     likes: [{ type: Schema.Types.ObjectId, ref: 'User' }],

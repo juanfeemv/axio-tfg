@@ -13,7 +13,7 @@ export const getUserProfile = async (req: Request, res: Response) => {
     if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
 
     // Traemos sus proyectos (ordenados por fecha)
-    const projects = await Project.find({ owner: user._id }).sort({ createdAt: -1 }).lean();
+    const projects = await Project.find({ owner: user._id, isHidden: { $ne: true } }).sort({ createdAt: -1 }).lean();
 
     res.json({ success: true, user, projects });
   } catch (error) {
@@ -31,7 +31,7 @@ export const getUserProfileById = async (req: Request, res: Response) => {
     const user = await User.findById(id).select('username avatar createdAt');
     if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
 
-    const projects = await Project.find({ owner: user._id }).sort({ createdAt: -1 }).lean();
+    const projects = await Project.find({ owner: user._id, isHidden: { $ne: true } }).sort({ createdAt: -1 }).lean();
 
     res.json({ success: true, user, projects });
   } catch (error) {

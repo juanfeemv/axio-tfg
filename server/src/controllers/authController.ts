@@ -5,6 +5,7 @@ import crypto from 'crypto';
 import User from '../models/User';
 import Project from '../models/Project';
 import { AuthRequest } from '../middlewares/auth';
+import { getSiteConfig } from '../utils/siteConfig';
 
 // Función para validar la contraseña
 const validatePassword = (password: string): { valid: boolean; message?: string } => {
@@ -27,6 +28,13 @@ const validatePassword = (password: string): { valid: boolean; message?: string 
 export const register = async (req: Request, res: Response) => {
   try {
     const { username, email, password } = req.body;
+    const config = await getSiteConfig();
+    if (!config.allowRegistration) {
+      return res.status(403).json({ message: 'El registro esta deshabilitado temporalmente' });
+    }
+    if (config.maintenanceMode) {
+      return res.status(503).json({ message: 'Plataforma en mantenimiento. Intenta mas tarde' });
+    }
     if (!username || !email || !password) {
       return res.status(400).json({ message: 'Rellena todos los campos' });
     }
@@ -72,6 +80,9 @@ export const login = async (req: Request, res: Response) => {
     }
 
     const user = await User.findOne({ email }).select('+password');
+    if (user?.isSuspended) {
+      return res.status(403).json({ message: 'Cuenta suspendida. Contacta con soporte' });
+    }
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(400).json({ message: 'Credenciales inválidas' });
     }

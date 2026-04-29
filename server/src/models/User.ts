@@ -6,6 +6,9 @@ export interface IUser extends Document {
   password: string;
   avatar?: string;
   role: 'user' | 'admin';
+  isSuspended?: boolean;
+  suspendedAt?: Date;
+  suspensionReason?: string;
   resetPasswordToken?: string;       // 👈 NUEVO
   resetPasswordExpires?: Date;       // 👈 NUEVO
   createdAt: Date;
@@ -43,6 +46,17 @@ const UserSchema: Schema = new Schema(
       type: String,
       enum: ['user', 'admin'],
       default: 'user'
+    },
+    isSuspended: {
+      type: Boolean,
+      default: false
+    },
+    suspendedAt: {
+      type: Date
+    },
+    suspensionReason: {
+      type: String,
+      trim: true
     },
     // 👇 NUEVOS CAMPOS PARA RESET DE CONTRASEÑA
     resetPasswordToken: {

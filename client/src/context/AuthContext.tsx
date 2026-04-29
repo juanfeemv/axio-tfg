@@ -64,12 +64,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(user);
       setIsAuthenticated(true);
 
-      // Redirigir según rol
-      if (user.role === 'admin') {
-        window.location.href = '/admin';
-      } else {
-        window.location.href = '/dashboard';
-      }
+      // Redirigir siempre al dashboard (admin ve vista normal + panel en Settings)
+      window.location.href = '/dashboard';
     } catch (error) {
       console.error("Error login:", error);
       throw error;

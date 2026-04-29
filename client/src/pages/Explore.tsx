@@ -279,6 +279,12 @@ export default function Explore() {
                     <span className="text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-1 rounded-lg font-medium uppercase">
                         {project.type}
                     </span>
+                    {project.isFeatured && (
+                      <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 px-2 py-1 rounded-lg font-medium uppercase flex items-center gap-1">
+                        <Star size={12} className="text-blue-600 dark:text-blue-300" />
+                        Destacado
+                      </span>
+                    )}
                     {isPdf && (
                       <span className="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-300 px-2 py-1 rounded-lg font-medium uppercase">
                         PDF
