@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
 import Admin from '../models/Admin';
+import { getJwtSecret } from '../utils/jwt';
 
 export interface AuthRequest extends Request {
   user?: any; // Añadimos la propiedad user a la Request
@@ -17,7 +18,7 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
       token = req.headers.authorization.split(' ')[1];
 
       // 2. Verificamos el token con la palabra secreta
-      const secret = process.env.JWT_SECRET || 'palabrasecretaparaeltoken';
+      const secret = getJwtSecret();
       const decoded = jwt.verify(token, secret);
 
       // 3. Guardamos los datos del usuario en la petición
@@ -29,7 +30,10 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
       }
 
       next();
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.message === 'JWT_SECRET_MISSING') {
+        return res.status(500).json({ message: 'Server misconfigured: JWT_SECRET missing' });
+      }
       console.error(error);
       return res.status(401).json({ message: 'Not authorized, token failed' });
     }

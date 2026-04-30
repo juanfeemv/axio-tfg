@@ -6,6 +6,7 @@ import User from '../models/User';
 import Project from '../models/Project';
 import { AuthRequest } from '../middlewares/auth';
 import { getSiteConfig } from '../utils/siteConfig';
+import { getJwtSecret } from '../utils/jwt';
 
 // Función para validar la contraseña
 const validatePassword = (password: string): { valid: boolean; message?: string } => {
@@ -87,7 +88,7 @@ export const login = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Credenciales inválidas' });
     }
 
-    const secret = process.env.JWT_SECRET || 'palabrasecretaparaeltoken';
+    const secret = getJwtSecret();
     const token = jwt.sign({ id: user._id }, secret, { expiresIn: '7d' });
 
     res.json({
@@ -95,7 +96,10 @@ export const login = async (req: Request, res: Response) => {
       token,
       user: { id: user._id, username: user.username, email: user.email, avatar: user.avatar, role: user.role }
     });
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.message === 'JWT_SECRET_MISSING') {
+      return res.status(500).json({ message: 'Server misconfigured: JWT_SECRET missing' });
+    }
     res.status(500).json({ message: 'Error en login' });
   }
 };

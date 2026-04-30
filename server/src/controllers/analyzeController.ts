@@ -9,6 +9,7 @@ import Audit from '../models/Audit';
 import Project from '../models/Project';
 import User from '../models/User';
 import { captureWebsite } from '../services/webScraper';
+import { getJwtSecret } from '../utils/jwt';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -25,7 +26,7 @@ const getUserIdFromToken = (req: Request): string | null => {
   if (authHeader && authHeader.startsWith('Bearer')) {
     const token = authHeader.split(' ')[1];
     try {
-      const secret = process.env.JWT_SECRET || 'palabrasecretaparaeltoken';
+      const secret = getJwtSecret();
       const decoded: any = jwt.verify(token, secret);
       return decoded.id;
     } catch (e) { return null; }
