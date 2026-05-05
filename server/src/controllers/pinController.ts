@@ -4,6 +4,8 @@ import Pin from '../models/Pin';
 import Project from '../models/Project';
 import User from '../models/User';
 import { getSiteConfig } from '../utils/siteConfig';
+import Notification from '../models/Notification';
+import { getIo } from '../utils/socket';
 
 // GET /api/pins/:projectId -> Obtener todos los pines de un proyecto
 export const getProjectPins = async (req: AuthRequest, res: Response) => {
@@ -59,6 +61,28 @@ export const createPin = async (req: AuthRequest, res: Response) => {
     await newPin.save();
     
     await newPin.populate('author', 'username');
+
+    const projectOwnerId = project.owner.toString();
+    if (projectOwnerId !== userId) {
+      await Notification.create({
+        user: projectOwnerId,
+        type: 'pin',
+        title: `Nuevo comentario en ${project.title}`,
+        body: newPin.content.slice(0, 80),
+        data: { projectId: project._id.toString() }
+      });
+
+      const io = getIo();
+      if (io) {
+        io.to(`user:${projectOwnerId}`).emit('notification', {
+          type: 'pin',
+          title: `Nuevo comentario en ${project.title}`,
+          body: newPin.content.slice(0, 80),
+          data: { projectId: project._id.toString() },
+          createdAt: new Date().toISOString()
+        });
+      }
+    }
 
     // 🔔 NOTIFICAR A N8N (Nuevo comentario/pin)
     try {

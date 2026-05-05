@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { protect } from '../middlewares/auth';
+import { upload } from '../middlewares/upload';
 import {
   listConversations,
   getOrCreateConversation,
@@ -16,7 +17,7 @@ router.use(protect);
 router.get('/conversations', listConversations);
 router.post('/conversations', getOrCreateConversation);
 router.get('/:conversationId', getConversationMessages);
-router.post('/:conversationId', sendMessage);
+router.post('/:conversationId', upload.single('image'), sendMessage);
 router.post('/:conversationId/read', markConversationRead);
 router.delete('/:conversationId', deleteConversation);
 

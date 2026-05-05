@@ -11,6 +11,7 @@ export default function Settings() {
 
   // Estados de UI
   const [username, setUsername] = useState(user?.username || '');
+  const [bio, setBio] = useState(user?.bio || '');
   const [loading, setLoading] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -36,6 +37,7 @@ export default function Settings() {
   // Sincronizo estado local si el usuario cambia externamente
   useEffect(() => {
     if (user?.username) setUsername(user.username);
+    if (user?.bio !== undefined) setBio(user.bio || '');
     if (user?.avatar) setAvatarPreview(uploadsUrl(user.avatar));
   }, [user]);
 
@@ -89,10 +91,11 @@ export default function Settings() {
   // --- 2. GUARDAR PERFIL ---
   const handleSaveProfile = async () => {
     if (!username.trim()) return alert("El nombre no puede estar vacío");
+    if (bio.trim().length > 65) return alert('La descripcion no puede superar 65 caracteres');
     
     setLoading(true);
     try {
-      const res = await api.put('/auth/profile', { username });
+      const res = await api.put('/auth/profile', { username, bio: bio.trim() });
       
       if (res.data.success) {
          updateUser(res.data.user);
@@ -223,6 +226,22 @@ export default function Settings() {
                         onChange={(e) => setUsername(e.target.value)}
                         className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all dark:text-white"
                     />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Descripcion (max 65)</label>
+                  <div className="relative">
+                    <textarea
+                      rows={2}
+                      maxLength={65}
+                      value={bio}
+                      onChange={(e) => setBio(e.target.value)}
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all dark:text-white resize-none"
+                      placeholder="Cuéntanos sobre ti en una linea..."
+                    />
+                    <div className="absolute right-3 bottom-2 text-xs text-slate-400">
+                      {bio.length}/65
+                    </div>
                   </div>
                 </div>
                 <div>

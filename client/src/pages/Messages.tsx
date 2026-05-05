@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, MessageCircle, Send, Trash2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { ArrowLeft, MessageCircle, Send, Paperclip, Smile, Clock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import api, { uploadsUrl } from '../services/api';
@@ -17,6 +17,7 @@ interface MessageItem {
   sender: UserSummary;
   recipient: UserSummary;
   createdAt: string;
+  image?: string;
 }
 
 interface ConversationItem {
@@ -30,27 +31,56 @@ interface ConversationItem {
   lastMessageAt?: string;
 }
 
-export default function Messages({ embedded = false }: { embedded?: boolean }) {
+export default function Messages({ embedded = false, initialUsername }: { embedded?: boolean; initialUsername?: string }) {
   const { username } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const { socket } = useSocket();
   const [input, setInput] = useState('');
+  const [showEmoji, setShowEmoji] = useState(false);
   const [messages, setMessages] = useState<MessageItem[]>([]);
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string>('');
   const [loading, setLoading] = useState(false);
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const currentUser = user?.username || '';
   const currentUserId = user?.id || '';
-  const targetUser = username || '';
+  const stateUsername = (location.state as { username?: string } | null)?.username || '';
+  const targetUser = username || initialUsername || stateUsername || '';
+  const panelHeight = embedded ? 'h-full' : 'h-[calc(100vh-220px)]';
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const emojiList = ['😀', '😂', '😍', '🥳', '😅', '😉', '😎', '😭', '🔥', '👍', '🙏', '💯'];
+
+  const uniqueById = (items: MessageItem[]) => {
+    const seen = new Set<string>();
+    return items.filter((item) => {
+      if (seen.has(item._id)) return false;
+      seen.add(item._id);
+      return true;
+    });
+  };
+
+  const formatTime = (value: string) => {
+    const date = new Date(value);
+    return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const formatDay = (value: string) => {
+    const date = new Date(value);
+    return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
+  };
 
   const loadConversations = async () => {
     if (!currentUserId) return;
     try {
       const res = await api.get('/messages/conversations');
-      setConversations(res.data.data || []);
+      const data = res.data.data || [];
+      setConversations(data);
+      if (!targetUser && data.length > 0 && !activeConversationId) {
+        setActiveConversationId(data[0].id);
+      }
     } catch (error) {
       console.error('Error loading conversations:', error);
     }
@@ -93,7 +123,7 @@ export default function Messages({ embedded = false }: { embedded?: boolean }) {
       try {
         setLoading(true);
         const res = await api.get(`/messages/${activeConversationId}`);
-        setMessages(res.data.data || []);
+        setMessages(uniqueById(res.data.data || []));
         await api.post(`/messages/${activeConversationId}/read`);
       } catch (error) {
         console.error('Error loading messages:', error);
@@ -145,34 +175,40 @@ export default function Messages({ embedded = false }: { embedded?: boolean }) {
     const text = input.trim();
     setInput('');
     try {
-      const res = await api.post(`/messages/${activeConversationId}`, {
-        text
+      const formData = new FormData();
+      formData.append('text', text);
+      const res = await api.post(`/messages/${activeConversationId}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
       const created = res.data.data as MessageItem;
-      // Only add if the socket event hasn't already added it (deduplication)
-      setMessages((prev) => {
-        if (prev.some((msg) => msg._id === created._id)) return prev;
-        return [...prev, created];
-      });
+      setMessages((prev) => uniqueById([...prev, created]));
       await loadConversations();
     } catch (error) {
       console.error('Error sending message:', error);
     }
   };
 
-  const handleDeleteConversation = async (convId: string) => {
+  const handleImagePick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImageSend = async (file: File) => {
+    if (!activeConversationId) return;
     try {
-      await api.delete(`/messages/${convId}`);
-      setConversations((prev) => prev.filter((c) => c.id !== convId));
-      if (activeConversationId === convId) {
-        setActiveConversationId('');
-        setMessages([]);
-        navigate('/messages');
+      const formData = new FormData();
+      formData.append('image', file);
+      if (input.trim()) {
+        formData.append('text', input.trim());
       }
+      setInput('');
+      const res = await api.post(`/messages/${activeConversationId}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      const created = res.data.data as MessageItem;
+      setMessages((prev) => uniqueById([...prev, created]));
+      await loadConversations();
     } catch (error) {
-      console.error('Error deleting conversation:', error);
-    } finally {
-      setConfirmDeleteId(null);
+      console.error('Error sending image:', error);
     }
   };
 
@@ -240,7 +276,6 @@ export default function Messages({ embedded = false }: { embedded?: boolean }) {
   }
 
   return (
-    <>
     <div className={embedded ? 'flex-1 flex flex-col h-full' : 'min-h-screen bg-white'}>
       <div className={embedded ? 'flex-1 flex flex-col px-4 py-4 h-full' : 'max-w-6xl mx-auto px-6 py-10'}>
         {!embedded && (
@@ -266,7 +301,7 @@ export default function Messages({ embedded = false }: { embedded?: boolean }) {
           </div>
         )}
         <div className={`${embedded ? 'flex-1' : 'mt-6'} grid lg:grid-cols-[300px_1fr] gap-4 ${embedded ? 'h-full' : ''}`}>
-          <div className="bg-white border border-slate-200 rounded-3xl shadow-sm p-4 h-[70vh] overflow-y-auto">
+          <div className={`bg-white border border-slate-200 rounded-3xl shadow-sm p-4 ${panelHeight} overflow-y-auto`}>
             <p className="text-xs uppercase tracking-widest text-slate-400 px-2">Conversaciones</p>
             <div className="mt-4 space-y-2">
               {conversations.length === 0 ? (
@@ -275,83 +310,179 @@ export default function Messages({ embedded = false }: { embedded?: boolean }) {
                 </div>
               ) : (
                 conversations.map((conv) => (
-                  <div key={conv.id} className="relative group">
-                    <button
-                      onClick={() => navigate(`/messages/${conv.otherUser.username}`)}
-                      className={`w-full text-left px-3 py-3 rounded-2xl border transition ${
-                        activeConversationId === conv.id
-                          ? 'border-emerald-200 bg-emerald-50'
-                          : 'border-slate-200 hover:bg-slate-50'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-slate-200 overflow-hidden text-slate-700 font-bold flex items-center justify-center shrink-0">
-                          {conv.otherUser.avatar ? (
-                            <img src={uploadsUrl(conv.otherUser.avatar)} alt={conv.otherUser.username} className="h-full w-full object-cover" />
-                          ) : (
-                            conv.otherUser.username?.charAt(0)?.toUpperCase()
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0 pr-6">
-                          <p className="font-semibold text-sm text-slate-800 truncate">{conv.otherUser.username}</p>
-                          <p className="text-xs text-slate-500 truncate">
-                            {conv.lastMessage?.text || 'Sin mensajes'}
-                          </p>
-                        </div>
+                  <button
+                    key={conv.id}
+                    onClick={() => {
+                      setActiveConversationId(conv.id);
+                      if (!embedded && conv.otherUser?.username) {
+                        navigate(`/messages/${conv.otherUser.username}`);
+                      }
+                    }}
+                    className={`w-full text-left px-3 py-3 rounded-2xl border transition ${
+                      activeConversationId === conv.id
+                        ? 'border-emerald-200 bg-emerald-50'
+                        : 'border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-slate-200 overflow-hidden text-slate-700 font-bold flex items-center justify-center shrink-0">
+                        {conv.otherUser.avatar ? (
+                          <img src={uploadsUrl(conv.otherUser.avatar)} alt={conv.otherUser.username} className="h-full w-full object-cover" />
+                        ) : (
+                          conv.otherUser.username?.charAt(0)?.toUpperCase()
+                        )}
                       </div>
-                    </button>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(conv.id); }}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity h-7 w-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50"
-                      aria-label="Eliminar conversación"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm text-slate-800 truncate">{conv.otherUser.username}</p>
+                        <p className="text-xs text-slate-500 truncate">
+                          {conv.lastMessage?.text || 'Sin mensajes'}
+                        </p>
+                      </div>
+                      {conv.lastMessage && conv.lastMessage.sender !== currentUserId && (
+                        <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                      )}
+                    </div>
+                  </button>
                 ))
               )}
             </div>
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-3xl shadow-sm flex flex-col h-[70vh]">
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          <div className={`bg-white border border-slate-200 rounded-3xl shadow-sm flex flex-col ${panelHeight} overflow-hidden relative`}>
+            <div className="absolute inset-0 pointer-events-none" style={{
+              backgroundImage:
+                'radial-gradient(circle at 15% 20%, rgba(61,145,113,0.08), transparent 40%), radial-gradient(circle at 85% 0%, rgba(35,99,138,0.08), transparent 35%)'
+            }} />
+            <div className="relative px-6 pt-5 pb-4 border-b border-slate-200 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-slate-200 overflow-hidden text-slate-700 font-bold flex items-center justify-center">
+                  {activeConversationId && conversations.find((c) => c.id === activeConversationId)?.otherUser?.avatar ? (
+                    <img
+                      src={uploadsUrl(conversations.find((c) => c.id === activeConversationId)?.otherUser.avatar || '')}
+                      alt="Avatar"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    conversations.find((c) => c.id === activeConversationId)?.otherUser?.username?.charAt(0)?.toUpperCase() || '?'
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-slate-800">
+                    {conversations.find((c) => c.id === activeConversationId)?.otherUser?.username || 'Conversacion'}
+                  </p>
+                  <p className="text-xs text-slate-400 flex items-center gap-1">
+                    <Clock size={12} /> Activo recientemente
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4 relative">
               {loading ? (
                 <div className="text-center text-slate-500 mt-10">Cargando mensajes...</div>
               ) : messages.length === 0 ? (
-                <div className="text-center text-slate-500 mt-10">
-                  Aun no hay mensajes. Escribe el primero para iniciar la conversacion.
+                <div className="text-center text-slate-500 mt-10 flex flex-col items-center gap-3">
+                  <div className="h-14 w-14 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400">
+                    <MessageCircle size={22} />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-slate-700">Aun no hay mensajes</p>
+                    <p className="text-sm text-slate-500">Escribe el primero para iniciar la conversacion.</p>
+                  </div>
                 </div>
               ) : (
-                messages.map((msg) => {
+                messages.map((msg, index) => {
                   const isMine = msg.sender?._id === currentUserId;
+                  const prev = messages[index - 1];
+                  const showDaySeparator = !prev || formatDay(prev.createdAt) !== formatDay(msg.createdAt);
                   return (
-                    <div key={msg._id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
-                      <div
-                        className={`max-w-[70%] rounded-2xl px-4 py-2 text-sm shadow-sm ${
-                          isMine
-                            ? 'bg-gradient-to-r from-[#3d9171] to-[#23638a] text-white'
-                            : 'bg-slate-100 text-slate-700'
-                        }`}
-                      >
-                        <p className="font-semibold text-xs opacity-80 mb-1">
-                          {isMine ? 'Tu' : msg.sender?.username || 'Usuario'}
-                        </p>
-                        <p>{msg.text}</p>
+                    <div key={msg._id}>
+                      {showDaySeparator && (
+                        <div className="flex items-center gap-3 my-2">
+                          <div className="h-px flex-1 bg-slate-200" />
+                          <span className="text-[11px] uppercase tracking-widest text-slate-400">
+                            {formatDay(msg.createdAt)}
+                          </span>
+                          <div className="h-px flex-1 bg-slate-200" />
+                        </div>
+                      )}
+                      <div className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
+                        <div
+                          className={`max-w-[72%] rounded-2xl px-4 py-2 text-sm shadow-sm ${
+                            isMine
+                              ? 'bg-gradient-to-r from-[#3d9171] to-[#23638a] text-white'
+                              : 'bg-white border border-slate-200 text-slate-700'
+                          }`}
+                        >
+                          <p className="font-semibold text-xs opacity-80 mb-1">
+                            {isMine ? 'Tu' : msg.sender?.username || 'Usuario'}
+                          </p>
+                          {msg.image ? (
+                            <img
+                              src={uploadsUrl(msg.image)}
+                              alt="Imagen enviada"
+                              className="rounded-xl mb-2 max-h-56 object-cover"
+                            />
+                          ) : null}
+                          {msg.text && msg.text.trim() && msg.text.trim() !== '' ? (
+                            <p>{msg.text}</p>
+                          ) : null}
+                          <p className={`text-[10px] mt-1 ${isMine ? 'text-white/70' : 'text-slate-400'}`}>
+                            {formatTime(msg.createdAt)}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   );
                 })
               )}
             </div>
-            <div className="border-t border-slate-200 p-4 flex items-center gap-3">
-              <input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Escribe tu mensaje..."
-                className="flex-1 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-4 focus:ring-[#23638a]/15 focus:border-[#23638a] outline-none"
-                disabled={!activeConversationId}
-              />
+            <div className="border-t border-slate-200 px-5 py-4 flex items-center gap-3 relative">
+              <button
+                className="h-10 w-10 rounded-xl border border-slate-200 text-slate-500 flex items-center justify-center"
+                aria-label="Adjuntar"
+                type="button"
+                onClick={handleImagePick}
+              >
+                <Paperclip size={16} />
+              </button>
+              <div className="flex-1 relative">
+                <input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Escribe tu mensaje..."
+                  className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-4 focus:ring-[#23638a]/15 focus:border-[#23638a] outline-none"
+                  disabled={!activeConversationId}
+                />
+                <button
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  aria-label="Emoji"
+                  type="button"
+                  onClick={() => setShowEmoji((prev) => !prev)}
+                >
+                  <Smile size={16} />
+                </button>
+                {showEmoji && (
+                  <div className="absolute right-0 bottom-14 z-30 bg-white border border-slate-200 rounded-2xl shadow-xl p-3 w-48">
+                    <div className="grid grid-cols-6 gap-2">
+                      {emojiList.map((emoji) => (
+                        <button
+                          key={emoji}
+                          className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-slate-100"
+                          onClick={() => {
+                            setInput((prev) => `${prev}${emoji}`);
+                            setShowEmoji(false);
+                          }}
+                          type="button"
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
               <button
                 onClick={handleSend}
                 className="h-11 w-11 rounded-xl bg-gradient-to-r from-[#3d9171] to-[#23638a] text-white flex items-center justify-center shadow-lg disabled:opacity-50"
@@ -361,37 +492,20 @@ export default function Messages({ embedded = false }: { embedded?: boolean }) {
                 <Send size={16} />
               </button>
             </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleImageSend(file);
+                if (fileInputRef.current) fileInputRef.current.value = '';
+              }}
+            />
           </div>
         </div>
       </div>
     </div>
-
-    {/* Modal de confirmación de borrado */}
-    {confirmDeleteId && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-        <div className="bg-white rounded-2xl shadow-2xl p-6 w-80 flex flex-col items-center gap-4">
-          <div className="h-12 w-12 rounded-xl bg-red-50 flex items-center justify-center text-red-500">
-            <Trash2 size={22} />
-          </div>
-          <p className="text-slate-800 font-semibold text-center">¿Eliminar esta conversación?</p>
-          <p className="text-slate-500 text-sm text-center">Se borrarán todos los mensajes de forma permanente.</p>
-          <div className="flex gap-3 w-full mt-1">
-            <button
-              onClick={() => setConfirmDeleteId(null)}
-              className="flex-1 py-2 rounded-xl border border-slate-200 text-slate-600 text-sm hover:bg-slate-50 transition"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={() => handleDeleteConversation(confirmDeleteId)}
-              className="flex-1 py-2 rounded-xl bg-red-500 text-white text-sm hover:bg-red-600 transition font-semibold"
-            >
-              Eliminar
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
-    </>
   );
 }

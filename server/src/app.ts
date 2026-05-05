@@ -18,6 +18,7 @@ import statsRoutes from './routes/statsRoutes';
 import adminRoutes from './routes/adminRoutes';
 import userRoutes from './routes/userRoutes';
 import messageRoutes from './routes/messageRoutes';
+import notificationRoutes from './routes/notificationRoutes';
 
 // --- CONFIGURACIÓN ---
 const __filename = fileURLToPath(import.meta.url);
@@ -117,6 +118,7 @@ app.use('/api/stats', statsRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 app.get('/', (req: Request, res: Response) => {
   res.json({ status: 'online', mode: 'real-time' });

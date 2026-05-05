@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLocation } from 'react-router-dom';
+import { useSocket } from '../context/SocketContext';
 import { 
   Upload, 
   Link2, 
@@ -17,10 +18,11 @@ import {
   Save,
   Menu, 
   X,
-  MessageCircle
+  MessageCircle,
+  Bell
 } from 'lucide-react';
 import brandLogo from '../assets/logo.png';
-import api from '../services/api';
+import api, { uploadsUrl } from '../services/api';
 
 // Importo las otras vistas
 import MyProjects from './MyProjects';
@@ -32,6 +34,7 @@ import Messages from './Messages';
 export default function Dashboard() {
   const { user, logout } = useAuth();
   const location = useLocation();
+  const { socket } = useSocket();
   
   const [activeTab, setActiveTab] = useState<'new' | 'projects' | 'explore' | 'settings' | 'admin' | 'messages'>(() => {
     if (location.state && location.state.tab) {
@@ -40,6 +43,13 @@ export default function Dashboard() {
     const savedTab = sessionStorage.getItem('dashboard_active_tab');
     return (savedTab as 'new' | 'projects' | 'explore' | 'settings' | 'admin' | 'messages') || 'new';
   });
+
+  const [messageUsername, setMessageUsername] = useState<string>(() => {
+    return (location.state as { username?: string } | null)?.username || '';
+  });
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -49,9 +59,54 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (location.state && location.state.tab) {
+      if ((location.state as { username?: string } | null)?.username) {
+        setMessageUsername((location.state as { username?: string } | null)?.username || '');
+      }
       window.history.replaceState({}, document.title);
     }
   }, [location]);
+
+  const loadNotifications = async () => {
+    try {
+      const res = await api.get('/notifications');
+      const data = res.data.data || [];
+      setNotifications(data);
+      setUnreadCount(data.filter((n: any) => !n.readAt).length);
+    } catch (error) {
+      console.error('Error loading notifications:', error);
+    }
+  };
+
+  useEffect(() => {
+    loadNotifications();
+  }, []);
+
+  useEffect(() => {
+    if (!socket) return;
+    const handleNotification = (payload: any) => {
+      setNotifications((prev) => [payload, ...prev]);
+      setUnreadCount((prev) => prev + 1);
+    };
+
+    socket.on('notification', handleNotification);
+    return () => {
+      socket.off('notification', handleNotification);
+    };
+  }, [socket]);
+
+  const handleToggleNotifications = async () => {
+    const next = !showNotifications;
+    setShowNotifications(next);
+    if (next) {
+      try {
+        await api.post('/notifications/read-all');
+        setUnreadCount(0);
+        setNotifications((prev) => prev.map((n) => ({ ...n, readAt: n.readAt || new Date().toISOString() })));
+      } catch (error) {
+        console.error('Error marking notifications:', error);
+      }
+    }
+  };
 
   const [useAI, setUseAI] = useState(true);
 
@@ -221,8 +276,12 @@ export default function Dashboard() {
         
         <div className="p-4 border-t border-slate-700/50 relative bg-slate-900/60">
           <div className="flex items-center gap-3 mb-3 p-3 bg-slate-800/70 rounded-xl border border-slate-700 shadow-sm">
-            <div className="h-10 w-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-sm font-bold shadow-inner text-white">
-              {user?.username.charAt(0).toUpperCase()}
+            <div className="h-10 w-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-sm font-bold shadow-inner text-white overflow-hidden">
+              {user?.avatar ? (
+                <img src={uploadsUrl(user.avatar)} alt={user.username} className="h-full w-full object-cover" />
+              ) : (
+                user?.username.charAt(0).toUpperCase()
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-sm truncate text-white">{user?.username}</p>
@@ -240,6 +299,54 @@ export default function Dashboard() {
 
       {/* 2. ÁREA PRINCIPAL */}
       <main className="flex-1 overflow-y-auto relative pt-16 md:pt-8 transition-all duration-300 px-2 md:px-6">
+        <div className="absolute right-4 top-4 z-50">
+          <button
+            onClick={handleToggleNotifications}
+            className="relative h-11 w-11 rounded-xl bg-white shadow-lg border border-slate-200 flex items-center justify-center text-slate-600 hover:text-slate-900"
+            aria-label="Notificaciones"
+          >
+            <Bell size={18} />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 rounded-full bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center">
+                {unreadCount}
+              </span>
+            )}
+          </button>
+        </div>
+        {showNotifications && (
+          <div className="absolute right-4 top-16 z-50 w-[320px] bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden">
+            <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+              <p className="text-sm font-semibold text-slate-800">Notificaciones</p>
+            </div>
+            <div className="max-h-[360px] overflow-y-auto">
+              {notifications.length === 0 ? (
+                <div className="p-6 text-center text-slate-500 text-sm">
+                  No tienes notificaciones nuevas.
+                </div>
+              ) : (
+                notifications.map((n: any, index: number) => (
+                  <button
+                    key={`${n._id || n.createdAt || index}`}
+                    onClick={() => {
+                      if (n.type === 'dm' && n.data?.senderUsername) {
+                        setActiveTab('messages');
+                        setMessageUsername(n.data.senderUsername);
+                      }
+                      if (n.type === 'pin' && n.data?.projectId) {
+                        setActiveTab('projects');
+                      }
+                      setShowNotifications(false);
+                    }}
+                    className="w-full text-left px-4 py-3 border-b border-slate-100 hover:bg-slate-50"
+                  >
+                    <p className="text-sm font-semibold text-slate-800">{n.title}</p>
+                    {n.body && <p className="text-xs text-slate-500 mt-1 line-clamp-2">{n.body}</p>}
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        )}
         
         {activeTab === 'new' && (
           <div className="p-4 md:p-8 max-w-7xl mx-auto min-h-full space-y-6">
@@ -501,7 +608,7 @@ export default function Dashboard() {
         {activeTab === 'explore' && <Explore />}
         {activeTab === 'settings' && <Settings />}
         {activeTab === 'admin' && user?.role === 'admin' && <Admin />}
-        {activeTab === 'messages' && <Messages embedded={true} />}
+        {activeTab === 'messages' && <Messages embedded={true} initialUsername={messageUsername} />}
 
       </main>
     </div>

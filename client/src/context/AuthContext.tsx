@@ -7,6 +7,7 @@ interface User {
   username: string;
   email: string;
   avatar?: string;
+  bio?: string;
   role: 'user' | 'admin';
 }
 

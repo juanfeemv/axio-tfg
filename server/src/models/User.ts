@@ -5,6 +5,7 @@ export interface IUser extends Document {
   email: string;
   password: string;
   avatar?: string;
+  bio?: string;
   role: 'user' | 'admin';
   isSuspended?: boolean;
   suspendedAt?: Date;
@@ -40,6 +41,12 @@ const UserSchema: Schema = new Schema(
     },
     avatar: {
       type: String,
+      default: ''
+    },
+    bio: {
+      type: String,
+      trim: true,
+      maxlength: 65,
       default: ''
     },
     role: {

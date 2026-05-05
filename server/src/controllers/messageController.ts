@@ -4,6 +4,7 @@ import { AuthRequest } from '../middlewares/auth';
 import Conversation from '../models/Conversation';
 import Message from '../models/Message';
 import User from '../models/User';
+import Notification from '../models/Notification';
 import { getIo } from '../utils/socket';
 
 const getOtherParticipant = (participants: mongoose.Types.ObjectId[], userId: string) => {
@@ -113,8 +114,10 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
     const userId = req.user.id;
     const { conversationId } = req.params;
     const { text } = req.body;
+    const imageFile = req.file;
+    const trimmedText = text ? String(text).trim() : '';
 
-    if (!text || !text.trim()) {
+    if (!trimmedText && !imageFile) {
       return res.status(400).json({ message: 'El mensaje esta vacio' });
     }
 
@@ -136,7 +139,8 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
       conversation: conversationId,
       sender: userId,
       recipient: recipientId,
-      text: text.trim()
+      text: trimmedText,
+      image: imageFile?.filename || ''
     });
 
     await Conversation.findByIdAndUpdate(conversationId, {
@@ -146,12 +150,33 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
 
     const populated = await message.populate('sender', 'username avatar');
 
+    const senderUsername = (populated.sender as any)?.username || 'Usuario';
+
+    await Notification.create({
+      user: recipientId,
+      type: 'dm',
+      title: `Nuevo mensaje de ${senderUsername}`,
+      body: trimmedText ? trimmedText.slice(0, 80) : 'Imagen enviada',
+      data: {
+        conversationId,
+        senderId: userId,
+        senderUsername
+      }
+    });
+
     const io = getIo();
     if (io) {
       // Solo emitir al receptor; el emisor ya gestiona el mensaje por la respuesta HTTP
       io.to(`user:${recipientId}`).emit('new_dm', {
         conversationId,
         message: populated
+      });
+      io.to(`user:${recipientId}`).emit('notification', {
+        type: 'dm',
+        title: `Nuevo mensaje de ${senderUsername}`,
+        body: trimmedText ? trimmedText.slice(0, 80) : 'Imagen enviada',
+        data: { conversationId, senderId: userId, senderUsername },
+        createdAt: new Date().toISOString()
       });
     }
 

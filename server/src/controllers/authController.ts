@@ -94,7 +94,7 @@ export const login = async (req: Request, res: Response) => {
     res.json({
       message: 'Login exitoso',
       token,
-      user: { id: user._id, username: user.username, email: user.email, avatar: user.avatar, role: user.role }
+      user: { id: user._id, username: user.username, email: user.email, avatar: user.avatar, bio: user.bio, role: user.role }
     });
   } catch (error: any) {
     if (error?.message === 'JWT_SECRET_MISSING') {
@@ -107,7 +107,7 @@ export const login = async (req: Request, res: Response) => {
 // --- ACTUALIZAR PERFIL ---
 export const updateProfile = async (req: AuthRequest, res: Response) => {
   try {
-    const { username } = req.body;
+    const { username, bio } = req.body;
     const userId = req.user.id;
 
     const user = await User.findById(userId);
@@ -124,11 +124,19 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
       user.username = username;
     }
 
+    if (bio !== undefined) {
+      const trimmedBio = String(bio).trim();
+      if (trimmedBio.length > 65) {
+        return res.status(400).json({ message: 'La descripcion no puede superar 65 caracteres' });
+      }
+      user.bio = trimmedBio;
+    }
+
     await user.save();
 
     res.json({
       success: true,
-      user: { id: user._id, username: user.username, email: user.email, avatar: user.avatar, role: user.role }
+      user: { id: user._id, username: user.username, email: user.email, avatar: user.avatar, bio: user.bio, role: user.role }
     });
   } catch (error) {
     res.status(500).json({ message: 'Error actualizando perfil' });
