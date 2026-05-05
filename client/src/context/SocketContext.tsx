@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import io, { Socket } from 'socket.io-client';
+import { useAuth } from './AuthContext';
 
 interface SocketContextType {
   socket: Socket | null;
@@ -14,6 +15,7 @@ const SOCKET_URL = 'http://localhost:3000';
 export const SocketProvider = ({ children }: { children: ReactNode }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
     // 1. Crear la conexión al arrancar la web
@@ -36,6 +38,11 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       newSocket.close();
     };
   }, []);
+
+  useEffect(() => {
+    if (!socket || !user?.id) return;
+    socket.emit('join_user', user.id);
+  }, [socket, user?.id]);
 
   return (
     <SocketContext.Provider value={{ socket, isConnected }}>

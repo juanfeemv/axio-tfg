@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import helmet from 'helmet';
+import { setIo } from './utils/socket';
 
 // Rutas
 import authRoutes from './routes/authRoutes';
@@ -16,6 +17,7 @@ import pinRoutes from './routes/pinRoutes';
 import statsRoutes from './routes/statsRoutes';
 import adminRoutes from './routes/adminRoutes';
 import userRoutes from './routes/userRoutes';
+import messageRoutes from './routes/messageRoutes';
 
 // --- CONFIGURACIÓN ---
 const __filename = fileURLToPath(import.meta.url);
@@ -45,10 +47,17 @@ const io = new Server(httpServer, {
     credentials: !allowAnyOrigin
   }
 });
+setIo(io);
 
 // --- LÓGICA DE TIEMPO REAL (SOCKETS) ---
 io.on('connection', (socket) => {
   console.log('🔌 Nuevo cliente conectado por Socket:', socket.id);
+
+  socket.on('join_user', (userId) => {
+    if (!userId) return;
+    socket.join(`user:${userId}`);
+    console.log(`💬 Usuario unido a su sala privada: ${userId}`);
+  });
 
   socket.on('join_project', (projectId) => {
     socket.join(projectId);
@@ -107,6 +116,7 @@ app.use('/api/pins', pinRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/messages', messageRoutes);
 
 app.get('/', (req: Request, res: Response) => {
   res.json({ status: 'online', mode: 'real-time' });

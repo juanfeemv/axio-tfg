@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api, { uploadsUrl } from '../services/api';
-import { Loader2, SunMoon, Share2 } from 'lucide-react';
+import { Loader2, SunMoon, Share2, MessageCircle } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function Profile() {
   const { username } = useParams();
   const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -40,7 +43,7 @@ export default function Profile() {
   );
 
   const { user, projects } = data;
-  const { theme, toggleTheme } = useTheme();
+  const canMessage = !!currentUser && currentUser.username !== user.username;
 
   return (
     <div className="p-8 max-w-6xl mx-auto min-h-screen bg-white dark:bg-slate-900">
@@ -62,6 +65,15 @@ export default function Profile() {
           </div>
 
           <div className="flex items-center gap-3">
+            {canMessage && (
+              <button
+                onClick={() => navigate(`/messages/${user.username}`)}
+                className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl transition hover:shadow-sm"
+              >
+                <MessageCircle size={16} />
+                <span className="text-sm">Mensaje</span>
+              </button>
+            )}
             <button onClick={() => toggleTheme(theme === 'dark' ? 'light' : 'dark')} className="flex items-center gap-2 px-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl transition">
               <SunMoon size={16} />
               <span className="text-sm">{theme === 'dark' ? 'Modo oscuro' : 'Modo claro'}</span>

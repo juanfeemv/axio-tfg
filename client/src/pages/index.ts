@@ -1,5 +1,7 @@
 export { default as Login } from './Login';
 export { default as Register } from './Register';
+export { default as Home } from './Home';
+export { default as Messages } from './Messages';
 export { default as Dashboard } from './Dashboard';
 export { default as ProjectView } from './ProjectView';
 export { default as Profile } from './Profile';

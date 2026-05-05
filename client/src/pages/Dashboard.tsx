@@ -16,7 +16,8 @@ import {
   FileCode, 
   Save,
   Menu, 
-  X      
+  X,
+  MessageCircle
 } from 'lucide-react';
 import brandLogo from '../assets/logo.png';
 import api from '../services/api';
@@ -26,17 +27,18 @@ import MyProjects from './MyProjects';
 import Settings from './Settings';
 import Explore from './Explore';
 import Admin from './Admin';
+import Messages from './Messages';
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
   const location = useLocation();
   
-  const [activeTab, setActiveTab] = useState<'new' | 'projects' | 'explore' | 'settings' | 'admin'>(() => {
+  const [activeTab, setActiveTab] = useState<'new' | 'projects' | 'explore' | 'settings' | 'admin' | 'messages'>(() => {
     if (location.state && location.state.tab) {
         return location.state.tab;
     }
     const savedTab = sessionStorage.getItem('dashboard_active_tab');
-    return (savedTab as 'new' | 'projects' | 'explore' | 'settings' | 'admin') || 'new';
+    return (savedTab as 'new' | 'projects' | 'explore' | 'settings' | 'admin' | 'messages') || 'new';
   });
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -192,6 +194,12 @@ export default function Dashboard() {
             label="Comunidad" 
             active={activeTab === 'explore'} 
             onClick={() => handleTabChange('explore')} 
+          />
+          <SidebarItem 
+            icon={<MessageCircle size={20} />} 
+            label="Mensajes" 
+            active={activeTab === 'messages'} 
+            onClick={() => handleTabChange('messages')} 
           />
           <div className="pt-4 mt-4 border-t border-slate-700/50">
             <SidebarItem 
@@ -493,6 +501,7 @@ export default function Dashboard() {
         {activeTab === 'explore' && <Explore />}
         {activeTab === 'settings' && <Settings />}
         {activeTab === 'admin' && user?.role === 'admin' && <Admin />}
+        {activeTab === 'messages' && <Messages embedded={true} />}
 
       </main>
     </div>

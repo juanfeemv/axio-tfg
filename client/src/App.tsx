@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
 // Importo las páginas
-import { Login, Register, Dashboard, ProjectView, Profile, ForgotPassword, ResetPassword, Admin } from './pages';
+import { Home, Login, Register, Messages, Dashboard, ProjectView, Profile, ForgotPassword, ResetPassword, Admin } from './pages';
 
 // Componente para proteger rutas (Si no estás logueado, te echa al Login)
 const PrivateRoute = ({ children }: { children: ReactNode }) => {
@@ -27,6 +27,7 @@ function App() {
       <AuthProvider>
         <Routes>
           {/* Rutas Públicas */}
+          <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -48,6 +49,24 @@ function App() {
             element={
               <PrivateRoute>
                 <ProjectView />
+              </PrivateRoute>
+            }
+          />
+
+          {/* Mensajes directos */}
+          <Route
+            path="/messages"
+            element={
+              <PrivateRoute>
+                <Messages />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/messages/:username"
+            element={
+              <PrivateRoute>
+                <Messages />
               </PrivateRoute>
             }
           />
