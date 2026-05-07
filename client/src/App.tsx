@@ -25,68 +25,73 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Routes>
-          {/* Rutas Públicas */}
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password/:token" element={<ResetPassword />} />
+        <a href="#main-content" className="skip-link">
+          Saltar al contenido principal
+        </a>
+        <main id="main-content">
+          <Routes>
+            {/* Rutas Públicas */}
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password/:token" element={<ResetPassword />} />
 
-          {/* Rutas Privadas (Solo usuarios logueados) */}
-          <Route
-            path="/dashboard"
-            element={
-              <PrivateRoute>
-                <Dashboard />
-              </PrivateRoute>
-            }
-          />
+            {/* Rutas Privadas (Solo usuarios logueados) */}
+            <Route
+              path="/dashboard"
+              element={
+                <PrivateRoute>
+                  <Dashboard />
+                </PrivateRoute>
+              }
+            />
 
-          {/* Ver un proyecto específico por su ID */}
-          <Route
-            path="/project/:id"
-            element={
-              <PrivateRoute>
-                <ProjectView />
-              </PrivateRoute>
-            }
-          />
+            {/* Ver un proyecto específico por su ID */}
+            <Route
+              path="/project/:id"
+              element={
+                <PrivateRoute>
+                  <ProjectView />
+                </PrivateRoute>
+              }
+            />
 
-          {/* Mensajes directos */}
-          <Route
-            path="/messages"
-            element={
-              <PrivateRoute>
-                <Messages />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/messages/:username"
-            element={
-              <PrivateRoute>
-                <Messages />
-              </PrivateRoute>
-            }
-          />
+            {/* Mensajes directos */}
+            <Route
+              path="/messages"
+              element={
+                <PrivateRoute>
+                  <Messages />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/messages/:username"
+              element={
+                <PrivateRoute>
+                  <Messages />
+                </PrivateRoute>
+              }
+            />
 
-          {/* Perfil público de usuario */}
-          <Route path="/u/:username" element={<Profile />} />
+            {/* Perfil público de usuario */}
+            <Route path="/u/:username" element={<Profile />} />
 
-          {/* Ruta SOLO para Admins */}
-          <Route
-            path="/admin"
-            element={
-              <AdminRoute>
-                <Admin />
-              </AdminRoute>
-            }
-          />
+            {/* Ruta SOLO para Admins */}
+            <Route
+              path="/admin"
+              element={
+                <AdminRoute>
+                  <Admin />
+                </AdminRoute>
+              }
+            />
 
-          {/* Por defecto, ir al dashboard (o al login si no hay sesión) */}
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
+            {/* Por defecto, ir al dashboard (o al login si no hay sesión) */}
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+        </main>
       </AuthProvider>
     </BrowserRouter>
   );

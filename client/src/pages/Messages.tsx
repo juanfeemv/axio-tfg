@@ -227,6 +227,8 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
             <button
               onClick={() => navigate(-1)}
               className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900"
+              aria-label="Volver"
+              data-speech="Volver"
             >
               <ArrowLeft size={16} />
               Volver
@@ -255,6 +257,8 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
             <button
               onClick={() => navigate(-1)}
               className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900"
+              aria-label="Volver"
+              data-speech="Volver"
             >
               <ArrowLeft size={16} />
               Volver
@@ -301,8 +305,13 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
           </div>
         )}
         <div className={`${embedded ? 'flex-1' : 'mt-6'} grid lg:grid-cols-[300px_1fr] gap-4 ${embedded ? 'h-full' : ''}`}>
-          <div className={`bg-white border border-slate-200 rounded-3xl shadow-sm p-4 ${panelHeight} overflow-y-auto`}>
-            <p className="text-xs uppercase tracking-widest text-slate-400 px-2">Conversaciones</p>
+          <div
+            className={`bg-white border border-slate-200 rounded-3xl shadow-sm p-4 ${panelHeight} overflow-y-auto`}
+            aria-label="Lista de conversaciones"
+          >
+            <p className="text-xs uppercase tracking-widest text-slate-400 px-2" data-speech="Conversaciones">
+              Conversaciones
+            </p>
             <div className="mt-4 space-y-2">
               {conversations.length === 0 ? (
                 <div className="text-center text-slate-500 text-sm mt-10">
@@ -318,6 +327,8 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
                         navigate(`/messages/${conv.otherUser.username}`);
                       }
                     }}
+                    aria-current={activeConversationId === conv.id}
+                    data-speech={`Conversacion con ${conv.otherUser.username}. ${conv.lastMessage?.text || 'Sin mensajes'}`}
                     className={`w-full text-left px-3 py-3 rounded-2xl border transition ${
                       activeConversationId === conv.id
                         ? 'border-emerald-200 bg-emerald-50'
@@ -327,7 +338,11 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
                     <div className="flex items-center gap-3">
                       <div className="h-10 w-10 rounded-full bg-slate-200 overflow-hidden text-slate-700 font-bold flex items-center justify-center shrink-0">
                         {conv.otherUser.avatar ? (
-                          <img src={uploadsUrl(conv.otherUser.avatar)} alt={conv.otherUser.username} className="h-full w-full object-cover" />
+                          <img
+                            src={uploadsUrl(conv.otherUser.avatar)}
+                            alt={`Avatar de ${conv.otherUser.username}`}
+                            className="h-full w-full object-cover"
+                          />
                         ) : (
                           conv.otherUser.username?.charAt(0)?.toUpperCase()
                         )}
@@ -359,7 +374,7 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
                   {activeConversationId && conversations.find((c) => c.id === activeConversationId)?.otherUser?.avatar ? (
                     <img
                       src={uploadsUrl(conversations.find((c) => c.id === activeConversationId)?.otherUser.avatar || '')}
-                      alt="Avatar"
+                      alt={`Avatar de ${conversations.find((c) => c.id === activeConversationId)?.otherUser?.username || 'usuario'}`}
                       className="h-full w-full object-cover"
                     />
                   ) : (
@@ -377,7 +392,13 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4 relative">
+            <div
+              className="flex-1 overflow-y-auto px-6 py-5 space-y-4 relative"
+              role="log"
+              aria-live="polite"
+              aria-relevant="additions text"
+              aria-busy={loading}
+            >
               {loading ? (
                 <div className="text-center text-slate-500 mt-10">Cargando mensajes...</div>
               ) : messages.length === 0 ? (
@@ -413,6 +434,7 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
                               ? 'bg-gradient-to-r from-[#3d9171] to-[#23638a] text-white'
                               : 'bg-white border border-slate-200 text-slate-700'
                           }`}
+                          data-speech={`Mensaje de ${isMine ? 'ti' : msg.sender?.username || 'usuario'}. ${msg.text?.trim() ? msg.text.trim() : msg.image ? 'Imagen enviada' : 'Mensaje sin texto'}. ${formatTime(msg.createdAt)}`}
                         >
                           <p className="font-semibold text-xs opacity-80 mb-1">
                             {isMine ? 'Tu' : msg.sender?.username || 'Usuario'}
@@ -452,6 +474,7 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Escribe tu mensaje..."
+                  aria-label="Escribe tu mensaje"
                   className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-4 focus:ring-[#23638a]/15 focus:border-[#23638a] outline-none"
                   disabled={!activeConversationId}
                 />
@@ -474,6 +497,8 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
                             setInput((prev) => `${prev}${emoji}`);
                             setShowEmoji(false);
                           }}
+                          aria-label={`Emoji ${emoji}`}
+                          data-speech={`Emoji ${emoji}`}
                           type="button"
                         >
                           {emoji}

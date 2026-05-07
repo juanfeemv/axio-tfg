@@ -19,10 +19,13 @@ import {
   Menu, 
   X,
   MessageCircle,
-  Bell
+  Bell,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 import brandLogo from '../assets/logo.png';
 import api, { uploadsUrl } from '../services/api';
+import { useA11y } from '../components/accessibility/A11yProvider';
 
 // Importo las otras vistas
 import MyProjects from './MyProjects';
@@ -52,6 +55,9 @@ export default function Dashboard() {
   const [unreadCount, setUnreadCount] = useState(0);
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [showA11yPanel, setShowA11yPanel] = useState(false);
+
+  const { ttsEnabled, setTtsEnabled, ttsVolume, setTtsVolume } = useA11y();
 
   useEffect(() => {
     sessionStorage.setItem('dashboard_active_tab', activeTab);
@@ -299,11 +305,70 @@ export default function Dashboard() {
 
       {/* 2. ÁREA PRINCIPAL */}
       <main className="flex-1 overflow-y-auto relative pt-16 md:pt-8 transition-all duration-300 px-2 md:px-6">
-        <div className="absolute right-4 top-4 z-50">
+        <div className="absolute right-4 top-4 z-50 flex items-center gap-2">
+          <div className="relative">
+            <button
+              onClick={() => setShowA11yPanel((prev) => !prev)}
+              className="relative h-11 w-11 rounded-xl bg-white shadow-lg border border-slate-200 flex items-center justify-center text-slate-600 hover:text-slate-900"
+              aria-label="Accesibilidad: texto a voz"
+              aria-pressed={ttsEnabled}
+              data-speech={ttsEnabled ? 'Texto a voz activado' : 'Texto a voz desactivado'}
+            >
+              {ttsEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
+            </button>
+            {showA11yPanel && (
+              <div className="absolute right-0 top-14 w-64 bg-white border border-slate-200 rounded-2xl shadow-2xl p-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-slate-800">Texto a voz</p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setTtsEnabled(!ttsEnabled)}
+                      className={`text-xs font-semibold px-3 py-1 rounded-full border ${ttsEnabled ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-slate-50 border-slate-200 text-slate-600'}`}
+                      aria-pressed={ttsEnabled}
+                    >
+                      {ttsEnabled ? 'Activado' : 'Desactivado'}
+                    </button>
+                    <button
+                      onClick={() => setShowA11yPanel(false)}
+                      className="text-xs font-semibold px-2.5 py-1 rounded-full border border-slate-200 text-slate-500 hover:text-slate-800"
+                      aria-label="Cerrar panel de texto a voz"
+                    >
+                      Cerrar
+                    </button>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <label className="text-xs text-slate-500" htmlFor="tts-volume">
+                    Volumen
+                  </label>
+                  <div className="mt-2 flex items-center gap-3">
+                    <input
+                      id="tts-volume"
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.05"
+                      value={ttsVolume}
+                      onChange={(e) => setTtsVolume(Number(e.target.value))}
+                      className="w-full accent-emerald-500"
+                      aria-label="Volumen de texto a voz"
+                    />
+                    <span className="text-xs text-slate-600 w-10 text-right">
+                      {Math.round(ttsVolume * 100)}%
+                    </span>
+                  </div>
+                  <p className="mt-2 text-[11px] text-slate-400">
+                    Pasa el mouse o usa Tab para escuchar.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
           <button
             onClick={handleToggleNotifications}
             className="relative h-11 w-11 rounded-xl bg-white shadow-lg border border-slate-200 flex items-center justify-center text-slate-600 hover:text-slate-900"
             aria-label="Notificaciones"
+            data-speech="Notificaciones"
           >
             <Bell size={18} />
             {unreadCount > 0 && (
@@ -368,6 +433,16 @@ export default function Dashboard() {
                 <div 
                   className="bg-white/80 dark:bg-slate-800/70 backdrop-blur-md p-2 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-md flex items-center gap-2 cursor-pointer select-none overflow-hidden"
                   onClick={() => setUseAI(!useAI)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setUseAI(!useAI);
+                    }
+                  }}
+                  aria-pressed={useAI}
+                  data-speech={useAI ? 'Analizar con IA activado' : 'Solo subir activado'}
                 >
                   <div className={`px-5 md:px-6 py-2.5 rounded-xl text-xs md:text-sm font-bold flex items-center gap-2 transition-all duration-300 ${useAI ? 'bg-gradient-to-r from-[#23638a] via-[#2f7d62] to-[#3d9171] text-white shadow-md scale-105' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700'}`}>
                     <span className="hidden sm:inline">Analizar con</span> IA
@@ -391,7 +466,9 @@ export default function Dashboard() {
                     <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-blue-500/30">
                       <Link2 size={24} />
                     </div>
-                    <h3 className="text-lg font-bold text-slate-800 mb-2 dark:text-white">Web en Vivo</h3>
+                      <h3 className="text-lg font-bold text-slate-800 mb-2 dark:text-white" data-speech="Web en vivo">
+                        Web en Vivo
+                      </h3>
                     <p className="text-slate-500 text-sm mb-6 h-10 line-clamp-2 dark:text-slate-400">
                       {useAI ? 'La IA navegará y detectará errores.' : 'Guarda la URL para compartirla.'}
                     </p>
@@ -420,7 +497,9 @@ export default function Dashboard() {
                     <div className="h-12 w-12 bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-purple-500/30">
                       <Upload size={24} />
                     </div>
-                    <h3 className="text-lg font-bold text-slate-800 mb-2 dark:text-white">Diseño Visual</h3>
+                      <h3 className="text-lg font-bold text-slate-800 mb-2 dark:text-white" data-speech="Diseño visual">
+                        Diseño Visual
+                      </h3>
                     <p className="text-slate-500 text-sm mb-6 h-10 line-clamp-2 dark:text-slate-400">
                       {useAI ? 'Sube una diseño (imagen o PDF) para análisis visual.' : 'Comparte un diseño (imagen o PDF) para feedback.'}
                     </p>
@@ -439,7 +518,9 @@ export default function Dashboard() {
                     <div className="h-12 w-12 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-emerald-500/30">
                       <FileCode size={24} />
                     </div>
-                    <h3 className="text-lg font-bold text-slate-800 mb-2 dark:text-white">Código Fuente</h3>
+                      <h3 className="text-lg font-bold text-slate-800 mb-2 dark:text-white" data-speech="Codigo fuente">
+                        Código Fuente
+                      </h3>
                     <p className="text-slate-500 text-sm mb-6 h-10 line-clamp-2 dark:text-slate-400">
                       {useAI ? 'Revisión de código automática.' : 'Comparte código a la comunidad.'}
                     </p>

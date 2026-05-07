@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './App';
+import A11yProvider from './components/accessibility/A11yProvider';
 
 // Contextos globales
 import { AuthProvider } from './context/AuthContext';
@@ -13,7 +14,9 @@ createRoot(document.getElementById('root')!).render(
     <AuthProvider>
       <SocketProvider>
         <ThemeProvider>   {/* <--- ENVOLVER APP EN EL TEMA */}
-          <App />
+          <A11yProvider>
+            <App />
+          </A11yProvider>
         </ThemeProvider>
       </SocketProvider>
     </AuthProvider>
