@@ -518,7 +518,7 @@ export default function Dashboard() {
                     <div className="h-12 w-12 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-emerald-500/30">
                       <FileCode size={24} />
                     </div>
-                      <h3 className="text-lg font-bold text-slate-800 mb-2 dark:text-white" data-speech="Codigo fuente">
+                      <h3 className="text-lg font-bold text-slate-800 mb-2 dark:text-white" data-speech="Código fuente">
                         Código Fuente
                       </h3>
                     <p className="text-slate-500 text-sm mb-6 h-10 line-clamp-2 dark:text-slate-400">

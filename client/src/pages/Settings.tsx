@@ -91,7 +91,7 @@ export default function Settings() {
   // --- 2. GUARDAR PERFIL ---
   const handleSaveProfile = async () => {
     if (!username.trim()) return alert("El nombre no puede estar vacío");
-    if (bio.trim().length > 65) return alert('La descripcion no puede superar 65 caracteres');
+    if (bio.trim().length > 65) return alert('La descripción no puede superar 65 caracteres');
     
     setLoading(true);
     try {
@@ -217,7 +217,7 @@ export default function Settings() {
               {/* Info */}
               <div className="flex-1 space-y-4 w-full">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Nombre de Usuario</label>
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Nombre de usuario</label>
                   <div className="relative group">
                     <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
                     <input 
@@ -229,7 +229,7 @@ export default function Settings() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Descripcion (max 65)</label>
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Descripción (max 65)</label>
                   <div className="relative">
                     <textarea
                       rows={2}
@@ -237,7 +237,7 @@ export default function Settings() {
                       value={bio}
                       onChange={(e) => setBio(e.target.value)}
                       className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all dark:text-white resize-none"
-                      placeholder="Cuéntanos sobre ti en una linea..."
+                      placeholder="Cuéntanos sobre ti en una línea..."
                     />
                     <div className="absolute right-3 bottom-2 text-xs text-slate-400">
                       {bio.length}/65
@@ -289,7 +289,7 @@ export default function Settings() {
                       <Lock className="text-purple-600 dark:text-purple-400" size={18} />
                    </div>
                    <div>
-                      <p className="font-semibold text-slate-800 dark:text-white">Cambiar Contraseña</p>
+                      <p className="font-semibold text-slate-800 dark:text-white">Cambiar contraseña</p>
                       <p className="text-sm text-slate-500 dark:text-slate-400">******</p>
                    </div>
                 </div>
@@ -298,7 +298,7 @@ export default function Settings() {
             ) : (
               <div className="bg-slate-50 dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-700 animate-in zoom-in duration-200">
                 <div className="flex justify-between items-center mb-6">
-                    <h3 className="font-bold text-slate-800 dark:text-white text-lg">Nueva Contraseña</h3>
+                    <h3 className="font-bold text-slate-800 dark:text-white text-lg">Nueva contraseña</h3>
                     <button onClick={() => setShowPasswordForm(false)} className="text-slate-400 hover:text-slate-600 transition-colors">✕</button>
                 </div>
                 
@@ -319,7 +319,7 @@ export default function Settings() {
                 <div className="space-y-5">
                   {/* Input 1: Contraseña Actual */}
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Contraseña Actual</label>
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Contraseña actual</label>
                     <div className="relative group">
                         <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-purple-600 transition-colors" />
                         <input 
@@ -334,7 +334,7 @@ export default function Settings() {
 
                   {/* Input 2: Nueva Contraseña con Validación Visual */}
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Nueva Contraseña</label>
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Nueva contraseña</label>
                     <div className="relative group">
                         <Key className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-purple-600 transition-colors" />
                         <input 

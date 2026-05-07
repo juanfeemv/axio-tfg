@@ -171,7 +171,7 @@ export default function Admin() {
     };
 
     const handleSuspendUser = async (id: string) => {
-        const reason = prompt('Motivo de suspension (opcional):') || undefined;
+        const reason = prompt('Motivo de suspensión (opcional):') || undefined;
         try {
             await adminService.suspendUser(id, reason);
             loadUsers();
@@ -224,7 +224,7 @@ export default function Admin() {
     };
 
     const handleEditProjectMeta = async (project: any) => {
-        const category = prompt('Categoria (opcional):', project.category || '') ?? project.category;
+        const category = prompt('Categoría (opcional):', project.category || '') ?? project.category;
         const tagsInput = prompt('Etiquetas separadas por coma:', (project.tags || []).join(', '));
         if (tagsInput === null) return;
         const tags = tagsInput.split(',').map((t: string) => t.trim()).filter(Boolean);
@@ -276,9 +276,9 @@ export default function Admin() {
                 maxPinsPerProject: Number(config.maxPinsPerProject) || 0,
                 maxUploadMb: Number(config.maxUploadMb) || 0
             });
-            alert('Configuracion actualizada');
+            alert('Configuración actualizada');
         } catch (error: any) {
-            alert(error.response?.data?.message || 'Error al guardar configuracion');
+            alert(error.response?.data?.message || 'Error al guardar configuración');
         } finally {
             setConfigSaving(false);
         }
@@ -296,7 +296,7 @@ export default function Admin() {
             link.remove();
             window.URL.revokeObjectURL(url);
         } catch (error: any) {
-            alert(error.response?.data?.message || 'Error al exportar auditorias');
+            alert(error.response?.data?.message || 'Error al exportar auditorías');
         }
     };
 
@@ -392,7 +392,7 @@ export default function Admin() {
                             <StatCard title="Auditorías" value={stats.totals.audits} subtitle="Total de análisis" color="from-emerald-500 to-emerald-600" />
                             <StatCard title="Pines" value={stats.totals.pins} subtitle="Comentarios totales" color="from-orange-500 to-orange-600" />
                             <div className="md:col-span-2 lg:col-span-4 bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-lg border-2 border-slate-100 dark:border-slate-700">
-                                <div className="text-sm font-semibold text-slate-600 dark:text-slate-300 mb-3">Ultimos 7 dias</div>
+                                <div className="text-sm font-semibold text-slate-600 dark:text-slate-300 mb-3">Últimos 7 días</div>
                                 <div className="flex flex-wrap gap-3">
                                     <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">Usuarios: {stats.last7Days?.users || 0}</span>
                                     <span className="px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">Proyectos: {stats.last7Days?.projects || 0}</span>
@@ -562,7 +562,7 @@ export default function Admin() {
                                                     <div>{project.title}</div>
                                                     {(project.category || (project.tags && project.tags.length > 0)) && (
                                                         <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                                            {project.category && <span className="mr-2">Categoria: {project.category}</span>}
+                                                            {project.category && <span className="mr-2">Categoría: {project.category}</span>}
                                                             {project.tags && project.tags.length > 0 && <span>Etiquetas: {project.tags.join(', ')}</span>}
                                                         </div>
                                                     )}
@@ -606,7 +606,7 @@ export default function Admin() {
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); handleEditProjectMeta(project); }}
                                                             className="p-2 text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-                                                            title="Editar etiquetas y categoria"
+                                                            title="Editar etiquetas y categoría"
                                                         >
                                                             <Tag size={16} />
                                                         </button>

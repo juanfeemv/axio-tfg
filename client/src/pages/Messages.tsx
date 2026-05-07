@@ -241,7 +241,7 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
             </div>
             <h1 className="text-2xl font-bold text-slate-800">Mensajes directos</h1>
             <p className="text-slate-500 mt-3">
-              Inicia sesion para enviar mensajes privados.
+              Inicia sesión para enviar mensajes privados.
             </p>
           </div>
         </div>
@@ -271,7 +271,7 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
             </div>
             <h1 className="text-2xl font-bold text-slate-800">Mensajes directos</h1>
             <p className="text-slate-500 mt-3">
-              Abre otro perfil y toca el icono de mensaje para iniciar una conversacion privada.
+              Abre otro perfil y toca el icono de mensaje para iniciar una conversación privada.
             </p>
           </div>
         </div>
@@ -315,7 +315,7 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
             <div className="mt-4 space-y-2">
               {conversations.length === 0 ? (
                 <div className="text-center text-slate-500 text-sm mt-10">
-                  Aun no tienes conversaciones.
+                  Aún no tienes conversaciones.
                 </div>
               ) : (
                 conversations.map((conv) => (
@@ -328,7 +328,7 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
                       }
                     }}
                     aria-current={activeConversationId === conv.id}
-                    data-speech={`Conversacion con ${conv.otherUser.username}. ${conv.lastMessage?.text || 'Sin mensajes'}`}
+                    data-speech={`Conversación con ${conv.otherUser.username}. ${conv.lastMessage?.text || 'Sin mensajes'}`}
                     className={`w-full text-left px-3 py-3 rounded-2xl border transition ${
                       activeConversationId === conv.id
                         ? 'border-emerald-200 bg-emerald-50'
@@ -383,7 +383,7 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-slate-800">
-                    {conversations.find((c) => c.id === activeConversationId)?.otherUser?.username || 'Conversacion'}
+                    {conversations.find((c) => c.id === activeConversationId)?.otherUser?.username || 'Conversación'}
                   </p>
                   <p className="text-xs text-slate-400 flex items-center gap-1">
                     <Clock size={12} /> Activo recientemente
@@ -407,8 +407,8 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
                     <MessageCircle size={22} />
                   </div>
                   <div>
-                    <p className="font-semibold text-slate-700">Aun no hay mensajes</p>
-                    <p className="text-sm text-slate-500">Escribe el primero para iniciar la conversacion.</p>
+                    <p className="font-semibold text-slate-700">Aún no hay mensajes</p>
+                    <p className="text-sm text-slate-500">Escribe el primero para iniciar la conversación.</p>
                   </div>
                 </div>
               ) : (
@@ -437,7 +437,7 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
                           data-speech={`Mensaje de ${isMine ? 'ti' : msg.sender?.username || 'usuario'}. ${msg.text?.trim() ? msg.text.trim() : msg.image ? 'Imagen enviada' : 'Mensaje sin texto'}. ${formatTime(msg.createdAt)}`}
                         >
                           <p className="font-semibold text-xs opacity-80 mb-1">
-                            {isMine ? 'Tu' : msg.sender?.username || 'Usuario'}
+                            {isMine ? 'Tú' : msg.sender?.username || 'Usuario'}
                           </p>
                           {msg.image ? (
                             <img

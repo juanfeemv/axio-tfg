@@ -129,7 +129,7 @@ export default function Profile() {
                 : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
             }`}
           >
-            <span className="flex items-center gap-2"><BarChart3 size={16} /> Estadisticas</span>
+            <span className="flex items-center gap-2"><BarChart3 size={16} /> Estadísticas</span>
           </button>
           <button
             onClick={() => setActiveSection('badges')}
@@ -221,7 +221,7 @@ export default function Profile() {
             <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Interaccion</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Interacción</p>
                   <p className="text-3xl font-bold text-slate-800 dark:text-white">{totalLikes}</p>
                 </div>
                 <div className="h-12 w-12 rounded-2xl bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 flex items-center justify-center font-bold">
@@ -264,7 +264,7 @@ export default function Profile() {
                 </div>
               ))
             ) : (
-              <div className="text-center text-slate-500">Aun no hay insignias para este usuario.</div>
+              <div className="text-center text-slate-500">Aún no hay insignias para este usuario.</div>
             )}
           </div>
         )}
