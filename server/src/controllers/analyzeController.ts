@@ -5,11 +5,11 @@ import { fileURLToPath } from 'url';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
-import Audit from '../models/Audit';
-import Project from '../models/Project';
-import User from '../models/User';
-import { captureWebsite } from '../services/webScraper';
-import { getJwtSecret } from '../utils/jwt';
+import Audit from '../models/Audit.js';
+import Project from '../models/Project.js';
+import User from '../models/User.js';
+import { captureWebsite } from '../services/webScraper.js';
+import { getJwtSecret } from '../utils/jwt.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

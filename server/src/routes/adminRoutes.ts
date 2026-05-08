@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { protect, requireAdmin } from '../middlewares/auth';
+import { protect, requireAdmin } from '../middlewares/auth.js';
 import {
     // User management
     getAllUsers,
@@ -28,7 +28,7 @@ import {
     getAdminActivity,
     getConfig,
     updateConfig
-} from '../controllers/adminController';
+} from '../controllers/adminController.js';
 
 const router = Router();
 

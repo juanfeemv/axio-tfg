@@ -7,9 +7,9 @@ import {
   getCommunityProjects, 
   toggleLike,
   rateProject
-} from '../controllers/projectController';
-import { protect } from '../middlewares/auth';
-import { upload } from '../middlewares/upload';
+} from '../controllers/projectController.js';
+import { protect } from '../middlewares/auth.js';
+import { upload } from '../middlewares/upload.js';
 
 const router = Router();
 

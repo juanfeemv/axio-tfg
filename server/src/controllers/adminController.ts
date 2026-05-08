@@ -1,13 +1,13 @@
 import { Response } from 'express';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
-import { AuthRequest } from '../middlewares/auth';
-import User from '../models/User';
-import Project from '../models/Project';
-import Audit from '../models/Audit';
-import Pin from '../models/Pin';
-import Admin from '../models/Admin';
-import { getSiteConfig } from '../utils/siteConfig';
+import { AuthRequest } from '../middlewares/auth.js';
+import User from '../models/User.js';
+import Project from '../models/Project.js';
+import Audit from '../models/Audit.js';
+import Pin from '../models/Pin.js';
+import Admin from '../models/Admin.js';
+import { getSiteConfig } from '../utils/siteConfig.js';
 
 // Helper function to log admin activity
 const logActivity = async (admin: any, action: string, targetType: string, targetId?: any, details?: string) => {

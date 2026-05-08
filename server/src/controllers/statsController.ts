@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import Project from '../models/Project';
-import Pin from '../models/Pin';
-import User from '../models/User';
+import Project from '../models/Project.js';
+import Pin from '../models/Pin.js';
+import User from '../models/User.js';
 
 export const getWeeklyStats = async (req: Request, res: Response) => {
   try {

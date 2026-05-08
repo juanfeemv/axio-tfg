@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import User from '../models/User';
-import Project from '../models/Project';
-import { getBadgesForStats } from '../utils/badges';
+import User from '../models/User.js';
+import Project from '../models/Project.js';
+import { getBadgesForStats } from '../utils/badges.js';
 
 // GET /api/users/:username -> Perfil público y sus proyectos
 export const getUserProfile = async (req: Request, res: Response) => {

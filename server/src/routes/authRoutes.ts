@@ -8,10 +8,10 @@ import {
   forgotPassword,    
   resetPassword,
   uploadAvatar      
-} from '../controllers/authController'; 
-import { protect } from '../middlewares/auth';
-import { upload } from '../middlewares/upload';
-import { rateLimit } from '../middlewares/rateLimit';
+} from '../controllers/authController.js'; 
+import { protect } from '../middlewares/auth.js';
+import { upload } from '../middlewares/upload.js';
+import { rateLimit } from '../middlewares/rateLimit.js';
 
 const router = Router();
 

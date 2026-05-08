@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { protect } from '../middlewares/auth';
-import { upload } from '../middlewares/upload';
+import { protect } from '../middlewares/auth.js';
+import { upload } from '../middlewares/upload.js';
 import {
   listConversations,
   getOrCreateConversation,
@@ -8,7 +8,7 @@ import {
   sendMessage,
   markConversationRead,
   deleteConversation
-} from '../controllers/messageController';
+} from '../controllers/messageController.js';
 
 const router = Router();
 

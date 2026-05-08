@@ -2,11 +2,11 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import User from '../models/User';
-import Project from '../models/Project';
-import { AuthRequest } from '../middlewares/auth';
-import { getSiteConfig } from '../utils/siteConfig';
-import { getJwtSecret } from '../utils/jwt';
+import User from '../models/User.js';
+import Project from '../models/Project.js';
+import { AuthRequest } from '../middlewares/auth.js';
+import { getSiteConfig } from '../utils/siteConfig.js';
+import { getJwtSecret } from '../utils/jwt.js';
 
 // Función para validar la contraseña
 const validatePassword = (password: string): { valid: boolean; message?: string } => {

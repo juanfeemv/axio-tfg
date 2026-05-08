@@ -1,11 +1,11 @@
 import { Response } from 'express';
 import mongoose from 'mongoose';
-import { AuthRequest } from '../middlewares/auth';
-import Conversation from '../models/Conversation';
-import Message from '../models/Message';
-import User from '../models/User';
-import Notification from '../models/Notification';
-import { getIo } from '../utils/socket';
+import { AuthRequest } from '../middlewares/auth.js';
+import Conversation from '../models/Conversation.js';
+import Message from '../models/Message.js';
+import User from '../models/User.js';
+import Notification from '../models/Notification.js';
+import { getIo } from '../utils/socket.js';
 
 const getOtherParticipant = (participants: mongoose.Types.ObjectId[], userId: string) => {
   const other = participants.find((p) => p.toString() !== userId);

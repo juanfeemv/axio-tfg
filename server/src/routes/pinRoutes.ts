@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { getProjectPins, createPin, deletePin } from '../controllers/pinController';
-import { protect } from '../middlewares/auth';
+import { getProjectPins, createPin, deletePin } from '../controllers/pinController.js';
+import { protect } from '../middlewares/auth.js';
 
 const router = Router();
 
