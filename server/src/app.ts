@@ -7,18 +7,18 @@ import { fileURLToPath } from 'url';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import helmet from 'helmet';
-import { setIo } from './utils/socket';
+import { setIo } from './utils/socket.js';
 
 // Rutas
-import authRoutes from './routes/authRoutes';
-import analyzeRoutes from './routes/analyzeRoutes';
-import projectRoutes from './routes/projectRoutes';
-import pinRoutes from './routes/pinRoutes';
-import statsRoutes from './routes/statsRoutes';
-import adminRoutes from './routes/adminRoutes';
-import userRoutes from './routes/userRoutes';
-import messageRoutes from './routes/messageRoutes';
-import notificationRoutes from './routes/notificationRoutes';
+import authRoutes from './routes/authRoutes.js';
+import analyzeRoutes from './routes/analyzeRoutes.js';
+import projectRoutes from './routes/projectRoutes.js';
+import pinRoutes from './routes/pinRoutes.js';
+import statsRoutes from './routes/statsRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
+import userRoutes from './routes/userRoutes.js';
+import messageRoutes from './routes/messageRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
 
 // --- CONFIGURACIÓN ---
 const __filename = fileURLToPath(import.meta.url);

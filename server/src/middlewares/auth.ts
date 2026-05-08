@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import User from '../models/User';
-import Admin from '../models/Admin';
-import { getJwtSecret } from '../utils/jwt';
+import User from '../models/User.js';
+import Admin from '../models/Admin.js';
+import { getJwtSecret } from '../utils/jwt.js';
 
 export interface AuthRequest extends Request {
   user?: any; // Añadimos la propiedad user a la Request

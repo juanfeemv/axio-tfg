@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { protect } from '../middlewares/auth';
-import { listNotifications, markAllRead, markNotificationRead } from '../controllers/notificationController';
+import { protect } from '../middlewares/auth.js';
+import { listNotifications, markAllRead, markNotificationRead } from '../controllers/notificationController.js';
 
 const router = Router();
 

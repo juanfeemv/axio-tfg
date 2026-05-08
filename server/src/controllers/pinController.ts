@@ -1,11 +1,11 @@
 import { Response } from 'express';
-import { AuthRequest } from '../middlewares/auth';
-import Pin from '../models/Pin';
-import Project from '../models/Project';
-import User from '../models/User';
-import { getSiteConfig } from '../utils/siteConfig';
-import Notification from '../models/Notification';
-import { getIo } from '../utils/socket';
+import { AuthRequest } from '../middlewares/auth.js';
+import Pin from '../models/Pin.js';
+import Project from '../models/Project.js';
+import User from '../models/User.js';
+import { getSiteConfig } from '../utils/siteConfig.js';
+import Notification from '../models/Notification.js';
+import { getIo } from '../utils/socket.js';
 
 // GET /api/pins/:projectId -> Obtener todos los pines de un proyecto
 export const getProjectPins = async (req: AuthRequest, res: Response) => {
