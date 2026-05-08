@@ -5,7 +5,11 @@ export interface IUser extends Document {
   email: string;
   password: string;
   avatar?: string;
+  bio?: string;
   role: 'user' | 'admin';
+  isSuspended?: boolean;
+  suspendedAt?: Date;
+  suspensionReason?: string;
   resetPasswordToken?: string;       // 👈 NUEVO
   resetPasswordExpires?: Date;       // 👈 NUEVO
   createdAt: Date;
@@ -18,6 +22,7 @@ const UserSchema: Schema = new Schema(
       type: String,
       required: [true, 'El nombre de usuario es obligatorio'],
       trim: true,
+      unique: true,
       minlength: [3, 'El nombre debe tener al menos 3 caracteres']
     },
     email: {
@@ -38,10 +43,27 @@ const UserSchema: Schema = new Schema(
       type: String,
       default: ''
     },
+    bio: {
+      type: String,
+      trim: true,
+      maxlength: 65,
+      default: ''
+    },
     role: {
       type: String,
       enum: ['user', 'admin'],
       default: 'user'
+    },
+    isSuspended: {
+      type: Boolean,
+      default: false
+    },
+    suspendedAt: {
+      type: Date
+    },
+    suspensionReason: {
+      type: String,
+      trim: true
     },
     // 👇 NUEVOS CAMPOS PARA RESET DE CONTRASEÑA
     resetPasswordToken: {

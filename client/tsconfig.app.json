@@ -17,7 +17,7 @@
     "moduleDetection": "force",
     "noEmit": true,
     "jsx": "react-jsx", /* <--- ESTA LÍNEA ES LA IMPORTANTE */
-    "types": ["react", "react-dom"],
+    "types": ["vite/client", "react", "react-dom"],
     /* Linting */
     "strict": true,
     "noUnusedLocals": true,

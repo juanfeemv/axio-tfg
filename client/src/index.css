@@ -1,3 +1,49 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+	:root {
+		font-family: 'Plus Jakarta Sans', Inter, system-ui, -apple-system, sans-serif;
+		--brand-green: #3d9171;
+		--brand-green-2: #2f7d62;
+		--brand-blue: #23638a;
+		--brand-blue-2: #1e5273;
+		--brand-foam: #eaf5f0;
+		--brand-mist: #e1edf6;
+	}
+	body {
+		@apply font-sans bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100;
+	}
+
+	:focus-visible {
+		outline: 3px solid #23638a;
+		outline-offset: 2px;
+	}
+}
+
+.skip-link {
+	position: absolute;
+	left: -999px;
+	top: 1rem;
+	background: #ffffff;
+	color: #1f2937;
+	border: 2px solid #23638a;
+	border-radius: 0.75rem;
+	padding: 0.5rem 0.75rem;
+	font-size: 0.875rem;
+	font-weight: 600;
+	z-index: 9999;
+}
+
+.skip-link:focus {
+	left: 1rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	* {
+		animation: none !important;
+		transition: none !important;
+		scroll-behavior: auto !important;
+	}
+}

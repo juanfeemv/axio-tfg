@@ -28,17 +28,13 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 p-4 relative overflow-hidden">
-      
-      {/* Elementos decorativos */}
-      <div className="absolute top-0 left-0 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl"></div>
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-400/10 rounded-full blur-3xl"></div>
+    <div className="min-h-screen flex items-center justify-center bg-white dark:bg-slate-900 p-4 relative overflow-hidden transition-colors">
       
       <div className="relative w-full max-w-md">
         
         {/* Logo Seccion */}
         <div className="text-center mb-8">      
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-[#3d9171] to-[#23638a] bg-clip-text text-transparent mb-2">
             AXIO
           </h1>
         </div>
@@ -71,7 +67,7 @@ export default function Login() {
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
                 <input
                   type="email"
-                  className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-slate-800 placeholder:text-slate-400"
+                  className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-[#23638a]/20 focus:border-[#23638a] outline-none transition-all text-slate-800 placeholder:text-slate-400"
                   placeholder="tu@email.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -86,7 +82,7 @@ export default function Login() {
                 <label className="block text-sm font-semibold text-slate-700">
                   Contraseña
                 </label>
-                <Link to="/forgot-password" className="text-xs text-blue-600 hover:text-blue-800 font-medium hover:underline">
+                <Link to="/forgot-password" className="text-xs text-[#23638a] hover:text-[#1d4f72] font-medium hover:underline">
   ¿Olvidaste tu contraseña?
 </Link>
               </div>
@@ -94,7 +90,7 @@ export default function Login() {
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
                 <input
                   type="password"
-                  className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-slate-800 placeholder:text-slate-400"
+                  className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-[#23638a]/20 focus:border-[#23638a] outline-none transition-all text-slate-800 placeholder:text-slate-400"
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -107,7 +103,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-slate-400 disabled:to-slate-400 text-white font-semibold py-3.5 rounded-xl transition-all shadow-lg shadow-blue-500/30 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 group"
+              className="w-full bg-gradient-to-r from-[#3d9171] to-[#23638a] hover:from-[#338066] hover:to-[#1f577a] disabled:from-slate-400 disabled:to-slate-400 text-white font-semibold py-3.5 rounded-xl transition-all shadow-lg shadow-[#23638a]/30 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 group"
             >
               {isLoading ? (
                 <>
@@ -126,7 +122,7 @@ export default function Login() {
           {/* Link de registro */}
           <p className="mt-8 text-center text-sm text-slate-600">
             ¿Primera vez en Axio?{' '}
-            <Link to="/register" className="text-blue-600 hover:text-blue-800 font-semibold hover:underline">
+            <Link to="/register" className="text-[#23638a] hover:text-[#1d4f72] font-semibold hover:underline">
               Crea tu cuenta gratis
             </Link>
           </p>

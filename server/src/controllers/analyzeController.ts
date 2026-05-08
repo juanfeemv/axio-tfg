@@ -9,6 +9,7 @@ import Audit from '../models/Audit';
 import Project from '../models/Project';
 import User from '../models/User';
 import { captureWebsite } from '../services/webScraper';
+import { getJwtSecret } from '../utils/jwt';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -25,7 +26,7 @@ const getUserIdFromToken = (req: Request): string | null => {
   if (authHeader && authHeader.startsWith('Bearer')) {
     const token = authHeader.split(' ')[1];
     try {
-      const secret = process.env.JWT_SECRET || 'palabrasecretaparaeltoken';
+      const secret = getJwtSecret();
       const decoded: any = jwt.verify(token, secret);
       return decoded.id;
     } catch (e) { return null; }
@@ -35,13 +36,21 @@ const getUserIdFromToken = (req: Request): string | null => {
 
 const notifyN8n = async (project: any, userId: string) => {
   try {
-    const n8nUrl = process.env.N8N_WEBHOOK_URL || 'http://n8n:5678/webhook/nuevo-proyecto'; // Implementación de la automatización
+    const n8nUrl = process.env.N8N_WEBHOOK_URL;
+    if (!n8nUrl) {
+      console.warn('⚠️ N8N_WEBHOOK_URL no configurado. Se omite la notificación.');
+      return;
+    }
     
     const userInfo = await User.findById(userId).select('username email');
-    
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
     await fetch(n8nUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
       body: JSON.stringify({
         projectId: project._id,
         title: project.title,
@@ -54,6 +63,8 @@ const notifyN8n = async (project: any, userId: string) => {
         score: project.accessibilityScore
       })
     });
+
+    clearTimeout(timeoutId);
     
     console.log('✅ Webhook n8n notificado (con IA)');
   } catch (webhookError) {

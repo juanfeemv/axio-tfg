@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom'; 
-import api from '../services/api';
+import api, { uploadsUrl } from '../services/api';
 import { 
   FolderOpen, 
   Calendar, 
@@ -93,7 +93,7 @@ export default function MyProjects() {
   );
 
   return (
-    <div className="p-8 max-w-7xl mx-auto min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-300">
+    <div className="p-8 max-w-7xl mx-auto min-h-screen bg-white dark:bg-slate-900 transition-colors duration-300">
       
       {/* Header y Stats */}
       <div className="mb-10 animate-fade-in-up">
@@ -112,32 +112,32 @@ export default function MyProjects() {
         <div className="grid md:grid-cols-3 gap-4 mb-8">
           {/* Card 1 */}
           <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-slate-700 dark:to-slate-800 p-6 rounded-2xl border border-blue-200 dark:border-slate-700">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-blue-700 dark:text-blue-400">Total</span>
-              <BarChart3 className="text-blue-600 dark:text-blue-400" size={20} />
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-semibold text-blue-800 dark:text-blue-300">Total</span>
+              <BarChart3 className="text-blue-600 dark:text-blue-400" size={24} />
             </div>
             <div className="text-3xl font-bold text-blue-900 dark:text-white">{totalProjects}</div>
-            <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">Auditorías realizadas</div>
+            <div className="text-xs text-blue-700 dark:text-blue-300 mt-1">Auditorías realizadas</div>
           </div>
 
           {/* Card 2 */}
           <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-slate-700 dark:to-slate-800 p-6 rounded-2xl border border-green-200 dark:border-slate-700">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-green-700 dark:text-green-400">Calidad Media</span>
-              <TrendingUp className="text-green-600 dark:text-green-400" size={20} />
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">Calidad Media</span>
+              <TrendingUp className="text-emerald-600 dark:text-emerald-400" size={24} />
             </div>
-            <div className="text-3xl font-bold text-green-900 dark:text-white">{avgScore}/100</div>
-            <div className="text-xs text-green-600 dark:text-green-400 mt-1">Puntuación global</div>
+            <div className="text-3xl font-bold text-emerald-900 dark:text-white">{avgScore}/100</div>
+             <div className="text-xs text-emerald-700 dark:text-emerald-300 mt-1">Puntuación global</div>
           </div>
 
           {/* Card 3 */}
           <div className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-slate-700 dark:to-slate-800 p-6 rounded-2xl border border-orange-200 dark:border-slate-700">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-orange-700 dark:text-orange-400">Issues Estimados</span>
-              <Filter className="text-orange-600 dark:text-orange-400" size={20} />
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-semibold text-orange-800 dark:text-orange-300">Issues Estimados</span>
+              <Filter className="text-orange-600 dark:text-orange-400" size={24} />
             </div>
             <div className="text-3xl font-bold text-orange-900 dark:text-white">{estimatedIssues}</div>
-            <div className="text-xs text-orange-600 dark:text-orange-400 mt-1">Problemas detectados</div>
+            <div className="text-xs text-orange-700 dark:text-orange-300 mt-1">Problemas detectados</div>
           </div>
         </div>
       </div>
@@ -161,18 +161,27 @@ export default function MyProjects() {
 
       {/* Grid de Proyectos */}
       {filteredProjects.length === 0 ? (
-        <div className="flex flex-col items-center justify-center text-center p-12 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-3xl bg-slate-50/50 dark:bg-slate-800/50">
-          <FolderOpen className="text-slate-400 dark:text-slate-600 mb-4" size={40} />
-          <h3 className="text-xl font-bold text-slate-700 dark:text-white mb-2">No se encontraron proyectos</h3>
-          <p className="text-slate-500 dark:text-slate-400">
-            {filter === 'all' ? 'Aún no has guardado ninguna auditoría.' : `No hay proyectos de tipo "${filter}" guardados.`}
+        <div className="flex flex-col items-center justify-center text-center p-12 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-3xl bg-slate-50/50 dark:bg-slate-800/50 gap-3">
+          <FolderOpen className="text-slate-400 dark:text-slate-600" size={52} />
+          <h3 className="text-2xl font-bold text-slate-700 dark:text-white">Sin proyectos aún</h3>
+          <p className="text-slate-500 dark:text-slate-400 max-w-md">
+            {filter === 'all' ? 'Crea tu primera auditoría para ver el resumen aquí.' : `No hay proyectos de tipo "${filter}". Sube uno para empezar.`}
           </p>
+          <button
+            onClick={() => navigate('/dashboard', { state: { tab: 'new' } })}
+            className="mt-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold shadow-lg hover:-translate-y-0.5 transition"
+          >
+            Crear primer proyecto
+          </button>
         </div>
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 pb-20">
-          {filteredProjects.map((project) => {
-            const score = project.accessibilityScore || 0;
-            const issuesCount = Math.round((100 - score) / 5);
+					{filteredProjects.map((project) => {
+						const score = project.accessibilityScore || 0;
+						const issuesCount = Math.round((100 - score) / 5);
+						const mediaSource = project.image || (project.type !== 'code' ? project.input : null);
+						const imageUrl = mediaSource ? uploadsUrl(mediaSource) : null;
+						const isPdf = mediaSource?.toLowerCase().endsWith('.pdf');
             
             // Lógica de estilos según tipo
             let TypeIcon = Link2;
@@ -192,13 +201,25 @@ export default function MyProjects() {
             const [bgClass, textClass] = typeStyle.split(' ').map(c => c.replace(/-\d{2,3}/g, ''));
 
 
-            return (
-              <div 
-                key={project._id} 
-                onClick={() => handleViewReport(project._id)}
-                className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden group cursor-pointer relative"
-              >
-                {/* BOTÓN BORRAR FLOTANTE */}
+						return (
+							<div 
+								key={project._id} 
+								onClick={() => handleViewReport(project._id)}
+								className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden group cursor-pointer relative"
+							>
+								{/* Preview de imagen si existe */}
+								{imageUrl && !isPdf && (
+									<div className="relative h-40 bg-slate-100 dark:bg-slate-900 overflow-hidden">
+										<img
+											src={imageUrl}
+											alt={project.title}
+											className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+											loading="lazy"
+										/>
+									</div>
+								)}
+
+								{/* BOTÓN BORRAR FLOTANTE */}
                 <button 
                   onClick={(e) => handleDelete(project._id, e)}
                   className="absolute top-3 right-3 p-2 bg-white/90 dark:bg-slate-700/90 hover:bg-red-50 dark:hover:bg-red-900/50 text-slate-400 hover:text-red-500 rounded-full transition-colors z-10 shadow-sm border border-slate-100 dark:border-slate-600 opacity-0 group-hover:opacity-100"

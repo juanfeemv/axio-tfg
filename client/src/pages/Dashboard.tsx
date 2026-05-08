@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLocation } from 'react-router-dom';
+import { useSocket } from '../context/SocketContext';
 import { 
   Upload, 
   Link2, 
@@ -11,33 +12,52 @@ import {
   FolderOpen, 
   Globe, 
   Settings as SettingsIcon,
-  Sparkles,
+  Shield,
   Zap, 
   FileCode, 
   Save,
   Menu, 
-  X      
+  X,
+  MessageCircle,
+  Bell,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
-import api from '../services/api';
+import brandLogo from '../assets/logo.png';
+import api, { uploadsUrl } from '../services/api';
+import { useA11y } from '../components/accessibility/A11yProvider';
 
 // Importo las otras vistas
 import MyProjects from './MyProjects';
 import Settings from './Settings';
 import Explore from './Explore';
+import Admin from './Admin';
+import Messages from './Messages';
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
   const location = useLocation();
+  const { socket } = useSocket();
   
-  const [activeTab, setActiveTab] = useState<'new' | 'projects' | 'explore' | 'settings'>(() => {
+  const [activeTab, setActiveTab] = useState<'new' | 'projects' | 'explore' | 'settings' | 'admin' | 'messages'>(() => {
     if (location.state && location.state.tab) {
         return location.state.tab;
     }
     const savedTab = sessionStorage.getItem('dashboard_active_tab');
-    return (savedTab as 'new' | 'projects' | 'explore' | 'settings') || 'new';
+    return (savedTab as 'new' | 'projects' | 'explore' | 'settings' | 'admin' | 'messages') || 'new';
   });
+
+  const [messageUsername, setMessageUsername] = useState<string>(() => {
+    return (location.state as { username?: string } | null)?.username || '';
+  });
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [showA11yPanel, setShowA11yPanel] = useState(false);
+
+  const { ttsEnabled, setTtsEnabled, ttsVolume, setTtsVolume } = useA11y();
 
   useEffect(() => {
     sessionStorage.setItem('dashboard_active_tab', activeTab);
@@ -45,9 +65,54 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (location.state && location.state.tab) {
+      if ((location.state as { username?: string } | null)?.username) {
+        setMessageUsername((location.state as { username?: string } | null)?.username || '');
+      }
       window.history.replaceState({}, document.title);
     }
   }, [location]);
+
+  const loadNotifications = async () => {
+    try {
+      const res = await api.get('/notifications');
+      const data = res.data.data || [];
+      setNotifications(data);
+      setUnreadCount(data.filter((n: any) => !n.readAt).length);
+    } catch (error) {
+      console.error('Error loading notifications:', error);
+    }
+  };
+
+  useEffect(() => {
+    loadNotifications();
+  }, []);
+
+  useEffect(() => {
+    if (!socket) return;
+    const handleNotification = (payload: any) => {
+      setNotifications((prev) => [payload, ...prev]);
+      setUnreadCount((prev) => prev + 1);
+    };
+
+    socket.on('notification', handleNotification);
+    return () => {
+      socket.off('notification', handleNotification);
+    };
+  }, [socket]);
+
+  const handleToggleNotifications = async () => {
+    const next = !showNotifications;
+    setShowNotifications(next);
+    if (next) {
+      try {
+        await api.post('/notifications/read-all');
+        setUnreadCount(0);
+        setNotifications((prev) => prev.map((n) => ({ ...n, readAt: n.readAt || new Date().toISOString() })));
+      } catch (error) {
+        console.error('Error marking notifications:', error);
+      }
+    }
+  };
 
   const [useAI, setUseAI] = useState(true);
 
@@ -129,13 +194,13 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-950 overflow-hidden relative transition-colors duration-300">
+    <div className="flex h-screen overflow-hidden relative transition-colors duration-300 bg-white dark:bg-slate-900">
       
       {/* --- HEADER MÓVIL --- */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-slate-900 text-white flex items-center justify-between px-4 z-50 shadow-md">
          <div className="flex items-center gap-2">
-            <Sparkles className="text-blue-400" size={20} />
-            <span className="font-bold text-lg tracking-wider">AXIO</span>
+          <img src={brandLogo} alt="AXIO" className="h-8 w-8 rounded-lg object-cover" />
+          <span className="font-bold text-lg tracking-wider">AXIO</span>
          </div>
          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 text-slate-300 hover:text-white">
             {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
@@ -152,19 +217,17 @@ export default function Dashboard() {
 
       {/* 1. SIDEBAR LATERAL */}
       <aside className={`
-        fixed left-0 z-40 w-64 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white flex flex-col shadow-2xl 
+        fixed left-0 z-40 w-80 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white flex flex-col shadow-2xl 
         transform transition-transform duration-300 ease-in-out
         top-16 bottom-0
         md:top-0 md:relative
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
       `}>
-        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute bottom-0 left-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
         
         <div className="p-6 relative hidden md:block">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-              <Sparkles className="text-white" size={20} />
+            <div className="h-10 w-10 rounded-xl flex items-center justify-center shadow-lg overflow-hidden bg-slate-900/10">
+              <img src={brandLogo} alt="AXIO" className="h-full w-full object-cover" />
             </div>
             <div>
               <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent tracking-wider">
@@ -193,6 +256,12 @@ export default function Dashboard() {
             active={activeTab === 'explore'} 
             onClick={() => handleTabChange('explore')} 
           />
+          <SidebarItem 
+            icon={<MessageCircle size={20} />} 
+            label="Mensajes" 
+            active={activeTab === 'messages'} 
+            onClick={() => handleTabChange('messages')} 
+          />
           <div className="pt-4 mt-4 border-t border-slate-700/50">
             <SidebarItem 
               icon={<SettingsIcon size={20} />} 
@@ -200,21 +269,33 @@ export default function Dashboard() {
               active={activeTab === 'settings'} 
               onClick={() => handleTabChange('settings')} 
             />
+            {user?.role === 'admin' && (
+              <SidebarItem
+                icon={<Shield size={20} />}
+                label="Panel Admin"
+                active={activeTab === 'admin'}
+                onClick={() => handleTabChange('admin')}
+              />
+            )}
           </div>
         </nav>
         
-        <div className="p-4 border-t border-slate-700/50 relative bg-slate-900/50">
-          <div className="flex items-center gap-3 mb-3 p-3 bg-slate-800/50 rounded-xl border border-slate-700/50">
-            <div className="h-10 w-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-sm font-bold shadow-inner">
-              {user?.username.charAt(0).toUpperCase()}
+        <div className="p-4 border-t border-slate-700/50 relative bg-slate-900/60">
+          <div className="flex items-center gap-3 mb-3 p-3 bg-slate-800/70 rounded-xl border border-slate-700 shadow-sm">
+            <div className="h-10 w-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-sm font-bold shadow-inner text-white overflow-hidden">
+              {user?.avatar ? (
+                <img src={uploadsUrl(user.avatar)} alt={user.username} className="h-full w-full object-cover" />
+              ) : (
+                user?.username.charAt(0).toUpperCase()
+              )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-sm truncate">{user?.username}</p>
+              <p className="font-semibold text-sm truncate text-white">{user?.username}</p>
             </div>
           </div>
           <button 
             onClick={logout} 
-            className="flex items-center gap-3 text-slate-400 hover:text-red-400 hover:bg-slate-800 w-full p-3 rounded-xl transition-all text-sm font-medium group"
+            className="flex items-center gap-3 text-slate-300 hover:text-red-400 hover:bg-slate-800 w-full p-3 rounded-xl transition-all text-sm font-semibold group"
           >
             <LogOut size={18} className="group-hover:translate-x-0.5 transition-transform" /> 
             Cerrar Sesión
@@ -223,17 +304,123 @@ export default function Dashboard() {
       </aside>
 
       {/* 2. ÁREA PRINCIPAL */}
-      <main className="flex-1 overflow-y-auto relative pt-16 md:pt-0 transition-all duration-300">
+      <main className="flex-1 overflow-y-auto relative pt-16 md:pt-8 transition-all duration-300 px-2 md:px-6">
+        <div className="absolute right-4 top-4 z-50 flex items-center gap-2">
+          <div className="relative">
+            <button
+              onClick={() => setShowA11yPanel((prev) => !prev)}
+              className="relative h-11 w-11 rounded-xl bg-white shadow-lg border border-slate-200 flex items-center justify-center text-slate-600 hover:text-slate-900"
+              aria-label="Accesibilidad: texto a voz"
+              aria-pressed={ttsEnabled}
+              data-speech={ttsEnabled ? 'Texto a voz activado' : 'Texto a voz desactivado'}
+            >
+              {ttsEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
+            </button>
+            {showA11yPanel && (
+              <div className="absolute right-0 top-14 w-64 bg-white border border-slate-200 rounded-2xl shadow-2xl p-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-slate-800">Texto a voz</p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setTtsEnabled(!ttsEnabled)}
+                      className={`text-xs font-semibold px-3 py-1 rounded-full border ${ttsEnabled ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-slate-50 border-slate-200 text-slate-600'}`}
+                      aria-pressed={ttsEnabled}
+                    >
+                      {ttsEnabled ? 'Activado' : 'Desactivado'}
+                    </button>
+                    <button
+                      onClick={() => setShowA11yPanel(false)}
+                      className="text-xs font-semibold px-2.5 py-1 rounded-full border border-slate-200 text-slate-500 hover:text-slate-800"
+                      aria-label="Cerrar panel de texto a voz"
+                    >
+                      Cerrar
+                    </button>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <label className="text-xs text-slate-500" htmlFor="tts-volume">
+                    Volumen
+                  </label>
+                  <div className="mt-2 flex items-center gap-3">
+                    <input
+                      id="tts-volume"
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.05"
+                      value={ttsVolume}
+                      onChange={(e) => setTtsVolume(Number(e.target.value))}
+                      className="w-full accent-emerald-500"
+                      aria-label="Volumen de texto a voz"
+                    />
+                    <span className="text-xs text-slate-600 w-10 text-right">
+                      {Math.round(ttsVolume * 100)}%
+                    </span>
+                  </div>
+                  <p className="mt-2 text-[11px] text-slate-400">
+                    Pasa el mouse o usa Tab para escuchar.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+          <button
+            onClick={handleToggleNotifications}
+            className="relative h-11 w-11 rounded-xl bg-white shadow-lg border border-slate-200 flex items-center justify-center text-slate-600 hover:text-slate-900"
+            aria-label="Notificaciones"
+            data-speech="Notificaciones"
+          >
+            <Bell size={18} />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 rounded-full bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center">
+                {unreadCount}
+              </span>
+            )}
+          </button>
+        </div>
+        {showNotifications && (
+          <div className="absolute right-4 top-16 z-50 w-[320px] bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden">
+            <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+              <p className="text-sm font-semibold text-slate-800">Notificaciones</p>
+            </div>
+            <div className="max-h-[360px] overflow-y-auto">
+              {notifications.length === 0 ? (
+                <div className="p-6 text-center text-slate-500 text-sm">
+                  No tienes notificaciones nuevas.
+                </div>
+              ) : (
+                notifications.map((n: any, index: number) => (
+                  <button
+                    key={`${n._id || n.createdAt || index}`}
+                    onClick={() => {
+                      if (n.type === 'dm' && n.data?.senderUsername) {
+                        setActiveTab('messages');
+                        setMessageUsername(n.data.senderUsername);
+                      }
+                      if (n.type === 'pin' && n.data?.projectId) {
+                        setActiveTab('projects');
+                      }
+                      setShowNotifications(false);
+                    }}
+                    className="w-full text-left px-4 py-3 border-b border-slate-100 hover:bg-slate-50"
+                  >
+                    <p className="text-sm font-semibold text-slate-800">{n.title}</p>
+                    {n.body && <p className="text-xs text-slate-500 mt-1 line-clamp-2">{n.body}</p>}
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        )}
         
         {activeTab === 'new' && (
-          <div className="p-4 md:p-8 max-w-7xl mx-auto min-h-full">
+          <div className="p-4 md:p-8 max-w-7xl mx-auto min-h-full space-y-6">
             
-            <header className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
+            <header className="flex flex-col md:flex-row justify-between items-start md:items-end mb-4 gap-4">
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="text-3xl md:text-4xl">👋</span>
                   <h2 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-white">
-                    Hola, <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">{user?.username}</span>
+                    Hola, <span className="bg-gradient-to-r from-[#23638a] via-[#2f7d62] to-[#3d9171] bg-clip-text text-transparent">{user?.username}</span>
                   </h2>
                 </div>
                 <p className="text-slate-500 text-base md:text-lg dark:text-slate-400">¿Qué quieres subir hoy?</p>
@@ -242,16 +429,25 @@ export default function Dashboard() {
 
             {/* --- INTERRUPTOR --- */}
             {!result && !loading && (
-              <div className="mb-8 flex justify-center md:justify-start animate-fade-in">
+              <div className="mb-6 flex justify-center md:justify-start animate-fade-in">
                 <div 
-                  className="bg-white p-1.5 rounded-full border border-slate-200 shadow-sm flex items-center gap-1 cursor-pointer select-none overflow-hidden dark:bg-slate-800 dark:border-slate-700"
+                  className="bg-white/80 dark:bg-slate-800/70 backdrop-blur-md p-2 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-md flex items-center gap-2 cursor-pointer select-none overflow-hidden"
                   onClick={() => setUseAI(!useAI)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setUseAI(!useAI);
+                    }
+                  }}
+                  aria-pressed={useAI}
+                  data-speech={useAI ? 'Analizar con IA activado' : 'Solo subir activado'}
                 >
-                  <div className={`px-4 md:px-5 py-2 md:py-2.5 rounded-full text-xs md:text-sm font-bold flex items-center gap-2 transition-all duration-300 ${useAI ? 'bg-blue-600 text-white shadow-md transform scale-105' : 'text-slate-500 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-700'}`}>
-                    <Sparkles size={14} />
+                  <div className={`px-5 md:px-6 py-2.5 rounded-xl text-xs md:text-sm font-bold flex items-center gap-2 transition-all duration-300 ${useAI ? 'bg-gradient-to-r from-[#23638a] via-[#2f7d62] to-[#3d9171] text-white shadow-md scale-105' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700'}`}>
                     <span className="hidden sm:inline">Analizar con</span> IA
                   </div>
-                  <div className={`px-4 md:px-5 py-2 md:py-2.5 rounded-full text-xs md:text-sm font-bold flex items-center gap-2 transition-all duration-300 ${!useAI ? 'bg-emerald-500 text-white shadow-md transform scale-105' : 'text-slate-500 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-700'}`}>
+                  <div className={`px-5 md:px-6 py-2.5 rounded-xl text-xs md:text-sm font-bold flex items-center gap-2 transition-all duration-300 ${!useAI ? 'bg-[#3d9171] text-white shadow-md scale-105' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700'}`}>
                     <Save size={14} />
                     Solo Subir
                   </div>
@@ -265,12 +461,14 @@ export default function Dashboard() {
                 <div className="grid md:grid-cols-3 gap-6 animate-fade-in-up">
                   
                   {/* 1. Card URL */}
-                  <div className="bg-white p-6 rounded-3xl shadow-lg border-2 border-slate-200 hover:shadow-2xl hover:border-blue-300 hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden dark:bg-slate-800 dark:border-slate-700 dark:hover:border-blue-500/50">
+                  <div className="bg-white/75 dark:bg-slate-800/70 backdrop-blur-md p-6 rounded-3xl shadow-xl border border-white/50 dark:border-white/10 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group relative overflow-hidden min-h-[280px] flex flex-col">
                     <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl"></div>
                     <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-blue-500/30">
                       <Link2 size={24} />
                     </div>
-                    <h3 className="text-lg font-bold text-slate-800 mb-2 dark:text-white">Web en Vivo</h3>
+                      <h3 className="text-lg font-bold text-slate-800 mb-2 dark:text-white" data-speech="Web en vivo">
+                        Web en Vivo
+                      </h3>
                     <p className="text-slate-500 text-sm mb-6 h-10 line-clamp-2 dark:text-slate-400">
                       {useAI ? 'La IA navegará y detectará errores.' : 'Guarda la URL para compartirla.'}
                     </p>
@@ -279,7 +477,7 @@ export default function Dashboard() {
                       <input 
                         type="url" 
                         placeholder="https://ejemplo.com" 
-                        className="w-full border-2 border-slate-300 rounded-xl px-4 py-3 pr-12 text-sm focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all shadow-sm dark:bg-slate-900 dark:border-slate-600 dark:text-white"
+                        className="w-full border-2 border-slate-300 rounded-xl px-4 py-3 pr-12 text-sm focus:ring-4 focus:ring-[#23638a]/20 focus:border-[#23638a] outline-none transition-all shadow-sm dark:bg-slate-900 dark:border-slate-600 dark:text-white"
                         value={url}
                         onChange={(e) => setUrl(e.target.value)}
                         required
@@ -294,12 +492,14 @@ export default function Dashboard() {
                   </div>
 
                   {/* 2. Card Diseño */}
-                  <div className="bg-white p-6 rounded-3xl shadow-lg border-2 border-slate-200 hover:shadow-2xl hover:border-purple-300 hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden dark:bg-slate-800 dark:border-slate-700 dark:hover:border-purple-500/50">
+                  <div className="bg-white/75 dark:bg-slate-800/70 backdrop-blur-md p-6 rounded-3xl shadow-xl border border-white/50 dark:border-white/10 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group relative overflow-hidden min-h-[280px] flex flex-col">
                     <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/5 rounded-full blur-2xl"></div>
                     <div className="h-12 w-12 bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-purple-500/30">
                       <Upload size={24} />
                     </div>
-                    <h3 className="text-lg font-bold text-slate-800 mb-2 dark:text-white">Diseño Visual</h3>
+                      <h3 className="text-lg font-bold text-slate-800 mb-2 dark:text-white" data-speech="Diseño visual">
+                        Diseño Visual
+                      </h3>
                     <p className="text-slate-500 text-sm mb-6 h-10 line-clamp-2 dark:text-slate-400">
                       {useAI ? 'Sube una diseño (imagen o PDF) para análisis visual.' : 'Comparte un diseño (imagen o PDF) para feedback.'}
                     </p>
@@ -313,12 +513,14 @@ export default function Dashboard() {
                   </div>
 
                   {/* 3. Card CÓDIGO */}
-                  <div className="bg-white p-6 rounded-3xl shadow-lg border-2 border-slate-200 hover:shadow-2xl hover:border-emerald-300 hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden dark:bg-slate-800 dark:border-slate-700 dark:hover:border-emerald-500/50">
+                  <div className="bg-white/75 dark:bg-slate-800/70 backdrop-blur-md p-6 rounded-3xl shadow-xl border border-white/50 dark:border-white/10 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group relative overflow-hidden min-h-[280px] flex flex-col">
                     <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl"></div>
                     <div className="h-12 w-12 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-emerald-500/30">
                       <FileCode size={24} />
                     </div>
-                    <h3 className="text-lg font-bold text-slate-800 mb-2 dark:text-white">Código Fuente</h3>
+                      <h3 className="text-lg font-bold text-slate-800 mb-2 dark:text-white" data-speech="Código fuente">
+                        Código Fuente
+                      </h3>
                     <p className="text-slate-500 text-sm mb-6 h-10 line-clamp-2 dark:text-slate-400">
                       {useAI ? 'Revisión de código automática.' : 'Comparte código a la comunidad.'}
                     </p>
@@ -338,26 +540,28 @@ export default function Dashboard() {
                     href="https://discord.gg/zh78ZtSF" 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="block w-full bg-[#5865F2] hover:bg-[#4752C4] rounded-2xl p-6 shadow-lg hover:shadow-[#5865F2]/40 hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group"
+                    className="block w-full rounded-3xl p-6 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group border border-white/30 dark:border-white/10"
+                    style={{
+                      backgroundImage:
+                        'radial-gradient(at 20% 20%, rgba(96,165,250,0.45), transparent 35%), radial-gradient(at 80% 0%, rgba(124,58,237,0.4), transparent 35%), radial-gradient(at 50% 100%, rgba(16,185,129,0.35), transparent 30%), radial-gradient(at 10% 80%, rgba(236,72,153,0.25), transparent 30%)',
+                      backgroundColor: '#0f172a',
+                    }}
                   >
-                    {/* Decoración de fondo */}
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/4 blur-3xl group-hover:bg-white/20 transition-all"></div>
-                    
-                    <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
+                    <div className="absolute inset-0 opacity-25 mix-blend-screen" style={{ backgroundImage: "url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22 viewBox=%220 0 40 40%22%3E%3Cg fill=%22none%22 stroke=%22%23ffffff%22 stroke-width=%220.5%22 opacity=%220.3%22%3E%3Cpath d=%27M0 20h40M20 0v40%27/%3E%3Ccircle cx=%2220%22 cy=%2220%22 r=%2219%22/%3E%3C/g%3E%3C/svg%3E')" }}></div>
+                    <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left text-white">
                       <div className="flex items-center gap-5">
-                        <div className="bg-white/20 p-4 rounded-xl backdrop-blur-sm shrink-0">
-                          {/* Logo de Discord SVG */}
+                        <div className="bg-white/15 p-4 rounded-xl backdrop-blur-sm shrink-0 border border-white/20">
                           <svg width="32" height="32" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
                             <path d="M20.317 4.3698a19.7913 19.7913 0 0 0-4.8851-1.5152.0741.0741 0 0 0-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 0 0-.0785-.037 19.7363 19.7363 0 0 0-4.8852 1.515.0699.0699 0 0 0-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 0 0 .0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 0 0 .0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 0 0-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 0 1-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 0 1 .0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 0 1 .0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 0 1-.0066.1276 12.2986 12.2986 0 0 1-1.873.8914.0766.0766 0 0 0-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 0 0 .0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 0 0 .0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 0 0-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.419-2.1568 2.419zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.419-2.1568 2.419z"/>
                           </svg>
                         </div>
-                        <div className="text-white">
-                          <h3 className="text-xl font-bold">Únete a la Comunidad</h3>
-                          <p className="text-blue-100/90 text-sm mt-1 max-w-lg">Recibe notificaciones sobre tus proyectos y conecta con otros creadores en nuestro Discord.</p>
+                        <div>
+                          <h3 className="text-2xl font-bold">Únete a la Comunidad</h3>
+                          <p className="text-slate-100/90 text-sm mt-1 max-w-lg">Recibe notificaciones sobre tus proyectos y conecta con otros creadores en nuestro Discord.</p>
                         </div>
                       </div>
                       
-                      <div className="bg-white text-[#5865F2] px-6 py-2.5 rounded-xl font-bold text-sm shadow-md group-hover:scale-105 transition-transform whitespace-nowrap">
+                      <div className="bg-white text-slate-900 px-6 py-2.5 rounded-xl font-bold text-sm shadow-md group-hover:scale-105 transition-transform whitespace-nowrap">
                         Unirse Ahora →
                       </div>
                     </div>
@@ -372,7 +576,7 @@ export default function Dashboard() {
                 <div className="relative">
                   <div className="h-24 w-24 rounded-full border-4 border-slate-200 border-t-blue-600 animate-spin dark:border-slate-700"></div>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <Sparkles className="text-blue-600 animate-pulse" size={32} />
+                    <img src={brandLogo} alt="AXIO" className="h-10 w-10 rounded-lg animate-pulse object-cover" />
                   </div>
                 </div>
                 <h3 className="text-xl font-bold text-slate-800 mt-8 mb-2 dark:text-white">Procesando Proyecto</h3>
@@ -403,8 +607,8 @@ export default function Dashboard() {
                     <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                       <div>
                         <div className="flex items-center gap-3 mb-3">
-                          <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                            <Sparkles className="text-white" size={24} />
+                          <div className="h-12 w-12 rounded-xl flex items-center justify-center shadow-lg overflow-hidden bg-slate-900/10">
+                            <img src={brandLogo} alt="AXIO" className="h-full w-full object-cover" />
                           </div>
                           <h2 className="text-3xl font-bold">Resultado de Auditoría</h2>
                         </div>
@@ -484,6 +688,8 @@ export default function Dashboard() {
         {activeTab === 'projects' && <MyProjects />}
         {activeTab === 'explore' && <Explore />}
         {activeTab === 'settings' && <Settings />}
+        {activeTab === 'admin' && user?.role === 'admin' && <Admin />}
+        {activeTab === 'messages' && <Messages embedded={true} initialUsername={messageUsername} />}
 
       </main>
     </div>
@@ -502,8 +708,10 @@ function SidebarItem({ icon, label, active, onClick }: { icon: any, label: strin
       `}
     >
       {active && <div className="absolute inset-0 bg-white/10"></div>}
-      <span className={`relative z-10 ${active ? '' : 'group-hover:scale-110'} transition-transform`}>{icon}</span>
-      <span className="relative z-10">{label}</span>
+      <span className={`relative z-10 flex h-10 w-10 items-center justify-center rounded-lg ${active ? 'bg-white/15 text-white' : 'text-slate-400 group-hover:text-white group-hover:bg-slate-800/60'} transition-all`}>
+        {icon}
+      </span>
+      <span className="relative z-10 font-semibold">{label}</span>
       {active && <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-white rounded-l-full"></div>}
     </button>
   );

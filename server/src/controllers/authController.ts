@@ -5,6 +5,8 @@ import crypto from 'crypto';
 import User from '../models/User';
 import Project from '../models/Project';
 import { AuthRequest } from '../middlewares/auth';
+import { getSiteConfig } from '../utils/siteConfig';
+import { getJwtSecret } from '../utils/jwt';
 
 // Función para validar la contraseña
 const validatePassword = (password: string): { valid: boolean; message?: string } => {
@@ -27,6 +29,13 @@ const validatePassword = (password: string): { valid: boolean; message?: string 
 export const register = async (req: Request, res: Response) => {
   try {
     const { username, email, password } = req.body;
+    const config = await getSiteConfig();
+    if (!config.allowRegistration) {
+      return res.status(403).json({ message: 'El registro esta deshabilitado temporalmente' });
+    }
+    if (config.maintenanceMode) {
+      return res.status(503).json({ message: 'Plataforma en mantenimiento. Intenta mas tarde' });
+    }
     if (!username || !email || !password) {
       return res.status(400).json({ message: 'Rellena todos los campos' });
     }
@@ -37,9 +46,15 @@ export const register = async (req: Request, res: Response) => {
       return res.status(400).json({ message: passwordValidation.message });
     }
 
-    const userExists = await User.findOne({ email });
-    if (userExists) {
+    // Verificar email y username únicos
+    const emailExists = await User.findOne({ email });
+    if (emailExists) {
       return res.status(400).json({ message: 'Email ya registrado' });
+    }
+
+    const usernameExists = await User.findOne({ username });
+    if (usernameExists) {
+      return res.status(400).json({ message: 'Nombre de usuario ya en uso' });
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -48,9 +63,9 @@ export const register = async (req: Request, res: Response) => {
     const newUser = new User({ username, email, password: hashedPassword });
     await newUser.save();
 
-    res.status(201).json({ 
-      message: 'Usuario registrado', 
-      user: { id: newUser._id, username: newUser.username, email: newUser.email } 
+    res.status(201).json({
+      message: 'Usuario registrado',
+      user: { id: newUser._id, username: newUser.username, email: newUser.email }
     });
   } catch (error) {
     res.status(500).json({ message: 'Error en registro' });
@@ -66,19 +81,25 @@ export const login = async (req: Request, res: Response) => {
     }
 
     const user = await User.findOne({ email }).select('+password');
+    if (user?.isSuspended) {
+      return res.status(403).json({ message: 'Cuenta suspendida. Contacta con soporte' });
+    }
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(400).json({ message: 'Credenciales inválidas' });
     }
 
-    const secret = process.env.JWT_SECRET || 'palabrasecretaparaeltoken';
+    const secret = getJwtSecret();
     const token = jwt.sign({ id: user._id }, secret, { expiresIn: '7d' });
 
-    res.json({ 
-      message: 'Login exitoso', 
-      token, 
-      user: { id: user._id, username: user.username, email: user.email, avatar: user.avatar } 
+    res.json({
+      message: 'Login exitoso',
+      token,
+      user: { id: user._id, username: user.username, email: user.email, avatar: user.avatar, bio: user.bio, role: user.role }
     });
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.message === 'JWT_SECRET_MISSING') {
+      return res.status(500).json({ message: 'Server misconfigured: JWT_SECRET missing' });
+    }
     res.status(500).json({ message: 'Error en login' });
   }
 };
@@ -86,7 +107,7 @@ export const login = async (req: Request, res: Response) => {
 // --- ACTUALIZAR PERFIL ---
 export const updateProfile = async (req: AuthRequest, res: Response) => {
   try {
-    const { username } = req.body;
+    const { username, bio } = req.body;
     const userId = req.user.id;
 
     const user = await User.findById(userId);
@@ -94,13 +115,28 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
-    if (username) user.username = username;
-    
+    if (username) {
+      // Verificar unicidad del username al actualizar
+      const taken = await User.findOne({ username });
+      if (taken && taken._id.toString() !== userId) {
+        return res.status(400).json({ message: 'Nombre de usuario ya en uso' });
+      }
+      user.username = username;
+    }
+
+    if (bio !== undefined) {
+      const trimmedBio = String(bio).trim();
+      if (trimmedBio.length > 65) {
+        return res.status(400).json({ message: 'La descripcion no puede superar 65 caracteres' });
+      }
+      user.bio = trimmedBio;
+    }
+
     await user.save();
 
-    res.json({ 
-      success: true, 
-      user: { id: user._id, username: user.username, email: user.email, avatar: user.avatar } 
+    res.json({
+      success: true,
+      user: { id: user._id, username: user.username, email: user.email, avatar: user.avatar, bio: user.bio, role: user.role }
     });
   } catch (error) {
     res.status(500).json({ message: 'Error actualizando perfil' });
@@ -178,10 +214,10 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
     // Generar token único
     const resetToken = crypto.randomBytes(32).toString('hex');
-    
+
     // Guardar token hasheado en BD (más seguro)
     const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-    
+
     user.resetPasswordToken = hashedToken;
     user.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
     await user.save();
@@ -189,9 +225,9 @@ export const forgotPassword = async (req: Request, res: Response) => {
     // 🔔 NOTIFICAR A N8N para enviar email
     try {
       const n8nUrl = process.env.N8N_WEBHOOK_URL_RESET || 'http://n8n:5678/webhook/reset-password';
-      
+
       const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
-      
+
       await fetch(n8nUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -202,7 +238,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
           expiresIn: '1 hora'
         })
       });
-      
+
       console.log('✅ Email de recuperación enviado via n8n');
     } catch (webhookError) {
       console.error('❌ Error al notificar n8n:', webhookError);
@@ -248,11 +284,11 @@ export const resetPassword = async (req: Request, res: Response) => {
     // Actualizar contraseña
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(newPassword, salt);
-    
+
     // Limpiar campos de reset
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
-    
+
     await user.save();
 
     res.json({ success: true, message: 'Contraseña actualizada correctamente' });
@@ -260,5 +296,34 @@ export const resetPassword = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error reset password:', error);
     res.status(500).json({ message: 'Error al resetear contraseña' });
+  }
+};
+
+// --- SUBIR AVATAR ---
+export const uploadAvatar = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user.id;
+    if (!req.file) {
+      return res.status(400).json({ message: 'No se envió archivo' });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+
+    // Guardar nombre del archivo como avatar
+    user.avatar = req.file.filename;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Avatar actualizado',
+      avatar: req.file.filename,
+      user: { id: user._id, username: user.username, email: user.email, avatar: user.avatar, role: user.role }
+    });
+  } catch (error) {
+    console.error('Error uploading avatar:', error);
+    res.status(500).json({ message: 'Error al subir avatar' });
   }
 };

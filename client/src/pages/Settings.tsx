@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { User, Shield, Mail, Lock, Palette, Save, Key, Check, AlertCircle } from 'lucide-react';
+import { User, Shield, Mail, Lock, Palette, Save, Key, Check, AlertCircle, Upload } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import api from '../services/api';
+import { useDropzone } from 'react-dropzone';
+import api, { uploadsUrl } from '../services/api';
 
 export default function Settings() {
   const { user, updateUser, logout } = useAuth();
@@ -10,7 +11,10 @@ export default function Settings() {
 
   // Estados de UI
   const [username, setUsername] = useState(user?.username || '');
+  const [bio, setBio] = useState(user?.bio || '');
   const [loading, setLoading] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   
   // Estados Contraseña
   const [showPasswordForm, setShowPasswordForm] = useState(false);
@@ -33,7 +37,51 @@ export default function Settings() {
   // Sincronizo estado local si el usuario cambia externamente
   useEffect(() => {
     if (user?.username) setUsername(user.username);
+    if (user?.bio !== undefined) setBio(user.bio || '');
+    if (user?.avatar) setAvatarPreview(uploadsUrl(user.avatar));
   }, [user]);
+
+  // --- DRAG & DROP AVATAR ---
+  const onDrop = async (acceptedFiles: File[]) => {
+    if (acceptedFiles.length === 0) return;
+    
+    const file = acceptedFiles[0];
+    if (!file.type.startsWith('image/')) {
+      alert('Por favor sube una imagen válida');
+      return;
+    }
+
+    // Preview local
+    const reader = new FileReader();
+    reader.onload = (e) => setAvatarPreview(e.target?.result as string);
+    reader.readAsDataURL(file);
+
+    // Subir al servidor
+    setUploadingAvatar(true);
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    try {
+      const res = await api.post('/auth/avatar', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      if (res.data.success) {
+        updateUser(res.data.user);
+        alert('✅ Avatar actualizado');
+      }
+    } catch (error: any) {
+      console.error(error);
+      alert(error.response?.data?.message || 'Error al subir avatar');
+      setAvatarPreview(user?.avatar ? uploadsUrl(user.avatar) : null);
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: { 'image/*': ['.jpeg', '.jpg', '.png', '.webp', '.gif'] }
+  });
 
   // --- 1. CAMBIAR TEMA ---
   const handleThemeChange = (mode: 'light' | 'dark') => {
@@ -43,10 +91,11 @@ export default function Settings() {
   // --- 2. GUARDAR PERFIL ---
   const handleSaveProfile = async () => {
     if (!username.trim()) return alert("El nombre no puede estar vacío");
+    if (bio.trim().length > 65) return alert('La descripción no puede superar 65 caracteres');
     
     setLoading(true);
     try {
-      const res = await api.put('/auth/profile', { username });
+      const res = await api.put('/auth/profile', { username, bio: bio.trim() });
       
       if (res.data.success) {
          updateUser(res.data.user);
@@ -145,17 +194,30 @@ export default function Settings() {
 
           <div className="p-6">
             <div className="flex flex-col md:flex-row gap-6 items-start">
-              {/* Avatar */}
-              <div className="relative group">
-                <div className="h-24 w-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center text-4xl font-bold text-white shadow-lg uppercase">
-                  {user?.username?.charAt(0) || 'U'}
+              {/* Avatar - Drag & Drop */}
+              <div {...getRootProps()} className="relative group cursor-pointer">
+                <div className={`h-24 w-24 rounded-2xl flex items-center justify-center text-4xl font-bold text-white shadow-lg uppercase transition-all ${isDragActive ? 'ring-4 ring-blue-500' : ''} ${avatarPreview ? 'overflow-hidden' : 'bg-gradient-to-br from-blue-500 to-purple-600'}`}>
+                  {avatarPreview ? (
+                    <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    user?.username?.charAt(0) || 'U'
+                  )}
+                </div>
+                <input {...getInputProps()} />
+                {uploadingAvatar && (
+                  <div className="absolute inset-0 bg-black/50 rounded-2xl flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent"></div>
+                  </div>
+                )}
+                <div className="absolute -bottom-1 -right-1 h-8 w-8 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Upload size={16} />
                 </div>
               </div>
 
               {/* Info */}
               <div className="flex-1 space-y-4 w-full">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Nombre de Usuario</label>
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Nombre de usuario</label>
                   <div className="relative group">
                     <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
                     <input 
@@ -164,6 +226,22 @@ export default function Settings() {
                         onChange={(e) => setUsername(e.target.value)}
                         className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all dark:text-white"
                     />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Descripción (max 65)</label>
+                  <div className="relative">
+                    <textarea
+                      rows={2}
+                      maxLength={65}
+                      value={bio}
+                      onChange={(e) => setBio(e.target.value)}
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all dark:text-white resize-none"
+                      placeholder="Cuéntanos sobre ti en una línea..."
+                    />
+                    <div className="absolute right-3 bottom-2 text-xs text-slate-400">
+                      {bio.length}/65
+                    </div>
                   </div>
                 </div>
                 <div>
@@ -178,6 +256,7 @@ export default function Settings() {
                     />
                   </div>
                 </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400">💡 Arrastra una imagen o haz clic en el avatar para cambiar</p>
               </div>
             </div>
 
@@ -210,7 +289,7 @@ export default function Settings() {
                       <Lock className="text-purple-600 dark:text-purple-400" size={18} />
                    </div>
                    <div>
-                      <p className="font-semibold text-slate-800 dark:text-white">Cambiar Contraseña</p>
+                      <p className="font-semibold text-slate-800 dark:text-white">Cambiar contraseña</p>
                       <p className="text-sm text-slate-500 dark:text-slate-400">******</p>
                    </div>
                 </div>
@@ -219,7 +298,7 @@ export default function Settings() {
             ) : (
               <div className="bg-slate-50 dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-700 animate-in zoom-in duration-200">
                 <div className="flex justify-between items-center mb-6">
-                    <h3 className="font-bold text-slate-800 dark:text-white text-lg">Nueva Contraseña</h3>
+                    <h3 className="font-bold text-slate-800 dark:text-white text-lg">Nueva contraseña</h3>
                     <button onClick={() => setShowPasswordForm(false)} className="text-slate-400 hover:text-slate-600 transition-colors">✕</button>
                 </div>
                 
@@ -240,7 +319,7 @@ export default function Settings() {
                 <div className="space-y-5">
                   {/* Input 1: Contraseña Actual */}
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Contraseña Actual</label>
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Contraseña actual</label>
                     <div className="relative group">
                         <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-purple-600 transition-colors" />
                         <input 
@@ -255,7 +334,7 @@ export default function Settings() {
 
                   {/* Input 2: Nueva Contraseña con Validación Visual */}
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Nueva Contraseña</label>
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Nueva contraseña</label>
                     <div className="relative group">
                         <Key className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-purple-600 transition-colors" />
                         <input 

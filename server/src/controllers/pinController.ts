@@ -3,13 +3,16 @@ import { AuthRequest } from '../middlewares/auth';
 import Pin from '../models/Pin';
 import Project from '../models/Project';
 import User from '../models/User';
+import { getSiteConfig } from '../utils/siteConfig';
+import Notification from '../models/Notification';
+import { getIo } from '../utils/socket';
 
 // GET /api/pins/:projectId -> Obtener todos los pines de un proyecto
 export const getProjectPins = async (req: AuthRequest, res: Response) => {
   try {
     const { projectId } = req.params;
 
-    const pins = await Pin.find({ project: projectId })
+    const pins = await Pin.find({ project: projectId, isHidden: { $ne: true } })
       .populate('author', 'username') 
       .sort({ createdAt: 1 });
 
@@ -25,9 +28,26 @@ export const createPin = async (req: AuthRequest, res: Response) => {
   try {
     const { projectId, x, y, content } = req.body;
     const userId = req.user.id;
+    const config = await getSiteConfig();
+    if (config.maintenanceMode) {
+      return res.status(503).json({ message: 'Plataforma en mantenimiento' });
+    }
 
     if (!content || x === undefined || y === undefined) {
       return res.status(400).json({ message: 'Faltan datos del pin' });
+    }
+
+    const project = await Project.findById(projectId);
+    if (!project) {
+      return res.status(404).json({ message: 'Proyecto no encontrado' });
+    }
+    if (project.isHidden && project.owner.toString() !== userId) {
+      return res.status(403).json({ message: 'Proyecto no disponible' });
+    }
+
+    const pinCount = await Pin.countDocuments({ project: projectId });
+    if (pinCount >= config.maxPinsPerProject) {
+      return res.status(400).json({ message: 'Se alcanzo el limite de comentarios para este proyecto' });
     }
 
     const newPin = new Pin({
@@ -41,6 +61,28 @@ export const createPin = async (req: AuthRequest, res: Response) => {
     await newPin.save();
     
     await newPin.populate('author', 'username');
+
+    const projectOwnerId = project.owner.toString();
+    if (projectOwnerId !== userId) {
+      await Notification.create({
+        user: projectOwnerId,
+        type: 'pin',
+        title: `Nuevo comentario en ${project.title}`,
+        body: newPin.content.slice(0, 80),
+        data: { projectId: project._id.toString() }
+      });
+
+      const io = getIo();
+      if (io) {
+        io.to(`user:${projectOwnerId}`).emit('notification', {
+          type: 'pin',
+          title: `Nuevo comentario en ${project.title}`,
+          body: newPin.content.slice(0, 80),
+          data: { projectId: project._id.toString() },
+          createdAt: new Date().toISOString()
+        });
+      }
+    }
 
     // 🔔 NOTIFICAR A N8N (Nuevo comentario/pin)
     try {

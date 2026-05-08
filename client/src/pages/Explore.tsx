@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../services/api';
+import api, { uploadsUrl } from '../services/api';
 import { useAuth } from '../context/AuthContext'; 
 import { 
   Globe, 
@@ -128,13 +128,13 @@ export default function Explore() {
   };
 
   if (loading) return (
-    <div className="flex h-screen items-center justify-center p-8 bg-slate-50 dark:bg-slate-900">
+    <div className="flex h-screen items-center justify-center p-8 bg-white dark:bg-slate-900">
       <Loader2 className="animate-spin text-purple-600 h-10 w-10" />
     </div>
   );
 
   return (
-    <div className="p-8 max-w-7xl mx-auto min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-300 font-sans">
+    <div className="p-8 max-w-7xl mx-auto min-h-screen bg-white dark:bg-slate-900 transition-colors duration-300 font-sans">
        
       {/* Header */}
       <div className="relative mb-12 overflow-hidden rounded-3xl shadow-sm border border-purple-100 dark:border-purple-900/50 animate-fade-in-up">
@@ -152,20 +152,14 @@ export default function Explore() {
             Descubre proyectos auditados por Axio, inspírate y ayuda a la comunidad puntuando sus aportes.
           </p>
            
-          <div className="flex gap-6 mt-6">
-            <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
-              <div className="h-8 w-8 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center shadow-sm">
-                <TrendingUp size={16} className="text-blue-600 dark:text-blue-400" />
-              </div>
-              <span className="text-sm font-medium">{projects.length} Proyectos activos</span>
+          <div className="flex flex-wrap gap-3 mt-6">
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white shadow-sm border border-purple-100 text-sm font-semibold text-slate-700 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100">
+              <TrendingUp size={16} className="text-blue-600 dark:text-blue-400" />
+              <span>{projects.length} Proyectos activos</span>
             </div>
-            <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
-              <div className="h-8 w-8 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center shadow-sm">
-                <Heart size={16} className="text-red-500" />
-              </div>
-              <span className="text-sm font-medium">
-                {projects.reduce((acc, p) => acc + (p.likes?.length || 0), 0)} Likes totales
-              </span>
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white shadow-sm border border-purple-100 text-sm font-semibold text-slate-700 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100">
+              <Heart size={16} className="text-red-500" />
+              <span>{projects.reduce((acc, p) => acc + (p.likes?.length || 0), 0)} Likes totales</span>
             </div>
           </div>
         </div>
@@ -197,12 +191,11 @@ export default function Explore() {
       {/* Grid */}
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 pb-20">
         {filteredProjects.map((project) => {
-            const imageUrl = project.image 
-                ? `http://localhost:3000/uploads/${project.image}`
-                : null;
+            const mediaSource = project.image || (project.type !== 'code' ? project.input : null);
+            const imageUrl = mediaSource ? uploadsUrl(mediaSource) : null;
             
             // Detección de PDF
-            const isPdf = project.image?.toLowerCase().endsWith('.pdf');
+            const isPdf = mediaSource?.toLowerCase().endsWith('.pdf');
 
             const authorName = project.owner?.username || 'Anónimo';
             const initial = authorName.charAt(0).toUpperCase();
@@ -225,13 +218,13 @@ export default function Explore() {
                 className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group flex flex-col"
               >
                 {/* Imagen / Header */}
-                <div className="h-48 relative overflow-hidden bg-slate-100 dark:bg-slate-900 shrink-0">
+                <div className="h-64 relative overflow-hidden bg-slate-100 dark:bg-slate-900 shrink-0">
                   {imageUrl && !isPdf ? (
                       // CASO 1: Imagen normal
                       <img 
                         src={imageUrl} 
                         alt={project.title} 
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
                       />
                   ) : isPdf && imageUrl ? (
                       // CASO 2: PDF - Vista previa con iframe ampliado SIN SCROLL
@@ -253,8 +246,8 @@ export default function Explore() {
                   ) : (
                       // CASO 3: Placeholder genérico
                       <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 text-slate-400">
-                        <TypeIcon size={48} className="mb-2 opacity-50" />
-                        <span className="text-xs font-bold uppercase tracking-widest opacity-70">{project.type}</span>
+                        <TypeIcon size={56} className="mb-2 opacity-50" />
+                        <span className="text-sm font-bold uppercase tracking-widest opacity-70">{project.type}</span>
                       </div>
                   )}
                    
@@ -286,6 +279,12 @@ export default function Explore() {
                     <span className="text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-1 rounded-lg font-medium uppercase">
                         {project.type}
                     </span>
+                    {project.isFeatured && (
+                      <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 px-2 py-1 rounded-lg font-medium uppercase flex items-center gap-1">
+                        <Star size={12} className="text-blue-600 dark:text-blue-300" />
+                        Destacado
+                      </span>
+                    )}
                     {isPdf && (
                       <span className="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-300 px-2 py-1 rounded-lg font-medium uppercase">
                         PDF
@@ -334,14 +333,18 @@ export default function Explore() {
 
                   {/* Footer */}
                   <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-700">
-                    <div className="flex items-center gap-2">
-                      <div className="h-7 w-7 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm">
-                        {initial}
+                      <div className="flex items-center gap-2 cursor-pointer" onClick={(e) => { e.stopPropagation(); navigate(`/u/${project.owner?.username || authorName}`); }}>
+                        <div className="h-7 w-7 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm overflow-hidden">
+                          {project.owner?.avatar ? (
+                            <img src={uploadsUrl(project.owner.avatar)} alt={authorName} className="w-full h-full object-cover" />
+                          ) : (
+                            initial
+                          )}
+                        </div>
+                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                          @{authorName}
+                        </span>
                       </div>
-                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                        @{authorName}
-                      </span>
-                    </div>
 
                     <div className="flex items-center gap-3 text-slate-400 text-xs">
                       <button 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import api from '../services/api';
+import api, { uploadsUrl } from '../services/api';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 import PinLayer from '../components/collaboration/PinLayer';
@@ -16,7 +16,7 @@ export default function ProjectView() {
   const { socket } = useSocket();
   const { user } = useAuth();
   
-  const previousTab = location.state?.from || 'projects';
+    const previousTab = location.state?.from || 'projects';
 
   // Estados de Datos
   const [project, setProject] = useState<any>(null);
@@ -46,7 +46,7 @@ export default function ProjectView() {
 
         if (resProject.data.project.type === 'code' && resProject.data.project.input) {
             try {
-                const fileRes = await fetch(`http://localhost:3000/uploads/${resProject.data.project.input}`);
+                const fileRes = await fetch(uploadsUrl(resProject.data.project.input));
                 if (fileRes.ok) setCodeContent(await fileRes.text());
             } catch (err) { console.error(err); }
         }
@@ -131,15 +131,20 @@ export default function ProjectView() {
     }
   };
 
-  const handleBack = () => {
-    navigate('/dashboard', { state: { tab: previousTab } });
-  };
+    const handleBack = () => {
+        if (previousTab === 'admin') {
+            navigate('/admin');
+        } else {
+            navigate('/dashboard', { state: { tab: previousTab } });
+        }
+    };
 
   if (loading) return <div className="flex h-screen items-center justify-center bg-slate-900 text-white"><Loader2 className="animate-spin" /></div>;
   if (!project) return <div className="p-10 text-center text-red-500">Proyecto no encontrado</div>;
 
-  const imageUrl = project.image ? `http://localhost:3000/uploads/${project.image}` : undefined;
-  const isPdf = project.image?.toLowerCase().endsWith('.pdf');
+        const mediaSource = project.image || (project.type !== 'code' ? project.input : undefined);
+        const imageUrl = mediaSource ? uploadsUrl(mediaSource) : undefined;
+    const isPdf = mediaSource?.toLowerCase().endsWith('.pdf');
   const showEmpathy = project.type !== 'code';
   const visualPins = pins.filter(p => p.x >= 0 && p.y >= 0);
 
@@ -169,8 +174,13 @@ export default function ProjectView() {
                 <h1 className="font-bold text-lg">{project.title}</h1>
                 <div className="flex items-center gap-2 text-xs text-slate-400">
                    <span className="uppercase font-bold">{project.type}</span> • {new Date(project.createdAt).toLocaleDateString()}
-                </div>
-            </div>
+                </div>                {project.owner && (
+                  <div className="text-xs text-slate-400 mt-1">
+                    <button onClick={(e) => { e.stopPropagation(); navigate(`/u/${project.owner.username || project.owner}`); }} className="text-slate-300 hover:text-white font-semibold">
+                      @{project.owner.username || project.owner}
+                    </button>
+                  </div>
+                )}            </div>
         </div>
         
         {showEmpathy && (
