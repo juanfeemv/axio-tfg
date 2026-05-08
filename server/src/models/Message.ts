@@ -7,6 +7,8 @@ export interface IMessage extends Document {
   text: string;
   image?: string;
   readAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const MessageSchema: Schema = new Schema(

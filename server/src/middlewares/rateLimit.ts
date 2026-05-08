@@ -16,7 +16,7 @@ const hits = new Map<string, RateLimitEntry>();
 
 export const rateLimit = (options: RateLimitOptions) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    const key = options.keyGenerator ? options.keyGenerator(req) : req.ip;
+    const key = options.keyGenerator ? options.keyGenerator(req) : req.ip || 'unknown';
     const now = Date.now();
     const existing = hits.get(key);
 
