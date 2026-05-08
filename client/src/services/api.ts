@@ -1,6 +1,6 @@
 import axios, { InternalAxiosRequestConfig } from 'axios';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const API_BASE = import.meta.env.VITE_API_URL?.trim() || '/api';
 
 // 1. Creo una instancia de axios con la URL base
 const api = axios.create({
@@ -15,7 +15,7 @@ export const uploadsUrl = (fileName: string) => {
   const apiBase = api.defaults.baseURL || API_BASE;
   const normalized = fileName.replace(/^\/?uploads\//i, '');
   try {
-    const apiUrl = new URL(apiBase);
+    const apiUrl = new URL(apiBase, window.location.origin);
     // Quitar sufijo /api para apuntar a la raíz del servidor
     apiUrl.pathname = apiUrl.pathname.replace(/\/api\/?$/, '/');
     return new URL(`/uploads/${normalized}`, apiUrl).toString();

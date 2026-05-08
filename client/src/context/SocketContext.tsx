@@ -9,8 +9,8 @@ interface SocketContextType {
 
 const SocketContext = createContext<SocketContextType | undefined>(undefined);
 
-// Conecto con el servidor
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, '') || 'http://localhost:3000';
+// Conecto con el servidor usando el origen actual por defecto.
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL?.trim();
 
 export const SocketProvider = ({ children }: { children: ReactNode }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
@@ -19,7 +19,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     // 1. Crear la conexión al arrancar la web
-    const newSocket = io(SOCKET_URL);
+    const newSocket = SOCKET_URL ? io(SOCKET_URL) : io();
 
     newSocket.on('connect', () => {
       console.log("🟢 Conectado al servidor de WebSockets");
