@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 
 interface User {
   id: string;
@@ -52,7 +52,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (email: string, pass: string) => {
     try {
-      const res = await axios.post('http://localhost:3000/api/auth/login', {
+      const res = await api.post('/auth/login', {
         email,
         password: pass
       });
@@ -84,7 +84,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const register = async (username: string, email: string, pass: string) => {
     try {
-      await axios.post('http://localhost:3000/api/auth/register', {
+      await api.post('/auth/register', {
         username,
         email,
         password: pass
@@ -102,7 +102,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const forgotPassword = async (email: string) => {
     try {
-      await axios.post('http://localhost:3000/api/auth/forgot-password', { email });
+      await api.post('/auth/forgot-password', { email });
     } catch (error) {
       console.error("Error forgot password:", error);
       throw error;
@@ -111,7 +111,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const resetPassword = async (token: string, newPassword: string) => {
     try {
-      await axios.post(`http://localhost:3000/api/auth/reset-password/${token}`, {
+      await api.post(`/auth/reset-password/${token}`, {
         newPassword
       });
     } catch (error) {
