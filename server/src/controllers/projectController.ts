@@ -123,26 +123,17 @@ export const createProject = async (req: AuthRequest, res: Response) => {
       inputData = req.file.filename;
     }
     
-    // Intentar sacar captura si es URL (aunque no se use IA, para la portada).
-    // Usamos Promise.race con un timeout de 90s para que Puppeteer no bloquee
-    // indefinidamente si Chromium no está disponible (e.g. Raspberry Pi sin Chromium instalado).
+    // Intentar sacar captura si es URL (aunque no se use IA, para la portada)
     if (type === 'url' && url) {
         try {
-          const capturePromise = captureWebsite(url);
-          const timeoutPromise = new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error('Timeout de captura (90s)')), 90000)
-          );
-          const { imageBase64 } = await Promise.race([capturePromise, timeoutPromise]);
+          const { imageBase64 } = await captureWebsite(url);
           const filename = `url-${Date.now()}.png`;
           const uploadDir = path.join(__dirname, '../../uploads');
           if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
           fs.writeFileSync(path.join(uploadDir, filename), Buffer.from(imageBase64, 'base64'));
           imageFilename = filename;
-          console.log(`📸 Preview generado para URL manual: ${filename}`);
-        } catch (e: any) {
-          // Si falla la captura (Chromium no disponible, timeout, etc.) continuamos sin imagen.
-          // El proyecto se guarda igualmente, solo sin portada.
-          console.warn(`⚠️  Preview no generado para URL manual (${url}): ${e.message}`);
+        } catch (e) {
+            console.log("No se pudo generar preview para el proyecto manual", e);
         }
     }
 
@@ -158,32 +149,30 @@ export const createProject = async (req: AuthRequest, res: Response) => {
 
     await newProject.save();
 
-    // 🔔 NOTIFICAR A N8N (con timeout de 5s para no colgar si n8n no está disponible)
-    const n8nUrl = process.env.N8N_WEBHOOK_URL;
-    if (n8nUrl) {
-      try {
-        const userInfo = await User.findById(userId).select('username email');
-        const n8nController = new AbortController();
-        const n8nTimeout = setTimeout(() => n8nController.abort(), 5000);
-        await fetch(n8nUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          signal: n8nController.signal,
-          body: JSON.stringify({
-            projectId: newProject._id,
-            title: newProject.title,
-            type: newProject.type,
-            url: newProject.input,
-            owner: userId,
-            ownerName: userInfo?.username || userInfo?.email || 'Usuario Anónimo',
-            createdAt: newProject.createdAt
-          })
-        });
-        clearTimeout(n8nTimeout);
-        console.log('✅ Webhook n8n notificado correctamente');
-      } catch (webhookError: any) {
-        console.warn('⚠️  n8n no disponible, se omite la notificación:', webhookError.message);
-      }
+    // 🔔 NOTIFICAR A N8N
+    try {
+      const n8nUrl = process.env.N8N_WEBHOOK_URL || 'http://n8n:5678/webhook/nuevo-proyecto';
+      
+      const userInfo = await User.findById(userId).select('username email');
+      
+      await fetch(n8nUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId: newProject._id,
+          title: newProject.title,
+          type: newProject.type,
+          url: newProject.input,
+          owner: userId,
+          ownerName: userInfo?.username || userInfo?.email || 'Usuario Anónimo',
+          createdAt: newProject.createdAt
+        })
+      });
+      
+      console.log('✅ Webhook n8n notificado correctamente');
+    } catch (webhookError) {
+      console.error('❌ Error al notificar n8n:', webhookError);
+      // No bloqueamos la creación del proyecto si falla n8n
     }
 
     res.status(201).json({
