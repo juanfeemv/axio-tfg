@@ -46,8 +46,10 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
 
   // Ref para evitar stale closure en el socket listener (siempre tiene el valor actual)
   const activeConversationIdRef = useRef<string>('');
-  // Ref para auto-scroll al último mensaje
+  // Ref centinela al final de la lista (target del scroll)
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  // Ref para saber si es la carga inicial de la conversación (scroll instantáneo)
+  const isInitialLoadRef = useRef<boolean>(false);
 
   const currentUser = user?.username || '';
   const currentUserId = user?.id || '';
@@ -82,9 +84,12 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
     activeConversationIdRef.current = activeConversationId;
   }, [activeConversationId]);
 
-  // Auto-scroll al último mensaje cuando llegan mensajes nuevos
+  // Scroll al fondo: instantáneo en carga inicial, smooth al recibir nuevos
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (!messagesEndRef.current) return;
+    const behavior = isInitialLoadRef.current ? 'instant' : 'smooth';
+    messagesEndRef.current.scrollIntoView({ behavior: behavior as ScrollBehavior });
+    isInitialLoadRef.current = false;
   }, [messages]);
 
   const loadConversations = async () => {
@@ -137,6 +142,7 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
       }
       try {
         setLoading(true);
+        isInitialLoadRef.current = true; // scroll instantáneo al abrir conversación
         const res = await api.get(`/messages/${activeConversationId}`);
         setMessages(uniqueById(res.data.data || []));
         await api.post(`/messages/${activeConversationId}/read`);
@@ -149,6 +155,34 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
 
     loadMessages();
   }, [activeConversationId]);
+
+  // ── POLLING SILENCIOSO ──────────────────────────────────────────────────────
+  // Comprueba mensajes nuevos cada 3s sin mostrar ningún loader.
+  // Si el socket no entrega el mensaje (problemas de red, cloudflared, etc.)
+  // el polling lo recoge en máximo 3 segundos, invisible para el usuario.
+  useEffect(() => {
+    if (!activeConversationId || !currentUserId) return;
+
+    const poll = async () => {
+      try {
+        const res = await api.get(`/messages/${activeConversationId}`);
+        const fresh = uniqueById(res.data.data || []) as MessageItem[];
+        setMessages((prev) => {
+          // Solo actualizar si hay mensajes nuevos (evitar re-renders innecesarios)
+          if (fresh.length === prev.length) return prev;
+          const prevIds = new Set(prev.map((m) => m._id));
+          const hasNew = fresh.some((m) => !prevIds.has(m._id));
+          if (!hasNew) return prev;
+          return fresh;
+        });
+      } catch {
+        // Si falla silenciosamente, el socket sigue como respaldo
+      }
+    };
+
+    const interval = setInterval(poll, 3000);
+    return () => clearInterval(interval);
+  }, [activeConversationId, currentUserId]);
 
   // Registrar el listener de socket UNA SOLA VEZ.
   // Usamos activeConversationIdRef (ref) en vez de activeConversationId (state)
