@@ -18,17 +18,16 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
 
   useEffect(() => {
-    const newSocket = SOCKET_URL ? io(SOCKET_URL, {
+    // Cloudflare Tunnel no soporta WebSocket nativo → forzamos polling HTTP.
+    // Socket.IO polling funciona sobre HTTP normal, compatible con cloudflared.
+    const opts = {
+      transports: ['polling'] as ['polling'],
       reconnection: true,
       reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
-    }) : io({
-      reconnection: true,
-      reconnectionAttempts: Infinity,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-    });
+    };
+    const newSocket = SOCKET_URL ? io(SOCKET_URL, opts) : io(opts);
 
     newSocket.on('connect', () => {
       console.log("🟢 Conectado al servidor de WebSockets:", newSocket.id);

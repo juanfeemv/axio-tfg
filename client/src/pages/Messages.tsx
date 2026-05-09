@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { ArrowLeft, MessageCircle, Send, Paperclip, Smile, Clock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -46,9 +46,11 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
 
   // Ref para evitar stale closure en el socket listener (siempre tiene el valor actual)
   const activeConversationIdRef = useRef<string>('');
-  // Ref centinela al final de la lista (target del scroll)
+  // Ref al contenedor de mensajes para controlar scrollTop directamente
+  const messagesContainerRef = useRef<HTMLDivElement | null>(null);
+  // Ref centinela al final de la lista
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-  // Ref para saber si es la carga inicial de la conversación (scroll instantáneo)
+  // true = scroll instantáneo (carga inicial), false = smooth (mensaje nuevo)
   const isInitialLoadRef = useRef<boolean>(false);
 
   const currentUser = user?.username || '';
@@ -84,12 +86,20 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
     activeConversationIdRef.current = activeConversationId;
   }, [activeConversationId]);
 
-  // Scroll al fondo: instantáneo en carga inicial, smooth al recibir nuevos
-  useEffect(() => {
-    if (!messagesEndRef.current) return;
-    const behavior = isInitialLoadRef.current ? 'instant' : 'smooth';
-    messagesEndRef.current.scrollIntoView({ behavior: behavior as ScrollBehavior });
-    isInitialLoadRef.current = false;
+  // Scroll al fondo del chat.
+  // useLayoutEffect garantiza que corre DESPUÉS de que React actualiza el DOM
+  // pero ANTES de que el navegador pinte, así scrollTop tiene el valor correcto.
+  useLayoutEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    if (isInitialLoadRef.current) {
+      // Scroll instantáneo al abrir conversación: ir al final sin animación
+      container.scrollTop = container.scrollHeight;
+      isInitialLoadRef.current = false;
+    } else {
+      // Scroll suave al recibir mensaje nuevo
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages]);
 
   const loadConversations = async () => {
@@ -447,6 +457,7 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
             </div>
 
             <div
+              ref={messagesContainerRef}
               className="flex-1 overflow-y-auto px-6 py-5 space-y-4 relative"
               role="log"
               aria-live="polite"
