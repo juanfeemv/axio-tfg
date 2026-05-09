@@ -147,9 +147,10 @@ export default function Dashboard() {
         alert("✅ Proyecto guardado. Ve a 'Mis Proyectos' para verlo.");
         setUrl('');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error URL:", error);
-      alert("Error al procesar la web.");
+      const msg = error.response?.data?.message || error.message || 'Error al procesar la web.';
+      alert(`❌ ${msg}`);
     } finally {
       setLoading(false);
     }
@@ -185,9 +186,10 @@ export default function Dashboard() {
       } else {
         alert("✅ Archivo subido correctamente.");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error archivo:", error);
-      alert("Error al subir el archivo.");
+      const msg = error.response?.data?.message || error.message || 'Error al subir el archivo.';
+      alert(`❌ ${msg}`);
     } finally {
       setLoading(false);
     }

@@ -166,11 +166,16 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
 
     const io = getIo();
     if (io) {
-      // Solo emitir al receptor; el emisor ya gestiona el mensaje por la respuesta HTTP
-      io.to(`user:${recipientId}`).emit('new_dm', {
-        conversationId,
-        message: populated
-      });
+      const dmPayload = { conversationId, message: populated };
+
+      // Emitir al receptor (otro usuario)
+      io.to(`user:${recipientId}`).emit('new_dm', dmPayload);
+
+      // Emitir también al emisor para sincronizar otros dispositivos/pestañas
+      // El campo fromSelf=true permite al cliente ignorarlo si ya lo añadió optimísticamente
+      io.to(`user:${userId}`).emit('new_dm', { ...dmPayload, fromSelf: true });
+
+      // Notificación solo al receptor
       io.to(`user:${recipientId}`).emit('notification', {
         type: 'dm',
         title: `Nuevo mensaje de ${senderUsername}`,

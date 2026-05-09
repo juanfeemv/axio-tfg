@@ -138,7 +138,8 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
   useEffect(() => {
     if (!socket) return;
 
-    const handleNewMessage = (payload: { conversationId: string; message: MessageItem }) => {
+    const handleNewMessage = (payload: { conversationId: string; message: MessageItem; fromSelf?: boolean }) => {
+      // Actualizar la lista de conversaciones con el último mensaje
       setConversations((prev) => {
         const existing = prev.find((conv) => conv.id === payload.conversationId);
         if (!existing) return prev;
@@ -158,7 +159,9 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
       });
 
       if (payload.conversationId !== activeConversationId) return;
+
       setMessages((prev) => {
+        // Siempre deduplicamos por ID para evitar duplicados en cualquier caso
         if (prev.some((msg) => msg._id === payload.message._id)) return prev;
         return [...prev, payload.message];
       });

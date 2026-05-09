@@ -89,17 +89,13 @@ const analyzeVisual = async (imageBase64: string, mimeType: string) => {
     }
   `;
 
-  try {
-    const result = await model.generateContent([
-      prompt,
-      { inlineData: { data: imageBase64, mimeType: mimeType } }
-    ]);
-    const text = result.response.text();
-    const cleanJson = text.replace(/```json|```/g, '').trim();
-    return { json: JSON.parse(cleanJson), raw: text };
-  } catch (e) {
-    return { json: { score: 0, issues: [] }, raw: "" };
-  }
+  const result = await model.generateContent([
+    prompt,
+    { inlineData: { data: imageBase64, mimeType: mimeType } }
+  ]);
+  const text = result.response.text();
+  const cleanJson = text.replace(/```json|```/g, '').trim();
+  return { json: JSON.parse(cleanJson), raw: text };
 };
 
 const analyzeCode = async (codeContent: string, filename: string) => {
@@ -124,14 +120,10 @@ const analyzeCode = async (codeContent: string, filename: string) => {
     }
   `;
 
-  try {
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
-    const cleanJson = text.replace(/```json|```/g, '').trim();
-    return { json: JSON.parse(cleanJson), raw: text };
-  } catch (e) {
-    return { json: { score: 0, issues: [] }, raw: "" };
-  }
+  const result = await model.generateContent(prompt);
+  const text = result.response.text();
+  const cleanJson = text.replace(/```json|```/g, '').trim();
+  return { json: JSON.parse(cleanJson), raw: text };
 };
 
 export const analyzeImage = async (req: Request, res: Response) => { // Analizo la imagen con su carga
