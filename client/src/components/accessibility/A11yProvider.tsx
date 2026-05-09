@@ -113,7 +113,7 @@ const speakText = (text: string, volume: number) => {
 };
 
 export default function A11yProvider({ children }: { children: ReactNode }) {
-  const [ttsEnabled, setTtsEnabled] = useState<boolean>(() => getStoredBoolean(STORAGE_ENABLED, true));
+  const [ttsEnabled, setTtsEnabled] = useState<boolean>(() => getStoredBoolean(STORAGE_ENABLED, false));
   const [ttsVolume, setTtsVolume] = useState<number>(() => getStoredVolume(1));
   const lastTargetRef = useRef<HTMLElement | null>(null);
   const lastTextRef = useRef('');

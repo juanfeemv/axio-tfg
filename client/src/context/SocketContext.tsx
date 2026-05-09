@@ -18,11 +18,20 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
 
   useEffect(() => {
-    // 1. Crear la conexión al arrancar la web
-    const newSocket = SOCKET_URL ? io(SOCKET_URL) : io();
+    const newSocket = SOCKET_URL ? io(SOCKET_URL, {
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+    }) : io({
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+    });
 
     newSocket.on('connect', () => {
-      console.log("🟢 Conectado al servidor de WebSockets");
+      console.log("🟢 Conectado al servidor de WebSockets:", newSocket.id);
       setIsConnected(true);
     });
 
@@ -33,15 +42,32 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
 
     setSocket(newSocket);
 
-    // 2. Limpieza al cerrar la web
     return () => {
       newSocket.close();
     };
   }, []);
 
+  // Unirse a la sala del usuario cuando hay socket Y usuario.
+  // Se ejecuta también al reconectar (socket cambia de id tras reconexión).
   useEffect(() => {
     if (!socket || !user?.id) return;
-    socket.emit('join_user', user.id);
+
+    const joinRoom = () => {
+      socket.emit('join_user', user.id);
+      console.log("🏠 Unido a sala privada del usuario:", user.id);
+    };
+
+    // Unirse al conectar por primera vez
+    if (socket.connected) {
+      joinRoom();
+    }
+
+    // Volver a unirse cada vez que se reconecte (cloudflared puede cortar el WS)
+    socket.on('connect', joinRoom);
+
+    return () => {
+      socket.off('connect', joinRoom);
+    };
   }, [socket, user?.id]);
 
   return (

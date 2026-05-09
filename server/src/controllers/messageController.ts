@@ -13,7 +13,7 @@ const getOtherParticipant = (participants: mongoose.Types.ObjectId[], userId: st
 };
 
 // GET /api/messages/conversations
-export const listConversations = async (req: AuthRequest, res: Response) => {
+export const listConversations = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user.id;
     const conversations = await Conversation.find({ participants: userId })
@@ -40,22 +40,22 @@ export const listConversations = async (req: AuthRequest, res: Response) => {
 };
 
 // POST /api/messages/conversations { username }
-export const getOrCreateConversation = async (req: AuthRequest, res: Response) => {
+export const getOrCreateConversation = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user.id;
     const { username } = req.body;
 
     if (!username) {
-      return res.status(400).json({ message: 'Falta username' });
+      res.status(400).json({ message: 'Falta username' }); return;
     }
 
     const targetUser = await User.findOne({ username: new RegExp(`^${username}$`, 'i') }).select('username avatar');
     if (!targetUser) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
+      res.status(404).json({ message: 'Usuario no encontrado' }); return;
     }
 
     if (targetUser._id.toString() === userId) {
-      return res.status(400).json({ message: 'No puedes abrir un chat contigo mismo' });
+      res.status(400).json({ message: 'No puedes abrir un chat contigo mismo' }); return;
     }
 
     let conversation = await Conversation.findOne({
@@ -82,18 +82,18 @@ export const getOrCreateConversation = async (req: AuthRequest, res: Response) =
 };
 
 // GET /api/messages/:conversationId
-export const getConversationMessages = async (req: AuthRequest, res: Response) => {
+export const getConversationMessages = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user.id;
     const { conversationId } = req.params;
 
     const conversation = await Conversation.findById(conversationId);
     if (!conversation) {
-      return res.status(404).json({ message: 'Conversacion no encontrada' });
+      res.status(404).json({ message: 'Conversacion no encontrada' }); return;
     }
 
     if (!conversation.participants.some((p) => p.toString() === userId)) {
-      return res.status(403).json({ message: 'No tienes acceso a esta conversacion' });
+      res.status(403).json({ message: 'No tienes acceso a esta conversacion' }); return;
     }
 
     const messages = await Message.find({ conversation: conversationId })
@@ -109,7 +109,7 @@ export const getConversationMessages = async (req: AuthRequest, res: Response) =
 };
 
 // POST /api/messages/:conversationId
-export const sendMessage = async (req: AuthRequest, res: Response) => {
+export const sendMessage = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user.id;
     const { conversationId } = req.params;
@@ -118,21 +118,21 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
     const trimmedText = text ? String(text).trim() : '';
 
     if (!trimmedText && !imageFile) {
-      return res.status(400).json({ message: 'El mensaje esta vacio' });
+      res.status(400).json({ message: 'El mensaje esta vacio' }); return;
     }
 
     const conversation = await Conversation.findById(conversationId);
     if (!conversation) {
-      return res.status(404).json({ message: 'Conversacion no encontrada' });
+      res.status(404).json({ message: 'Conversacion no encontrada' }); return;
     }
 
     if (!conversation.participants.some((p) => p.toString() === userId)) {
-      return res.status(403).json({ message: 'No tienes acceso a esta conversacion' });
+      res.status(403).json({ message: 'No tienes acceso a esta conversacion' }); return;
     }
 
     const recipientId = getOtherParticipant(conversation.participants, userId);
     if (!recipientId) {
-      return res.status(400).json({ message: 'No se encontro receptor' });
+      res.status(400).json({ message: 'No se encontro receptor' }); return;
     }
 
     const message = await Message.create({
@@ -166,11 +166,16 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
 
     const io = getIo();
     if (io) {
-      // Solo emitir al receptor; el emisor ya gestiona el mensaje por la respuesta HTTP
-      io.to(`user:${recipientId}`).emit('new_dm', {
-        conversationId,
-        message: populated
-      });
+      const dmPayload = { conversationId, message: populated };
+
+      // Emitir al receptor para que vea el mensaje al instante
+      io.to(`user:${recipientId}`).emit('new_dm', dmPayload);
+
+      // Emitir también al emisor para sincronizar otras pestañas/dispositivos
+      // fromSelf:true permite al cliente evitar duplicar si ya lo añadió optimísticamente
+      io.to(`user:${userId}`).emit('new_dm', { ...dmPayload, fromSelf: true });
+
+      // Notificación solo al receptor
       io.to(`user:${recipientId}`).emit('notification', {
         type: 'dm',
         title: `Nuevo mensaje de ${senderUsername}`,
@@ -188,18 +193,18 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
 };
 
 // POST /api/messages/:conversationId/read
-export const markConversationRead = async (req: AuthRequest, res: Response) => {
+export const markConversationRead = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user.id;
     const { conversationId } = req.params;
 
     const conversation = await Conversation.findById(conversationId);
     if (!conversation) {
-      return res.status(404).json({ message: 'Conversacion no encontrada' });
+      res.status(404).json({ message: 'Conversacion no encontrada' }); return;
     }
 
     if (!conversation.participants.some((p) => p.toString() === userId)) {
-      return res.status(403).json({ message: 'No tienes acceso a esta conversacion' });
+      res.status(403).json({ message: 'No tienes acceso a esta conversacion' }); return;
     }
 
     await Message.updateMany(
@@ -215,18 +220,18 @@ export const markConversationRead = async (req: AuthRequest, res: Response) => {
 };
 
 // DELETE /api/messages/:conversationId
-export const deleteConversation = async (req: AuthRequest, res: Response) => {
+export const deleteConversation = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user.id;
     const { conversationId } = req.params;
 
     const conversation = await Conversation.findById(conversationId);
     if (!conversation) {
-      return res.status(404).json({ message: 'Conversacion no encontrada' });
+      res.status(404).json({ message: 'Conversacion no encontrada' }); return;
     }
 
     if (!conversation.participants.some((p) => p.toString() === userId)) {
-      return res.status(403).json({ message: 'No tienes acceso a esta conversacion' });
+      res.status(403).json({ message: 'No tienes acceso a esta conversacion' }); return;
     }
 
     // Eliminar todos los mensajes y la conversacion

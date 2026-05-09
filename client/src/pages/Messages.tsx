@@ -44,6 +44,11 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
   const [activeConversationId, setActiveConversationId] = useState<string>('');
   const [loading, setLoading] = useState(false);
 
+  // Ref para evitar stale closure en el socket listener (siempre tiene el valor actual)
+  const activeConversationIdRef = useRef<string>('');
+  // Ref para auto-scroll al último mensaje
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
   const currentUser = user?.username || '';
   const currentUserId = user?.id || '';
   const stateUsername = (location.state as { username?: string } | null)?.username || '';
@@ -71,6 +76,16 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
     const date = new Date(value);
     return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
   };
+
+  // Sincronizar el ref con el estado para usarlo en el socket listener
+  useEffect(() => {
+    activeConversationIdRef.current = activeConversationId;
+  }, [activeConversationId]);
+
+  // Auto-scroll al último mensaje cuando llegan mensajes nuevos
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   const loadConversations = async () => {
     if (!currentUserId) return;
@@ -135,15 +150,18 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
     loadMessages();
   }, [activeConversationId]);
 
+  // Registrar el listener de socket UNA SOLA VEZ.
+  // Usamos activeConversationIdRef (ref) en vez de activeConversationId (state)
+  // para evitar el stale closure que causaba que los mensajes no se actualizaran al instante.
   useEffect(() => {
     if (!socket) return;
 
     const handleNewMessage = (payload: { conversationId: string; message: MessageItem; fromSelf?: boolean }) => {
-      // Actualizar la lista de conversaciones con el último mensaje
+      // Actualizar siempre la lista de conversaciones con el último mensaje
       setConversations((prev) => {
         const existing = prev.find((conv) => conv.id === payload.conversationId);
         if (!existing) return prev;
-        const updated = [
+        return [
           {
             ...existing,
             lastMessage: {
@@ -155,13 +173,12 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
           },
           ...prev.filter((conv) => conv.id !== payload.conversationId)
         ];
-        return updated;
       });
 
-      if (payload.conversationId !== activeConversationId) return;
+      // Usar el ref para comparar, así siempre tiene el ID actual sin re-registrar el listener
+      if (payload.conversationId !== activeConversationIdRef.current) return;
 
       setMessages((prev) => {
-        // Siempre deduplicamos por ID para evitar duplicados en cualquier caso
         if (prev.some((msg) => msg._id === payload.message._id)) return prev;
         return [...prev, payload.message];
       });
@@ -171,7 +188,7 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
     return () => {
       socket.off('new_dm', handleNewMessage);
     };
-  }, [socket, activeConversationId]);
+  }, [socket]); // Solo depende de socket, no de activeConversationId
 
   const handleSend = async () => {
     if (!input.trim() || !activeConversationId) return;
@@ -461,6 +478,8 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
                   );
                 })
               )}
+              {/* Centinela para auto-scroll al último mensaje */}
+              <div ref={messagesEndRef} />
             </div>
             <div className="border-t border-slate-200 px-5 py-4 flex items-center gap-3 relative">
               <button
