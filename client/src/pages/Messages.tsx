@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { ArrowLeft, MessageCircle, Send, Paperclip, Smile, Clock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -44,6 +44,15 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
   const [activeConversationId, setActiveConversationId] = useState<string>('');
   const [loading, setLoading] = useState(false);
 
+  // Ref para evitar stale closure en el socket listener (siempre tiene el valor actual)
+  const activeConversationIdRef = useRef<string>('');
+  // Ref al contenedor de mensajes para controlar scrollTop directamente
+  const messagesContainerRef = useRef<HTMLDivElement | null>(null);
+  // Ref centinela al final de la lista
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  // true = scroll instantáneo (carga inicial), false = smooth (mensaje nuevo)
+  const isInitialLoadRef = useRef<boolean>(false);
+
   const currentUser = user?.username || '';
   const currentUserId = user?.id || '';
   const stateUsername = (location.state as { username?: string } | null)?.username || '';
@@ -71,6 +80,27 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
     const date = new Date(value);
     return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
   };
+
+  // Sincronizar el ref con el estado para usarlo en el socket listener
+  useEffect(() => {
+    activeConversationIdRef.current = activeConversationId;
+  }, [activeConversationId]);
+
+  // Scroll al fondo del chat.
+  // useLayoutEffect garantiza que corre DESPUÉS de que React actualiza el DOM
+  // pero ANTES de que el navegador pinte, así scrollTop tiene el valor correcto.
+  useLayoutEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    if (isInitialLoadRef.current) {
+      // Scroll instantáneo al abrir conversación: ir al final sin animación
+      container.scrollTop = container.scrollHeight;
+      isInitialLoadRef.current = false;
+    } else {
+      // Scroll suave al recibir mensaje nuevo
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages]);
 
   const loadConversations = async () => {
     if (!currentUserId) return;
@@ -122,6 +152,7 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
       }
       try {
         setLoading(true);
+        isInitialLoadRef.current = true; // scroll instantáneo al abrir conversación
         const res = await api.get(`/messages/${activeConversationId}`);
         setMessages(uniqueById(res.data.data || []));
         await api.post(`/messages/${activeConversationId}/read`);
@@ -135,14 +166,46 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
     loadMessages();
   }, [activeConversationId]);
 
+  // ── POLLING SILENCIOSO ──────────────────────────────────────────────────────
+  // Comprueba mensajes nuevos cada 3s sin mostrar ningún loader.
+  // Si el socket no entrega el mensaje (problemas de red, cloudflared, etc.)
+  // el polling lo recoge en máximo 3 segundos, invisible para el usuario.
+  useEffect(() => {
+    if (!activeConversationId || !currentUserId) return;
+
+    const poll = async () => {
+      try {
+        const res = await api.get(`/messages/${activeConversationId}`);
+        const fresh = uniqueById(res.data.data || []) as MessageItem[];
+        setMessages((prev) => {
+          // Solo actualizar si hay mensajes nuevos (evitar re-renders innecesarios)
+          if (fresh.length === prev.length) return prev;
+          const prevIds = new Set(prev.map((m) => m._id));
+          const hasNew = fresh.some((m) => !prevIds.has(m._id));
+          if (!hasNew) return prev;
+          return fresh;
+        });
+      } catch {
+        // Si falla silenciosamente, el socket sigue como respaldo
+      }
+    };
+
+    const interval = setInterval(poll, 3000);
+    return () => clearInterval(interval);
+  }, [activeConversationId, currentUserId]);
+
+  // Registrar el listener de socket UNA SOLA VEZ.
+  // Usamos activeConversationIdRef (ref) en vez de activeConversationId (state)
+  // para evitar el stale closure que causaba que los mensajes no se actualizaran al instante.
   useEffect(() => {
     if (!socket) return;
 
-    const handleNewMessage = (payload: { conversationId: string; message: MessageItem }) => {
+    const handleNewMessage = (payload: { conversationId: string; message: MessageItem; fromSelf?: boolean }) => {
+      // Actualizar siempre la lista de conversaciones con el último mensaje
       setConversations((prev) => {
         const existing = prev.find((conv) => conv.id === payload.conversationId);
         if (!existing) return prev;
-        const updated = [
+        return [
           {
             ...existing,
             lastMessage: {
@@ -154,10 +217,11 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
           },
           ...prev.filter((conv) => conv.id !== payload.conversationId)
         ];
-        return updated;
       });
 
-      if (payload.conversationId !== activeConversationId) return;
+      // Usar el ref para comparar, así siempre tiene el ID actual sin re-registrar el listener
+      if (payload.conversationId !== activeConversationIdRef.current) return;
+
       setMessages((prev) => {
         if (prev.some((msg) => msg._id === payload.message._id)) return prev;
         return [...prev, payload.message];
@@ -168,7 +232,7 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
     return () => {
       socket.off('new_dm', handleNewMessage);
     };
-  }, [socket, activeConversationId]);
+  }, [socket]); // Solo depende de socket, no de activeConversationId
 
   const handleSend = async () => {
     if (!input.trim() || !activeConversationId) return;
@@ -393,6 +457,7 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
             </div>
 
             <div
+              ref={messagesContainerRef}
               className="flex-1 overflow-y-auto px-6 py-5 space-y-4 relative"
               role="log"
               aria-live="polite"
@@ -458,6 +523,8 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
                   );
                 })
               )}
+              {/* Centinela para auto-scroll al último mensaje */}
+              <div ref={messagesEndRef} />
             </div>
             <div className="border-t border-slate-200 px-5 py-4 flex items-center gap-3 relative">
               <button

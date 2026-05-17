@@ -42,9 +42,12 @@ const cspFrameAncestors = allowAnyOrigin ? ['*'] : ["'self'", ...allowedOrigins]
 // --- CREAMOS EL SERVIDOR HTTP Y SOCKET.IO ---
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
+  // Cloudflare Tunnel no soporta el upgrade WebSocket nativo de Socket.IO.
+  // Forzamos 'polling' (HTTP long-polling) que funciona perfecto a través de cloudflared.
+  transports: ['polling'],
   cors: {
     origin: corsOrigin,
-    methods: ["GET", "POST"],
+    methods: ['GET', 'POST'],
     credentials: !allowAnyOrigin
   }
 });

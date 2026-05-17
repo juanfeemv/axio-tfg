@@ -9,8 +9,8 @@ interface SocketContextType {
 
 const SocketContext = createContext<SocketContextType | undefined>(undefined);
 
-// Conecto con el servidor
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, '') || 'http://localhost:3000';
+// Conecto con el servidor usando el origen actual por defecto.
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL?.trim();
 
 export const SocketProvider = ({ children }: { children: ReactNode }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
@@ -18,11 +18,19 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
 
   useEffect(() => {
-    // 1. Crear la conexión al arrancar la web
-    const newSocket = io(SOCKET_URL);
+    // Cloudflare Tunnel no soporta WebSocket nativo → forzamos polling HTTP.
+    // Socket.IO polling funciona sobre HTTP normal, compatible con cloudflared.
+    const opts = {
+      transports: ['polling'] as ['polling'],
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+    };
+    const newSocket = SOCKET_URL ? io(SOCKET_URL, opts) : io(opts);
 
     newSocket.on('connect', () => {
-      console.log("🟢 Conectado al servidor de WebSockets");
+      console.log("🟢 Conectado al servidor de WebSockets:", newSocket.id);
       setIsConnected(true);
     });
 
@@ -33,15 +41,32 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
 
     setSocket(newSocket);
 
-    // 2. Limpieza al cerrar la web
     return () => {
       newSocket.close();
     };
   }, []);
 
+  // Unirse a la sala del usuario cuando hay socket Y usuario.
+  // Se ejecuta también al reconectar (socket cambia de id tras reconexión).
   useEffect(() => {
     if (!socket || !user?.id) return;
-    socket.emit('join_user', user.id);
+
+    const joinRoom = () => {
+      socket.emit('join_user', user.id);
+      console.log("🏠 Unido a sala privada del usuario:", user.id);
+    };
+
+    // Unirse al conectar por primera vez
+    if (socket.connected) {
+      joinRoom();
+    }
+
+    // Volver a unirse cada vez que se reconecte (cloudflared puede cortar el WS)
+    socket.on('connect', joinRoom);
+
+    return () => {
+      socket.off('connect', joinRoom);
+    };
   }, [socket, user?.id]);
 
   return (
