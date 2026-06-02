@@ -3,6 +3,29 @@ import fs from 'fs';
 import dotenv from 'dotenv';
 dotenv.config();
 
+export interface WebsiteAuditContext {
+  url: string;
+  title: string;
+  lang: string;
+  hasViewportMeta: boolean;
+  headingStructure: string[];
+  counts: {
+    images: number;
+    imagesWithoutAlt: number;
+    buttonsWithoutAccessibleName: number;
+    linksBlankWithoutRel: number;
+    formFieldsWithoutLabel: number;
+    mainLandmarks: number;
+    navLandmarks: number;
+  };
+}
+
+export interface WebsiteCaptureResult {
+  imageBase64: string;
+  pageTitle: string;
+  auditContext: WebsiteAuditContext;
+}
+
 // Rutas comunes de Chromium en sistemas Linux/ARM (Raspberry Pi, Debian, Ubuntu)
 const CHROMIUM_CANDIDATES = [
   '/usr/bin/chromium-browser',
@@ -35,7 +58,7 @@ const resolveExecutablePath = (): string | undefined => {
   return undefined; // Puppeteer usa su propio binario descargado
 };
 
-export const captureWebsite = async (url: string): Promise<{ imageBase64: string, pageTitle: string }> => {
+export const captureWebsite = async (url: string): Promise<WebsiteCaptureResult> => {
   
   console.log("📸 Puppeteer iniciando captura de:", url);
 
@@ -86,6 +109,62 @@ export const captureWebsite = async (url: string): Promise<{ imageBase64: string
 
     const pageTitle = await page.title();
 
+    const auditContext = await page.evaluate(() => {
+      const headings = Array.from(document.querySelectorAll('h1, h2, h3, h4, h5, h6'))
+        .map((heading) => `${heading.tagName}: ${(heading.textContent || '').trim().replace(/\s+/g, ' ')}`)
+        .filter((heading) => heading.length > 4)
+        .slice(0, 12);
+
+      const images = Array.from(document.querySelectorAll('img'));
+      const buttons = Array.from(document.querySelectorAll('button'));
+      const links = Array.from(document.querySelectorAll('a[target="_blank"]'));
+      const fields = Array.from(document.querySelectorAll('input, textarea, select'));
+
+      const hasAssociatedLabel = (field: Element) => {
+        if (field.getAttribute('aria-label') || field.getAttribute('aria-labelledby')) return true;
+        if (field.closest('label')) return true;
+
+        const id = field.getAttribute('id');
+        if (!id) return false;
+
+        return Boolean(document.querySelector('label[for="' + id.replace(/"/g, '\\"') + '"]'));
+      };
+
+      return {
+        url: location.href,
+        title: document.title,
+        lang: document.documentElement.lang || '',
+        hasViewportMeta: Boolean(document.querySelector('meta[name="viewport"]')),
+        headingStructure: headings,
+        counts: {
+          images: images.length,
+          imagesWithoutAlt: images.filter((image) => !image.hasAttribute('alt')).length,
+          buttonsWithoutAccessibleName: buttons.filter((button) => {
+            const label = (button.getAttribute('aria-label') || button.getAttribute('title') || '').trim();
+            const text = (button.textContent || '').trim();
+            return !label && !text;
+          }).length,
+          linksBlankWithoutRel: links.filter((link) => {
+            const rel = (link.getAttribute('rel') || '').toLowerCase();
+            return !rel.includes('noopener') || !rel.includes('noreferrer');
+          }).length,
+          formFieldsWithoutLabel: fields.filter((field) => {
+            const tagName = field.tagName.toLowerCase();
+            if (tagName === 'input') {
+              const input = field as HTMLInputElement;
+              if (['hidden', 'submit', 'reset', 'button', 'image'].includes(input.type)) {
+                return false;
+              }
+            }
+
+            return !hasAssociatedLabel(field);
+          }).length,
+          mainLandmarks: document.querySelectorAll('main').length,
+          navLandmarks: document.querySelectorAll('nav').length
+        }
+      };
+    });
+
     // Captura en Base64
     const screenshot = await page.screenshot({ encoding: 'base64', fullPage: false });
 
@@ -94,7 +173,8 @@ export const captureWebsite = async (url: string): Promise<{ imageBase64: string
 
     return {
       imageBase64: screenshot as string,
-      pageTitle
+      pageTitle,
+      auditContext
     };
 
   } catch (error: any) {
