@@ -73,7 +73,10 @@ const resolveExecutablePath = (): string | undefined => {
 };
 
 export const captureWebsite = async (url: string): Promise<WebsiteCaptureResult> => {
-  
+  // Lanza un navegador Chrome headless real para renderizar la página completa,
+  // ejecutar su JavaScript y capturar tanto el DOM como una screenshot.
+  // Esto es necesario porque Cheerio solo parsea HTML estático sin JS.
+
   console.log("📸 Puppeteer iniciando captura de:", url);
 
   const executablePath = resolveExecutablePath();
@@ -81,12 +84,12 @@ export const captureWebsite = async (url: string): Promise<WebsiteCaptureResult>
   let browser;
   try {
     browser = await puppeteer.launch({
-      headless: true,
-      executablePath,
+      headless: true,          // Sin interfaz gráfica (modo servidor)
+      executablePath,          // Chromium del sistema (Debian/ARM)
       args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',      // Vital para entornos con poca RAM (Raspberry Pi)
+        '--no-sandbox',                    // Necesario en Docker (ejecuta como root)
+        '--disable-setuid-sandbox',        // Evita errores de permisos en contenedores
+        '--disable-dev-shm-usage',         // Usa /tmp en vez de /dev/shm (crítico en RPi con poca RAM)
         '--disable-gpu',
         '--disable-extensions',
         '--disable-software-rasterizer',
@@ -107,22 +110,24 @@ export const captureWebsite = async (url: string): Promise<WebsiteCaptureResult>
   try {
     const page = await browser.newPage();
 
-    // User-agent de un navegador real para evitar bloqueos por bot-detection
+    // User-agent real para que la web no nos detecte como bot y nos bloquee
     await page.setUserAgent(
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
     );
 
-    // Viewport de portátil estándar
+    // Viewport estándar de portátil para capturar diseño responsive real
     await page.setViewport({ width: 1280, height: 800 });
 
-    // Timeout generoso para redes lentas
+    // Navegar a la URL y esperar a que el DOM principal esté listo
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
 
-    // Espera de seguridad para animaciones y cargas asíncronas
+    // Espera extra para animaciones, lazy loading y peticiones asíncronas
     await new Promise(r => setTimeout(r, 2000));
 
     const pageTitle = await page.title();
 
+    // Extraer datos del DOM para las heurísticas de accesibilidad
+    // page.evaluate() ejecuta JS en el contexto del navegador (no en Node)
     const auditContext = await page.evaluate(() => {
       const headings = Array.from(document.querySelectorAll('h1, h2, h3, h4, h5, h6'))
         .map((h) => `${h.tagName}: ${(h.textContent || '').trim().replace(/\s+/g, ' ')}`)

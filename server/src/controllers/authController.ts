@@ -26,6 +26,8 @@ const validatePassword = (password: string): { valid: boolean; message?: string 
 };
 
 // --- REGISTRO ---
+// Registro: valida campos, hashea contraseña con bcrypt (salt 10 rondas),
+// guarda usuario en MongoDB y devuelve datos sin password (select: false).
 export const register = async (req: Request, res: Response) => {
   try {
     const { username, email, password } = req.body;
@@ -73,6 +75,8 @@ export const register = async (req: Request, res: Response) => {
 };
 
 // --- LOGIN ---
+// Login: busca usuario por email, compara hash bcrypt, firma JWT (7 días expiración).
+// Si el usuario está suspendido → 403. Si credenciales inválidas → 400.
 export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;

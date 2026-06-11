@@ -169,6 +169,8 @@ const dedupeIssues = (issues: AuditIssue[]) => {
   });
 };
 
+// Puntuación restada por cada issue según su severidad.
+// Penalización máxima total: 35 puntos (evita que muchas issues hundan el score).
 const severityPenalty = (severity: AuditSeverity) => {
   switch (severity) {
     case 'high':
@@ -180,6 +182,8 @@ const severityPenalty = (severity: AuditSeverity) => {
   }
 };
 
+// Normaliza y calcula la puntuación final combinando lo que dice Gemini + heurísticas propias.
+// Aplica un cap por número de issues (0-1 issues = análisis superficial, se penaliza).
 const normalizeAuditPayload = (payload: any, fallbackIssues: AuditIssue[] = [], useHeuristicBase = false): AuditPayload => {
   const issues = dedupeIssues([...normalizeIssues(payload?.issues), ...fallbackIssues]);
 
@@ -549,6 +553,8 @@ Devuelve SOLO JSON:
 }
 `;
 
+// Envía la imagen + prompt a Gemini 2.5 Flash, parsea la respuesta JSON,
+// y la combina con heurísticas del DOM como fallback si algo falla.
 const analyzeVisual = async (imageBase64: string, mimeType: string, context?: WebsiteAuditContext) => {
   const model = genAI.getGenerativeModel({
     model: 'gemini-2.5-flash',
@@ -613,6 +619,8 @@ const analyzeCode = async (codeContent: string, filename: string) => {
   }
 };
 
+// Notifica a n8n vía webhook cuando se completa una auditoría.
+// Si n8n no está configurado (variable de entorno vacía), se omite sin fallar.
 const notifyN8n = async (project: any, userId: string) => {
   try {
     const n8nUrl = process.env.N8N_WEBHOOK_URL;

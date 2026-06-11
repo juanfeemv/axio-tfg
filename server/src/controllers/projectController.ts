@@ -245,6 +245,8 @@ export const deleteProject = async (req: AuthRequest, res: Response) => {
 };
 
 // --- DAR/QUITAR LIKE (PUT /api/projects/:id/like) ---
+// Toggle like: si el usuario ya dio like → lo quita (dislike); si no → lo añade.
+// Operación atómica sobre el array embebido likes[] del documento Project.
 export const toggleLike = async (req: AuthRequest, res: Response) => {
   try {
     const projectId = req.params.id;
@@ -279,7 +281,8 @@ export const toggleLike = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// --- NUEVO: VOTAR PROYECTO (1-5 estrellas) ---
+// Votar proyecto 1-5 estrellas: si el usuario ya votó → actualiza su voto; si no → añade.
+// Después recalcula averageRating como la media de todas las valoraciones.
 export const rateProject = async (req: AuthRequest, res: Response) => {
   try {
     const { rating } = req.body; // Esperamos { rating: 5 }

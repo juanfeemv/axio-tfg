@@ -26,6 +26,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  // Al iniciar, recuperar estado de autenticación de localStorage (persiste entre recargas)
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     return !!localStorage.getItem('token');
   });
@@ -37,6 +38,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const isAdmin = user?.role === 'admin';
 
+  // Sincronizar estado al montar el componente
   useEffect(() => {
     const token = localStorage.getItem('token');
     const savedUser = localStorage.getItem('user');
@@ -52,6 +54,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (email: string, pass: string) => {
     try {
+      // POST /api/auth/login → backend verifica credenciales, devuelve JWT + datos usuario
       const res = await api.post('/auth/login', {
         email,
         password: pass
@@ -59,13 +62,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       const { token, user } = res.data;
 
+      // Guardar token y datos en localStorage para persistencia
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
 
       setUser(user);
       setIsAuthenticated(true);
 
-      // Redirigir siempre al dashboard (admin ve vista normal + panel en Settings)
+      // Redirigir al dashboard (SPA: window.location recarga con la ruta correcta)
       window.location.href = '/dashboard';
     } catch (error) {
       console.error("Error login:", error);
@@ -74,6 +78,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = () => {
+    // Limpiar todo: token, datos, sesión → redirigir a login
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     sessionStorage.clear();

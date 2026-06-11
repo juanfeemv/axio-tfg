@@ -1,7 +1,9 @@
 import React, { useState, useRef } from 'react';
 import { MapPin, Send, X } from 'lucide-react';
 
-// Recibolos pines y la función de guardar desde el padre (ProjectView)
+// Capa transparente sobre la imagen del proyecto que permite colocar pines colaborativos.
+// El componente captura clics del ratón, calcula coordenadas relativas en porcentaje
+// (para que el pin no se descuadre al redimensionar) y muestra los pines existentes.
 interface PinLayerProps {
   pins: any[];
   onSavePin: (x: number, y: number, comment: string) => void;
@@ -13,9 +15,11 @@ export default function PinLayer({ pins, onSavePin }: PinLayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleImageClick = (e: React.MouseEvent) => {
-    if (tempPin) return; // Si ya hay uno abierto, no abrir otro
+    if (tempPin) return; // Ya hay un formulario de pin abierto
     if (!containerRef.current) return;
 
+    // Calcular coordenadas RELATIVAS (0-100%) respecto al tamaño del contenedor
+    // Así el pin se mantiene en su sitio aunque la ventana cambie de tamaño
     const rect = containerRef.current.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 100;
     const y = ((e.clientY - rect.top) / rect.height) * 100;

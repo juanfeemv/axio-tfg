@@ -19,14 +19,17 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     // Cloudflare Tunnel no soporta WebSocket nativo → forzamos polling HTTP.
-    // Socket.IO polling funciona sobre HTTP normal, compatible con cloudflared.
+    // Socket.IO polling: el cliente manda peticiones HTTP periódicas y el servidor
+    // las mantiene abiertas hasta que hay datos (long-polling). Más lento que 
+    // WebSocket puro (~100ms extra) pero compatible con cualquier proxy/túnel HTTP.
     const opts = {
-      transports: ['polling'] as ['polling'],
-      reconnection: true,
-      reconnectionAttempts: Infinity,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
+      transports: ['polling'] as ['polling'],        // Solo polling, sin WebSocket
+      reconnection: true,                             // Reconectar automáticamente
+      reconnectionAttempts: Infinity,                 // Sin límite de reintentos
+      reconnectionDelay: 1000,                        // Esperar 1s entre reintentos
+      reconnectionDelayMax: 5000,                     // Máximo 5s de espera
     };
+    // Si hay SOCKET_URL configurada, conectar a esa URL; si no, al mismo origen
     const newSocket = SOCKET_URL ? io(SOCKET_URL, opts) : io(opts);
 
     newSocket.on('connect', () => {

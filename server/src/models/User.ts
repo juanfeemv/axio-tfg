@@ -37,7 +37,7 @@ const UserSchema: Schema = new Schema(
       type: String,
       required: [true, 'La contraseña es obligatoria'],
       minlength: [6, 'La contraseña debe tener al menos 6 caracteres'],
-      select: false
+      select: false // Nunca se devuelve en consultas normales (seguridad)
     },
     avatar: {
       type: String,
@@ -65,10 +65,10 @@ const UserSchema: Schema = new Schema(
       type: String,
       trim: true
     },
-    // 👇 NUEVOS CAMPOS PARA RESET DE CONTRASEÑA
+    // Token para restablecer contraseña (SHA256 hasheado, expira en 1 hora)
     resetPasswordToken: {
       type: String,
-      select: false
+      select: false // Nunca se expone en respuestas de API
     },
     resetPasswordExpires: {
       type: Date,
