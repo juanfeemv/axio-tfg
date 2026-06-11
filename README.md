@@ -4,14 +4,6 @@ Plataforma colaborativa de auditoría de accesibilidad web con IA, simulación s
 
 ---
 
-## 🚀 Demo en vivo
-
-La aplicación está autoalojada 24/7 en una Raspberry Pi 5.
-
-> URL generada mediante Cloudflare Tunnel.
-
----
-
 ## ⚡ Tecnologías
 
 | Capa | Stack |
