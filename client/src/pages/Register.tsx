@@ -7,6 +7,7 @@ export default function Register() {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
@@ -20,6 +21,7 @@ export default function Register() {
   const hasNumber = /[0-9]/.test(password);
   
   const isPasswordValid = hasMinLength && hasUpperCase && hasLowerCase && hasNumber;
+  const passwordsMatch = confirmPassword === '' ? null : password === confirmPassword;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,6 +31,12 @@ export default function Register() {
     // Validación frontend
     if (!isPasswordValid) {
       setError('La contraseña no cumple con los requisitos de seguridad');
+      setIsLoading(false);
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError('Las contraseñas no coinciden.');
       setIsLoading(false);
       return;
     }
@@ -166,10 +174,44 @@ export default function Register() {
               )}
             </div>
 
+            {/* Confirm Password Input */}
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-slate-700">
+                Confirmar Contraseña
+              </label>
+              <div className="relative group">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-purple-600 transition-colors" />
+                <input
+                  type="password"
+                  className={`w-full pl-12 pr-4 py-3.5 bg-slate-50 border-2 rounded-xl focus:ring-4 outline-none transition-all text-slate-800 placeholder:text-slate-400 ${
+                    passwordsMatch === null
+                      ? 'border-slate-200 focus:ring-[#23638a]/20 focus:border-[#23638a]'
+                      : passwordsMatch
+                      ? 'border-green-400 focus:ring-green-500/20 focus:border-green-500'
+                      : 'border-red-400 focus:ring-red-500/20 focus:border-red-500'
+                  }`}
+                  placeholder="••••••••"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                />
+              </div>
+              {/* Indicador de coincidencia */}
+              {passwordsMatch !== null && (
+                <div className={`flex items-center gap-2 text-sm font-medium ${
+                  passwordsMatch ? 'text-green-600' : 'text-red-500'
+                }`}>
+                  {passwordsMatch
+                    ? <><CheckCircle size={15} className="shrink-0" /> <span>Las contraseñas coinciden</span></>
+                    : <><XCircle size={15} className="shrink-0" /> <span>Las contraseñas no coinciden</span></>}
+                </div>
+              )}
+            </div>
+
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={isLoading || !isPasswordValid}
+              disabled={isLoading || !isPasswordValid || passwordsMatch !== true}
               className="w-full bg-gradient-to-r from-[#3d9171] to-[#23638a] hover:from-[#338066] hover:to-[#1f577a] disabled:from-slate-400 disabled:to-slate-400 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-xl transition-all shadow-lg shadow-[#23638a]/30 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 group"
             >
               {isLoading ? (

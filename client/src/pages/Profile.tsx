@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api, { uploadsUrl } from '../services/api';
-import { Award, BarChart3, Layers, Loader2, MessageCircle, Share2, SunMoon } from 'lucide-react';
+import { Award, ArrowLeft, BarChart3, Layers, Loader2, MessageCircle, Share2, SunMoon } from 'lucide-react';
 import badgeAnalisis from '../assets/badges/ANALISIS.jpg';
 import badgeCalidad from '../assets/badges/Calidad +80.jpg';
 import badgeComunidad from '../assets/badges/COMUNIDAD.jpg';
@@ -66,42 +66,49 @@ export default function Profile() {
   };
 
   return (
-    <div className="p-8 max-w-6xl mx-auto min-h-screen bg-white dark:bg-slate-900">
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 mb-8">
-        <div className="flex items-center justify-between gap-6">
-          <div className="flex items-center gap-6">
-            <div className="h-24 w-24 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-4xl font-bold overflow-hidden">
+    <div className="px-4 md:p-8 max-w-6xl mx-auto min-h-screen bg-white dark:bg-slate-900 pt-6">
+      <button
+        onClick={() => navigate(-1)}
+        className="mb-4 flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white transition-colors"
+      >
+        <ArrowLeft size={16} />
+        <span>Volver</span>
+      </button>
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-4 md:p-6 mb-6 md:mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="h-16 w-16 md:h-24 md:w-24 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-2xl md:text-4xl font-bold overflow-hidden shrink-0">
               {user.avatar ? (
                 <img src={uploadsUrl(user.avatar)} alt={user.username} className="w-full h-full object-cover" />
               ) : (
                 user.username?.charAt(0)?.toUpperCase()
               )}
             </div>
-            <div>
-              <h1 className="text-3xl font-bold text-slate-800 dark:text-white">{user.username}</h1>
+            <div className="min-w-0">
+              <h1 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-white truncate">{user.username}</h1>
               {user.bio && (
                 <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">{user.bio}</p>
               )}
               <p className="text-sm text-slate-500 dark:text-slate-400">{projects?.length || 0} proyectos</p>
-              <p className="text-xs text-slate-400 mt-2">Miembro desde {new Date(user.createdAt).toLocaleDateString()}</p>
+              <p className="text-xs text-slate-400 mt-1">Miembro desde {new Date(user.createdAt).toLocaleDateString()}</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             {canMessage && (
               <button
                 onClick={() => navigate('/dashboard', { state: { tab: 'messages', username: user.username } })}
-                className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl transition hover:shadow-sm"
+                className="flex items-center gap-2 px-3 md:px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl transition hover:shadow-sm text-slate-700 dark:text-slate-300"
               >
                 <MessageCircle size={16} />
                 <span className="text-sm">Mensaje</span>
               </button>
             )}
-            <button onClick={() => toggleTheme(theme === 'dark' ? 'light' : 'dark')} className="flex items-center gap-2 px-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl transition">
+            <button onClick={() => toggleTheme(theme === 'dark' ? 'light' : 'dark')} className="flex items-center gap-2 px-3 md:px-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl transition text-slate-700 dark:text-slate-300">
               <SunMoon size={16} />
-              <span className="text-sm">{theme === 'dark' ? 'Modo oscuro' : 'Modo claro'}</span>
+              <span className="text-sm hidden sm:inline">{theme === 'dark' ? 'Oscuro' : 'Claro'}</span>
             </button>
-            <button onClick={() => navigator.share ? navigator.share({ title: `Perfil ${user.username}`, url: window.location.href }) : null} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl">
+            <button onClick={() => navigator.share ? navigator.share({ title: `Perfil ${user.username}`, url: window.location.href }) : null} className="flex items-center gap-2 px-3 md:px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl">
               <Share2 size={14} />
               <span className="text-sm">Compartir</span>
             </button>
@@ -147,7 +154,7 @@ export default function Profile() {
           <>
             <h2 className="text-xl font-semibold mb-4 text-slate-800 dark:text-white">Proyectos</h2>
             {projects && projects.length > 0 ? (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                 {projects.map((project: any) => (
                   <div key={project._id} onClick={() => navigate(`/project/${project._id}`)} className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden hover:shadow-2xl hover:-translate-y-1 transition-all duration-200 cursor-pointer">
                     {project.image ? (
@@ -169,7 +176,7 @@ export default function Profile() {
         )}
 
         {activeSection === 'stats' && (
-          <div className="grid lg:grid-cols-3 gap-5">
+          <div className="grid sm:grid-cols-1 lg:grid-cols-3 gap-4 md:gap-5">
             <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
               <div className="flex items-center justify-between">
                 <div>

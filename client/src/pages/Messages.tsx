@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { ArrowLeft, MessageCircle, Send, Paperclip, Smile, Clock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -50,8 +50,6 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   // Ref centinela al final de la lista
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-  // true = scroll instantáneo (carga inicial), false = smooth (mensaje nuevo)
-  const isInitialLoadRef = useRef<boolean>(false);
 
   const currentUser = user?.username || '';
   const currentUserId = user?.id || '';
@@ -86,85 +84,27 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
     activeConversationIdRef.current = activeConversationId;
   }, [activeConversationId]);
 
-  // Scroll al fondo del chat.
-  // useLayoutEffect garantiza que corre DESPUÉS de que React actualiza el DOM
-  // pero ANTES de que el navegador pinte, así scrollTop tiene el valor correcto.
-  useLayoutEffect(() => {
-    const container = messagesContainerRef.current;
-    if (!container) return;
-    if (isInitialLoadRef.current) {
-      // Scroll instantáneo al abrir conversación: ir al final sin animación
-      container.scrollTop = container.scrollHeight;
-      isInitialLoadRef.current = false;
-    } else {
-      // Scroll suave al recibir mensaje nuevo
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [messages]);
-
-  const loadConversations = async () => {
-    if (!currentUserId) return;
-    try {
-      const res = await api.get('/messages/conversations');
-      const data = res.data.data || [];
-      setConversations(data);
-      if (!targetUser && data.length > 0 && !activeConversationId) {
-        setActiveConversationId(data[0].id);
-      }
-    } catch (error) {
-      console.error('Error loading conversations:', error);
-    }
+  // Scroll al fondo al cargar mensajes por primera vez o al cambiar de conversación
+  const scrollToBottom = () => {
+    const el = messagesContainerRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
   };
 
   useEffect(() => {
-    loadConversations();
-  }, [currentUserId]);
+    if (!loading && messages.length > 0) {
+      const t1 = setTimeout(scrollToBottom, 0);
+      const t2 = setTimeout(scrollToBottom, 100);
+      const t3 = setTimeout(scrollToBottom, 300);
+      return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+    }
+  }, [loading, activeConversationId]);
 
+  // Scroll al recibir mensajes nuevos (WebSocket)
   useEffect(() => {
-    const openConversation = async () => {
-      if (!targetUser || !currentUserId) {
-        setActiveConversationId('');
-        setMessages([]);
-        return;
-      }
-      try {
-        setLoading(true);
-        const res = await api.post('/messages/conversations', { username: targetUser });
-        const convoId = res.data.data?.id as string;
-        if (!convoId) return;
-        setActiveConversationId(convoId);
-        await loadConversations();
-      } catch (error) {
-        console.error('Error opening conversation:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    openConversation();
-  }, [targetUser, currentUserId]);
-
-  useEffect(() => {
-    const loadMessages = async () => {
-      if (!activeConversationId) {
-        setMessages([]);
-        return;
-      }
-      try {
-        setLoading(true);
-        isInitialLoadRef.current = true; // scroll instantáneo al abrir conversación
-        const res = await api.get(`/messages/${activeConversationId}`);
-        setMessages(uniqueById(res.data.data || []));
-        await api.post(`/messages/${activeConversationId}/read`);
-      } catch (error) {
-        console.error('Error loading messages:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadMessages();
-  }, [activeConversationId]);
+    if (!loading && messages.length > 0) {
+      scrollToBottom();
+    }
+  }, [messages.length]);
 
   // ── POLLING SILENCIOSO ──────────────────────────────────────────────────────
   // Comprueba mensajes nuevos cada 3s sin mostrar ningún loader.
@@ -193,6 +133,47 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
     const interval = setInterval(poll, 3000);
     return () => clearInterval(interval);
   }, [activeConversationId, currentUserId]);
+
+  // Cargar lista de conversaciones
+  const loadConversations = async () => {
+    if (!currentUserId) return;
+    try {
+      const res = await api.get('/messages/conversations');
+      const data = (res.data.data || res.data || []) as ConversationItem[];
+      setConversations(data);
+      if (!targetUser && data.length > 0 && !activeConversationId) {
+        setActiveConversationId(data[0].id);
+      }
+    } catch (error) {
+      console.error('Error loading conversations:', error);
+    }
+  };
+
+  // Cargar conversaciones al montar
+  useEffect(() => {
+    loadConversations();
+  }, [currentUserId]);
+
+  // Cargar mensajes al seleccionar conversación
+  useEffect(() => {
+    const loadMessages = async () => {
+      if (!activeConversationId) {
+        setMessages([]);
+        return;
+      }
+      try {
+        setLoading(true);
+        const res = await api.get(`/messages/${activeConversationId}`);
+        setMessages(uniqueById(res.data.data || []));
+        await api.post(`/messages/${activeConversationId}/read`);
+      } catch (error) {
+        console.error('Error loading messages:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadMessages();
+  }, [activeConversationId]);
 
   // Registrar el listener de socket UNA SOLA VEZ.
   // Usamos activeConversationIdRef (ref) en vez de activeConversationId (state)
@@ -368,9 +349,10 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
             )}
           </div>
         )}
-        <div className={`${embedded ? 'flex-1' : 'mt-6'} grid lg:grid-cols-[300px_1fr] gap-4 ${embedded ? 'h-full' : ''}`}>
+        <div className={`${embedded ? 'flex-1' : 'mt-6'} grid ${activeConversationId ? 'grid-cols-1 lg:grid-cols-[300px_1fr]' : 'grid-cols-1 lg:grid-cols-[300px_1fr]'} gap-4 ${embedded ? 'h-full' : ''}`}>
+          {/* Lista de conversaciones: oculta en móvil si hay chat activo */}
           <div
-            className={`bg-white border border-slate-200 rounded-3xl shadow-sm p-4 ${panelHeight} overflow-y-auto`}
+            className={`bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-3xl shadow-sm p-4 ${panelHeight} overflow-y-auto ${activeConversationId ? 'hidden lg:block' : 'block'}`}
             aria-label="Lista de conversaciones"
           >
             <p className="text-xs uppercase tracking-widest text-slate-400 px-2" data-speech="Conversaciones">
@@ -427,13 +409,21 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
             </div>
           </div>
 
-          <div className={`bg-white border border-slate-200 rounded-3xl shadow-sm flex flex-col ${panelHeight} overflow-hidden relative`}>
+          <div className={`bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-3xl shadow-sm flex flex-col ${panelHeight} overflow-hidden relative ${!activeConversationId ? 'hidden lg:flex' : 'flex'}`}>
             <div className="absolute inset-0 pointer-events-none" style={{
               backgroundImage:
                 'radial-gradient(circle at 15% 20%, rgba(61,145,113,0.08), transparent 40%), radial-gradient(circle at 85% 0%, rgba(35,99,138,0.08), transparent 35%)'
             }} />
-            <div className="relative px-6 pt-5 pb-4 border-b border-slate-200 flex items-center justify-between gap-3">
+            <div className="relative px-4 md:px-6 pt-4 md:pt-5 pb-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
+                {/* Botón volver en móvil */}
+                <button
+                  className="lg:hidden h-9 w-9 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 shrink-0"
+                  onClick={() => setActiveConversationId('')}
+                  aria-label="Volver a conversaciones"
+                >
+                  <ArrowLeft size={16} />
+                </button>
                 <div className="h-10 w-10 rounded-full bg-slate-200 overflow-hidden text-slate-700 font-bold flex items-center justify-center">
                   {activeConversationId && conversations.find((c) => c.id === activeConversationId)?.otherUser?.avatar ? (
                     <img
@@ -494,10 +484,10 @@ export default function Messages({ embedded = false, initialUsername }: { embedd
                       )}
                       <div className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
                         <div
-                          className={`max-w-[72%] rounded-2xl px-4 py-2 text-sm shadow-sm ${
+                          className={`max-w-[85%] md:max-w-[72%] rounded-2xl px-4 py-2 text-sm shadow-sm ${
                             isMine
                               ? 'bg-gradient-to-r from-[#3d9171] to-[#23638a] text-white'
-                              : 'bg-white border border-slate-200 text-slate-700'
+                              : 'bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-800 dark:text-white'
                           }`}
                           data-speech={`Mensaje de ${isMine ? 'ti' : msg.sender?.username || 'usuario'}. ${msg.text?.trim() ? msg.text.trim() : msg.image ? 'Imagen enviada' : 'Mensaje sin texto'}. ${formatTime(msg.createdAt)}`}
                         >

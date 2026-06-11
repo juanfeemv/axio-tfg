@@ -75,8 +75,6 @@ const AdminSchema: Schema = new Schema(
     }
 );
 
-// Índice para búsquedas rápidas
-AdminSchema.index({ user: 1 });
 AdminSchema.index({ isActive: 1 });
 
 // Método para registrar actividad

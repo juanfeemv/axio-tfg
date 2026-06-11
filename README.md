@@ -78,3 +78,57 @@ Colecciones:
 - Capacidad de lectura y escritura en GPIO  
 
 ---
+
+## 🚢 Despliegue completo en Docker + Cloudflared
+
+El proyecto puede ejecutarse entero dentro de Docker Compose y publicarse por
+Internet mediante Cloudflare Tunnel sin abrir puertos del router.
+
+### 1) Preparar variables
+1. Copia `infra/docker/.env.example` a `infra/docker/.env`.
+2. Completa `GEMINI_API_KEY`.
+3. Si vas a usar el túnel por token, completa `CLOUDFLARE_TUNNEL_TOKEN`.
+
+### 2) Levantar el stack
+Desde `infra/docker/` ejecuta:
+
+```bash
+docker compose up -d --build
+```
+
+Esto levanta MongoDB, Redis, backend, frontend y n8n dentro de la red interna
+de Docker.
+
+### 3) Publicar por Cloudflared
+Si tienes dominio propio, activa el perfil del túnel con token:
+
+```bash
+docker compose --profile tunnel up -d
+```
+
+Cloudflared se conecta al contenedor `frontend` y expone Axio con un único
+dominio público. El frontend hace de entrada y redirige internamente las rutas
+`/api`, `/uploads` y `/socket.io` al backend, así que no necesitas publicar el
+backend ni la base de datos.
+
+Si no tienes dominio, usa un Quick Tunnel temporal:
+
+```bash
+docker compose --profile quick-tunnel up
+```
+
+Cloudflared imprimirá una URL `trycloudflare.com` en los logs del contenedor.
+Esa URL cambia cuando detienes y vuelves a levantar el túnel.
+
+### 4) Qué queda expuesto
+- Público: solo el dominio de Cloudflare o la URL temporal `trycloudflare.com`.
+- Privado: MongoDB, Redis y backend quedan dentro de la red Docker.
+- Opcional: `mongo-express` y `n8n` pueden mantenerse privados o publicarse
+solo si tú decides exponerlos.
+
+### 5) Si quieres usar Raspberry Pi
+- Usa una Raspberry Pi 5 con Raspberry Pi OS o una distro ARM64 compatible.
+- Asegúrate de tener Docker y Docker Compose instalados.
+- Ejecuta exactamente los mismos comandos: el stack está pensado para ARM64.
+
+---

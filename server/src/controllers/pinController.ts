@@ -13,7 +13,7 @@ export const getProjectPins = async (req: AuthRequest, res: Response) => {
     const { projectId } = req.params;
 
     const pins = await Pin.find({ project: projectId, isHidden: { $ne: true } })
-      .populate('author', 'username') 
+      .populate('author', 'username avatar') 
       .sort({ createdAt: 1 });
 
     res.json({ success: true, data: pins });

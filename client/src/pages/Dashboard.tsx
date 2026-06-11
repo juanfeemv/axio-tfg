@@ -204,9 +204,32 @@ export default function Dashboard() {
           <img src={brandLogo} alt="AXIO" className="h-8 w-8 rounded-lg object-cover" />
           <span className="font-bold text-lg tracking-wider">AXIO</span>
          </div>
-         <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 text-slate-300 hover:text-white">
-            {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
-         </button>
+         {/* Botones TTS, notificaciones y hamburger en el header móvil */}
+         <div className="flex items-center gap-1">
+           <button
+             onClick={() => setShowA11yPanel((prev) => !prev)}
+             className="relative h-9 w-9 rounded-lg bg-slate-800 flex items-center justify-center text-slate-300 hover:text-white"
+             aria-label="Accesibilidad: texto a voz"
+             aria-pressed={ttsEnabled}
+           >
+             {ttsEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
+           </button>
+           <button
+             onClick={handleToggleNotifications}
+             className="relative h-9 w-9 rounded-lg bg-slate-800 flex items-center justify-center text-slate-300 hover:text-white"
+             aria-label="Notificaciones"
+           >
+             <Bell size={16} />
+             {unreadCount > 0 && (
+               <span className="absolute -top-1 -right-1 h-4 min-w-[16px] px-0.5 rounded-full bg-emerald-500 text-white text-[9px] font-bold flex items-center justify-center">
+                 {unreadCount}
+               </span>
+             )}
+           </button>
+           <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="h-9 w-9 rounded-lg bg-slate-800 flex items-center justify-center text-slate-300 hover:text-white">
+              {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
+           </button>
+         </div>
       </div>
 
       {/* --- OVERLAY OSCURO --- */}
@@ -307,7 +330,8 @@ export default function Dashboard() {
 
       {/* 2. ÁREA PRINCIPAL */}
       <main className="flex-1 overflow-y-auto relative pt-16 md:pt-8 transition-all duration-300 px-2 md:px-6">
-        <div className="absolute right-4 top-4 z-50 flex items-center gap-2">
+        {/* Botones TTS y notificaciones — solo visibles en escritorio (md+) */}
+        <div className="hidden md:flex absolute right-4 top-4 z-50 items-center gap-2">
           <div className="relative">
             <button
               onClick={() => setShowA11yPanel((prev) => !prev)}
@@ -381,7 +405,7 @@ export default function Dashboard() {
           </button>
         </div>
         {showNotifications && (
-          <div className="absolute right-4 top-16 z-50 w-[320px] bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden">
+          <div className="absolute right-2 top-[68px] md:right-4 md:top-16 z-50 w-[calc(100vw-16px)] md:w-[320px] bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden">
             <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
               <p className="text-sm font-semibold text-slate-800">Notificaciones</p>
             </div>
@@ -539,7 +563,7 @@ export default function Dashboard() {
                 {/* --- SECCIÓN DISCORD COMUNIDAD --- */}
                 <div className="mt-8 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
                   <a 
-                    href="https://discord.gg/zh78ZtSF" 
+                    href="https://discord.gg/MZTV7g3trb" 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="block w-full rounded-3xl p-6 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group border border-white/30 dark:border-white/10"
@@ -604,17 +628,18 @@ export default function Dashboard() {
                 </button>
 
                 <div className="bg-white rounded-3xl shadow-2xl border-2 border-slate-200 overflow-hidden dark:bg-slate-800 dark:border-slate-700">
+                  {/* HEADER */}
                   <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white p-8 relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl"></div>
                     <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                      <div>
+                      <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 mb-3">
-                          <div className="h-12 w-12 rounded-xl flex items-center justify-center shadow-lg overflow-hidden bg-slate-900/10">
+                          <div className="h-12 w-12 rounded-xl flex items-center justify-center shadow-lg overflow-hidden bg-slate-900/10 shrink-0">
                             <img src={brandLogo} alt="AXIO" className="h-full w-full object-cover" />
                           </div>
                           <h2 className="text-3xl font-bold">Resultado de Auditoría</h2>
                         </div>
-                        <div className="flex items-center gap-3 text-slate-400 text-sm">
+                        <div className="flex flex-wrap items-center gap-3 text-slate-400 text-sm">
                           <span className="bg-slate-800 px-3 py-1.5 rounded-lg text-xs uppercase tracking-wider font-semibold flex items-center gap-1">
                             <Zap size={12} />
                             IA Powered
@@ -622,12 +647,31 @@ export default function Dashboard() {
                           <span>•</span>
                           <span>{new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
                         </div>
+                        {(result.url || result.pageTitle) && (
+                          <div className="mt-3 flex flex-col gap-1">
+                            {result.pageTitle && (
+                              <p className="text-slate-300 text-sm font-semibold truncate max-w-xs md:max-w-lg">
+                                📄 {result.pageTitle}
+                              </p>
+                            )}
+                            {result.url && (
+                              <a
+                                href={result.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-400 hover:text-blue-300 text-xs truncate max-w-xs md:max-w-lg underline underline-offset-2 transition-colors"
+                              >
+                                🌐 {result.url}
+                              </a>
+                            )}
+                          </div>
+                        )}
                       </div>
                       
-                      <div className="flex items-center gap-6">
+                      <div className="flex items-center gap-4 shrink-0">
                         <div className="text-right">
-                          <div className="text-sm text-slate-400 uppercase tracking-widest font-semibold">Puntuación Global</div>
-                          <div className="text-xs text-slate-500 mt-1">Basado en WCAG 2.1</div>
+                          <div className="text-sm text-slate-400 uppercase tracking-widest font-semibold">Puntuación</div>
+                          <div className="text-xs text-slate-500 mt-1">WCAG 2.1</div>
                         </div>
                         <div className={`
                           h-24 w-24 rounded-2xl flex items-center justify-center text-4xl font-bold shadow-2xl border-4 relative overflow-hidden
@@ -642,6 +686,46 @@ export default function Dashboard() {
                     </div>
                   </div>
 
+                  {/* SCREENSHOT + STATS ROW */}
+                  <div className="flex flex-col md:flex-row gap-0 border-b-2 border-slate-100 dark:border-slate-700">
+                    {/* Screenshot */}
+                    {result.screenshot && (
+                      <div className="md:w-1/2 bg-slate-900 p-4 flex items-center justify-center relative overflow-hidden min-h-[200px]">
+                        <img
+                          src={`data:image/png;base64,${result.screenshot}`}
+                          alt="Captura de pantalla de la web analizada"
+                          className="rounded-xl shadow-2xl max-h-64 w-full object-cover object-top border-2 border-slate-700"
+                        />
+                      </div>
+                    )}
+                    {/* Summary stats */}
+                    <div className={`${result.screenshot ? 'md:w-1/2' : 'w-full'} p-6 flex flex-col justify-center gap-4 bg-slate-50 dark:bg-slate-800/50`}>
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-widest dark:text-slate-400">Distribución de problemas</p>
+                      <div className="grid grid-cols-3 gap-3">
+                        {[
+                          { label: 'Alta', color: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800', emoji: '🔴', count: result.issues?.filter((i: any) => i.severity === 'high').length || 0 },
+                          { label: 'Media', color: 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800', emoji: '🟡', count: result.issues?.filter((i: any) => i.severity === 'medium').length || 0 },
+                          { label: 'Baja', color: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800', emoji: '🔵', count: result.issues?.filter((i: any) => i.severity === 'low').length || 0 },
+                        ].map(stat => (
+                          <div key={stat.label} className={`border-2 rounded-2xl p-4 text-center ${stat.color}`}>
+                            <div className="text-3xl font-black">{stat.count}</div>
+                            <div className="text-xs font-bold mt-1 uppercase tracking-wide">{stat.emoji} {stat.label}</div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex items-center gap-3 mt-1">
+                        <div className="flex-1 bg-slate-200 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
+                          <div
+                            className={`h-2.5 rounded-full transition-all duration-700 ${result.score >= 80 ? 'bg-emerald-500' : result.score >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                            style={{ width: `${result.score}%` }}
+                          />
+                        </div>
+                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400 w-14 text-right shrink-0">{result.score} / 100</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ISSUES LIST */}
                   <div className="p-8 bg-gradient-to-b from-slate-50 to-white dark:from-slate-800 dark:to-slate-900">
                     <div className="flex items-center gap-3 mb-6">
                       <div className="h-10 w-10 bg-orange-100 rounded-xl flex items-center justify-center dark:bg-orange-900/30">
@@ -654,7 +738,16 @@ export default function Dashboard() {
                     
                     <div className="grid gap-4">
                       {result.issues?.map((issue: any, index: number) => (
-                        <div key={index} className="bg-white border-2 border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all border-l-4 border-l-blue-500 dark:bg-slate-800 dark:border-slate-700">
+                        <div
+                          key={index}
+                          className={`bg-white border-2 rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all border-l-4 dark:bg-slate-800 dark:border-slate-700 ${
+                            issue.severity === 'high'
+                              ? 'border-l-red-500'
+                              : issue.severity === 'medium'
+                              ? 'border-l-orange-400'
+                              : 'border-l-blue-400'
+                          }`}
+                        >
                           <div className="flex flex-col md:flex-row justify-between mb-4 gap-3">
                             <span className="font-bold text-slate-800 text-lg dark:text-white">{issue.element || 'Elemento General'}</span>
                             <span className={`self-start text-xs px-3 py-1.5 rounded-full font-bold uppercase tracking-wide ${

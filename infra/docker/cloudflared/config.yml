@@ -1,0 +1,19 @@
+# Cloudflared tunnel config
+# Este archivo se monta en el contenedor cloudflared.
+# Requiere: haber creado el túnel previamente con `cloudflared tunnel create axio-tfg`
+# y tener el archivo credentials.json en esta misma carpeta.
+
+# URL interna a la que redirige el túnel (contenedor Nginx del frontend)
+url: http://frontend:80
+
+# ID del túnel (se obtiene al ejecutar `cloudflared tunnel list`)
+tunnel: ${CLOUDFLARE_TUNNEL_ID}
+
+# Archivo de credenciales generado por cloudflared
+credentials-file: /etc/cloudflared/credentials.json
+
+# Reglas de enrutamiento ingress
+ingress:
+  - hostname: ${CLOUDFLARE_DOMAIN}
+    service: http://frontend:80
+  - service: http_status:404

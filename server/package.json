@@ -18,7 +18,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.0.3",
     "multer": "^2.0.2",
-    "puppeteer": "^24.15.0",
+    "puppeteer": "^22.15.0",
     "socket.io": "^4.7.2"
   },
   "devDependencies": {

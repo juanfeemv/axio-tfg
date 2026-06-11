@@ -1,3 +1,4 @@
+import './__name-polyfill.js'; // Polyfill globalThis.__name antes de que esbuild/tsx transpile puppeteer
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';

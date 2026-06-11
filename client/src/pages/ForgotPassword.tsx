@@ -30,17 +30,17 @@ export default function ForgotPassword() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 p-4">
         <div className="w-full max-w-md">
-          <div className="bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-white/50 text-center">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <CheckCircle className="h-8 w-8 text-green-600" />
+          <div className="bg-white/80 backdrop-blur-xl p-5 sm:p-8 rounded-3xl shadow-2xl border border-white/50 text-center">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="h-7 w-7 sm:h-8 sm:w-8 text-green-600" />
             </div>
-            <h2 className="text-2xl font-bold text-slate-800 mb-2">¡Email enviado!</h2>
-            <p className="text-slate-600 mb-6">
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-800 mb-2">¡Email enviado!</h2>
+            <p className="text-sm sm:text-base text-slate-600 mb-6">
               Si el email existe en nuestro sistema, recibirás un enlace para restablecer tu contraseña.
             </p>
             <Link 
               to="/login"
-              className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 font-semibold"
+              className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 font-semibold text-sm sm:text-base"
             >
               <ArrowLeft size={18} />
               Volver al login
@@ -54,45 +54,46 @@ export default function ForgotPassword() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 p-4 relative overflow-hidden">
       
-      <div className="absolute top-0 left-0 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl"></div>
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-400/10 rounded-full blur-3xl"></div>
+      <div className="absolute top-0 left-0 w-64 sm:w-96 h-64 sm:h-96 bg-blue-400/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="absolute bottom-0 right-0 w-64 sm:w-96 h-64 sm:h-96 bg-purple-400/10 rounded-full blur-3xl pointer-events-none"></div>
       
       <div className="relative w-full max-w-md">
         
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
+        <div className="text-center mb-6 sm:mb-8">
+          <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
             AXIO
           </h1>
         </div>
 
-        <div className="bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-white/50">
+        <div className="bg-white/80 backdrop-blur-xl p-5 sm:p-8 rounded-2xl sm:rounded-3xl shadow-2xl border border-white/50">
           
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-slate-800 mb-2">¿Olvidaste tu contraseña?</h2>
-            <p className="text-slate-500">Te enviaremos un enlace para restablecerla</p>
+          <div className="mb-6 sm:mb-8">
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-800 mb-2">¿Olvidaste tu contraseña?</h2>
+            <p className="text-sm sm:text-base text-slate-500">Te enviaremos un enlace para restablecerla</p>
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 p-4 rounded-xl mb-6 text-sm">
+            <div className="bg-red-50 border border-red-200 text-red-600 p-3 sm:p-4 rounded-xl mb-5 sm:mb-6 text-sm">
               {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
             
             <div className="space-y-2">
               <label className="block text-sm font-semibold text-slate-700">
                 Email
               </label>
               <div className="relative group">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+                <Mail className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
                 <input
                   type="email"
-                  className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-slate-800 placeholder:text-slate-400"
+                  className="w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-3.5 bg-slate-50 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-slate-800 placeholder:text-slate-400 text-base"
                   placeholder="tu@email.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  autoComplete="email"
                 />
               </div>
             </div>
@@ -100,7 +101,7 @@ export default function ForgotPassword() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-slate-400 disabled:to-slate-400 text-white font-semibold py-3.5 rounded-xl transition-all shadow-lg shadow-blue-500/30 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-slate-400 disabled:to-slate-400 text-white font-semibold py-3 sm:py-3.5 rounded-xl transition-all shadow-lg shadow-blue-500/30 active:scale-[0.98] flex items-center justify-center gap-2 text-sm sm:text-base min-h-[48px]"
             >
               {isLoading ? (
                 <>
@@ -113,10 +114,10 @@ export default function ForgotPassword() {
             </button>
           </form>
 
-          <div className="mt-6 text-center">
+          <div className="mt-5 sm:mt-6 text-center">
             <Link 
               to="/login" 
-              className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-blue-600 font-medium"
+              className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-blue-600 font-medium min-h-[44px] sm:min-h-0 items-center"
             >
               <ArrowLeft size={16} />
               Volver al login

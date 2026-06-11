@@ -1,15 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, FolderOpen, FileText, MapPin, BarChart3, Plus, Edit2, Trash2, Search, X, Eye, EyeOff, LogOut, Ban, Unlock, KeyRound, Star, StarOff, Activity, Settings, Tag } from 'lucide-react';
+import { Users, FolderOpen, FileText, MapPin, BarChart3, Plus, Edit2, Trash2, Search, X, Eye, EyeOff, Ban, Unlock, KeyRound, Star, StarOff, Activity, Settings, Tag } from 'lucide-react';
 import brandLogo from '../assets/logo.png';
 import * as adminService from '../services/adminService';
-import { useAuth } from '../context/AuthContext';
 
 type TabType = 'overview' | 'users' | 'projects' | 'audits' | 'pins' | 'activity' | 'config';
 
 export default function Admin() {
     const navigate = useNavigate();
-    const { logout } = useAuth();
     const [activeTab, setActiveTab] = useState<TabType>('overview');
     const [stats, setStats] = useState<any>(null);
     const [loading, setLoading] = useState(false);
@@ -358,12 +356,6 @@ export default function Admin() {
                         <p className="text-slate-500 dark:text-slate-400">Gestiona usuarios, proyectos y contenido</p>
                     </div>
                 </div>
-                <button
-                    onClick={() => { logout(); navigate('/login'); }}
-                    className="flex items-center gap-2 px-4 py-2 bg-slate-200 dark:bg-slate-800 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-700 transition-all"
-                >
-                    <LogOut size={18} /> Cerrar sesión admin
-                </button>
             </div>
 
             {/* Tabs */}

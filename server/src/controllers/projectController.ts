@@ -17,13 +17,18 @@ const __dirname = path.dirname(__filename);
 export const getMyProjects = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user.id;
-    // Ordeno por fecha de creación descendente (más nuevo primero)
-    const projects = await Project.find({ owner: userId }).sort({ createdAt: -1 });
+    const projects = await Project.find({ owner: userId }).sort({ createdAt: -1 }).lean();
+
+    // Añadir número real de issues desde Audit (1 query por proyecto, sin afectar a Gemini)
+    const projectsWithIssues = await Promise.all(projects.map(async (p: any) => {
+      const audit = await Audit.findOne({ project: p._id }).select('issues').lean();
+      return { ...p, issuesCount: audit?.issues?.length || 0 };
+    }));
 
     res.json({
       success: true,
-      count: projects.length,
-      data: projects
+      count: projectsWithIssues.length,
+      data: projectsWithIssues
     });
 
   } catch (error) {
@@ -72,7 +77,7 @@ export const getProjectById = async (req: AuthRequest, res: Response) => {
     const projectId = req.params.id;
     
     // Buscamos el proyecto por ID y traemos el nombre del dueño
-    const project = await Project.findById(projectId).populate('owner', 'username');
+    const project = await Project.findById(projectId).populate('owner', 'username avatar');
     
     if (!project) {
       return res.status(404).json({ message: 'Proyecto no encontrado' });
@@ -173,6 +178,31 @@ export const createProject = async (req: AuthRequest, res: Response) => {
     } catch (webhookError) {
       console.error('❌ Error al notificar n8n:', webhookError);
       // No bloqueamos la creación del proyecto si falla n8n
+    }
+
+    // 🎮 NOTIFICAR A DISCORD via n8n
+    try {
+      const discordUrl = process.env.N8N_WEBHOOK_URL_DISCORD;
+      if (discordUrl) {
+        const userInfo = await User.findById(userId).select('username email');
+        await fetch(discordUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            projectId: newProject._id,
+            title: newProject.title,
+            type: newProject.type,
+            url: newProject.input,
+            ownerName: userInfo?.username || userInfo?.email || 'Usuario Anónimo',
+            createdAt: newProject.createdAt,
+            score: newProject.accessibilityScore ?? 0,
+            hasAI: false
+          })
+        });
+        console.log('✅ Discord notificado correctamente');
+      }
+    } catch (discordError) {
+      console.error('❌ Error al notificar Discord:', discordError);
     }
 
     res.status(201).json({

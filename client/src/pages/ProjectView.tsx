@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import api, { uploadsUrl } from '../services/api';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
@@ -32,6 +32,7 @@ export default function ProjectView() {
   // Estado del Motor de Empatía
   type FilterType = 'none' | 'blur' | 'protanopia' | 'deuteranopia' | 'tritanopia' | 'achromatopsia';
   const [activeFilter, setActiveFilter] = useState<FilterType>('none');
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   // 1. Carga Inicial de Datos
   useEffect(() => {
@@ -167,26 +168,37 @@ export default function ProjectView() {
       </svg>
 
       {/* HEADER */}
-      <header className="h-16 bg-slate-800 border-b border-slate-700 flex items-center justify-between px-6 shrink-0 z-20 shadow-lg">
-        <div className="flex items-center gap-4">
-            <button onClick={handleBack} className="hover:bg-slate-700 p-2 rounded-full transition"><ArrowLeft size={20} /></button>
-            <div>
-                <h1 className="font-bold text-lg">{project.title}</h1>
-                <div className="flex items-center gap-2 text-xs text-slate-400">
-                   <span className="uppercase font-bold">{project.type}</span> • {new Date(project.createdAt).toLocaleDateString()}
-                </div>                {project.owner && (
-                  <div className="text-xs text-slate-400 mt-1">
-                    <button onClick={(e) => { e.stopPropagation(); navigate(`/u/${project.owner.username || project.owner}`); }} className="text-slate-300 hover:text-white font-semibold">
-                      @{project.owner.username || project.owner}
-                    </button>
-                  </div>
-                )}            </div>
+      <header className="h-12 md:h-16 bg-slate-800 border-b border-slate-700 flex items-center justify-between px-2 md:px-6 shrink-0 z-20 shadow-lg gap-1 md:gap-2">
+        <div className="flex items-center gap-1 md:gap-4 min-w-0 flex-1">
+            <button onClick={handleBack} className="hover:bg-slate-700 p-1.5 md:p-2 rounded-full transition shrink-0"><ArrowLeft size={18} /></button>
+             <div className="min-w-0 flex-1">
+                <h1 className="font-bold text-sm md:text-lg truncate">{project.title}</h1>
+                <div className="flex items-center gap-1.5 md:gap-2 text-[10px] md:text-xs text-slate-400">
+                   <span className="uppercase font-bold">{project.type}</span>
+                   {project.owner && project.owner.username && (
+                     <Link 
+                       to={`/u/${project.owner.username}`}
+                       className="flex items-center gap-1 hover:text-blue-400 transition-colors truncate"
+                     >
+                       <span className="hidden sm:inline">•</span>
+                       {project.owner.avatar ? (
+                         <img src={uploadsUrl(project.owner.avatar)} alt="" className="w-3.5 h-3.5 md:w-4 md:h-4 rounded-full object-cover shrink-0" />
+                       ) : (
+                         <div className="w-3.5 h-3.5 md:w-4 md:h-4 rounded-full bg-slate-700 flex items-center justify-center text-[8px] md:text-[10px] shrink-0">
+                           {project.owner.username.charAt(0).toUpperCase()}
+                         </div>
+                       )}
+                       <span className="font-medium truncate">@{project.owner.username}</span>
+                     </Link>
+                   )}
+                </div>
+             </div>
         </div>
         
         {showEmpathy && (
-            <div className="hidden md:flex items-center gap-2 bg-slate-900 p-1 rounded-lg border border-slate-700">
+            <div className="hidden md:flex items-center gap-1 md:gap-2 bg-slate-900 p-0.5 md:p-1 rounded-lg border border-slate-700 shrink-0">
                 <FilterButton label="Normal" active={activeFilter === 'none'} onClick={() => setActiveFilter('none')} icon={<Eye size={14} />} />
-                <div className="w-px h-4 bg-slate-700 mx-1"></div>
+                <div className="w-px h-4 bg-slate-700 mx-0.5 md:mx-1"></div>
                 <FilterButton label="Borroso" active={activeFilter === 'blur'} onClick={() => setActiveFilter('blur')} icon={<EyeOff size={14} />} />
                 <FilterButton label="Grises" active={activeFilter === 'achromatopsia'} onClick={() => setActiveFilter('achromatopsia')} icon={<Activity size={14} />} />
                 <FilterButton label="Protanopia" active={activeFilter === 'protanopia'} onClick={() => setActiveFilter('protanopia')} />
@@ -194,23 +206,40 @@ export default function ProjectView() {
             </div>
         )}
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-1.5 md:gap-4 shrink-0">
             {audit ? (
                 <div className="text-right">
-                    <div className="text-[10px] uppercase tracking-wider text-slate-400">IA Score</div>
-                    <div className={`text-xl font-bold ${audit.score >= 80 ? 'text-green-400' : audit.score >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>{audit.score}/100</div>
+                    <div className="text-[8px] md:text-[10px] uppercase tracking-wider text-slate-400">Score</div>
+                    <div className={`text-sm md:text-xl font-bold ${audit.score >= 80 ? 'text-green-400' : audit.score >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>{audit.score}/100</div>
                 </div>
             ) : (
-                <div className="text-sm font-bold text-slate-300">Sin auditar</div>
+                <div className="text-xs md:text-sm font-bold text-slate-300 hidden sm:block">Sin auditar</div>
             )}
+            <button
+              className="md:hidden h-8 w-8 bg-slate-700 hover:bg-slate-600 rounded-lg flex items-center justify-center transition shrink-0"
+              onClick={() => setMobileSidebarOpen(v => !v)}
+              aria-label="Ver auditoría y comentarios"
+            >
+              <MessageSquare size={16} />
+            </button>
         </div>
       </header>
 
       <div className="flex-1 flex overflow-hidden">
         
-        {/* CANVAS PRINCIPAL */}
-        <main className="flex-1 bg-slate-950 relative overflow-hidden flex items-center justify-center p-6 min-w-0">
-            <div className="transition-all duration-500 relative shadow-2xl rounded-xl overflow-hidden w-full h-full flex items-center justify-center" style={showEmpathy ? getFilterStyle() : {}}>
+         {/* CANVAS PRINCIPAL */}
+        <main className="flex-1 bg-slate-950 relative overflow-hidden flex flex-col items-center justify-center p-1.5 md:p-6 min-w-0 min-h-0">
+            {/* Filtros de empatía en móvil: scroll horizontal compacto */}
+            {showEmpathy && (
+              <div className="md:hidden w-full flex items-center gap-1 overflow-x-auto pb-1 shrink-0 scrollbar-none px-0.5">
+                <FilterButton label="Normal" active={activeFilter === 'none'} onClick={() => setActiveFilter('none')} icon={<Eye size={12} />} />
+                <FilterButton label="Borroso" active={activeFilter === 'blur'} onClick={() => setActiveFilter('blur')} icon={<EyeOff size={12} />} />
+                <FilterButton label="Grises" active={activeFilter === 'achromatopsia'} onClick={() => setActiveFilter('achromatopsia')} icon={<Activity size={12} />} />
+                <FilterButton label="Protanopia" active={activeFilter === 'protanopia'} onClick={() => setActiveFilter('protanopia')} />
+                <FilterButton label="Deuteranopia" active={activeFilter === 'deuteranopia'} onClick={() => setActiveFilter('deuteranopia')} />
+              </div>
+            )}
+            <div className="transition-all duration-500 relative shadow-2xl rounded-lg md:rounded-xl overflow-hidden w-full flex-1 flex items-center justify-center min-h-0" style={showEmpathy ? getFilterStyle() : {}}>
                 
                 {showEmpathy && !isPdf && <PinLayer pins={visualPins} onSavePin={handleSavePin} />}
 
@@ -246,15 +275,33 @@ export default function ProjectView() {
                          <iframe src={imageUrl} className="w-full h-full" title="Visor PDF" />
                     </div>
                 ) : (
-                    <div className="w-full h-full overflow-auto flex items-center justify-center custom-scrollbar">
-                         <img src={imageUrl} alt="Proyecto" className="max-w-none shadow-lg" />
+                    <div className="w-full h-full overflow-auto custom-scrollbar flex items-center justify-center bg-slate-950/50">
+                         <img
+                           src={imageUrl}
+                           alt="Proyecto"
+                           className="max-w-full max-h-full object-contain shadow-lg"
+                         />
                     </div>
                 )}
             </div>
         </main>
 
-        {/* SIDEBAR */}
-        <aside className="w-96 bg-slate-900 border-l border-slate-700 flex flex-col shrink-0 z-10 shadow-xl">
+        {/* SIDEBAR — escritorio: lateral fija | móvil: panel inferior deslizante */}
+        {/* Overlay móvil */}
+        {mobileSidebarOpen && (
+          <div
+            className="md:hidden fixed inset-0 bg-black/50 z-30"
+            onClick={() => setMobileSidebarOpen(false)}
+          />
+        )}
+        <aside className={`
+          fixed md:relative bottom-0 left-0 right-0 md:bottom-auto md:left-auto md:right-auto
+          md:w-96 bg-slate-900 border-t md:border-t-0 md:border-l border-slate-700
+          flex flex-col shrink-0 z-40 md:z-10 shadow-xl
+          transition-transform duration-300 ease-in-out
+          ${mobileSidebarOpen ? 'translate-y-0' : 'translate-y-full md:translate-y-0'}
+          h-[70vh] md:h-auto
+        `}>
             <div className="flex border-b border-slate-700 bg-slate-900">
                 <button 
                     onClick={() => setSidebarTab('ai')}
@@ -300,13 +347,24 @@ export default function ProjectView() {
                         ) : (
                             pins.map((pin, idx) => (
                                 <div key={idx} className="group bg-slate-800 p-3 rounded-xl border border-slate-700 flex gap-3 animate-fade-in-up hover:border-slate-600 transition-colors">
-                                    <div className="h-8 w-8 rounded-full bg-purple-900/50 text-purple-200 flex items-center justify-center text-xs font-bold shrink-0 border border-purple-500/30">
-                                        {pin.author?.username?.charAt(0).toUpperCase() || '?'}
-                                    </div>
+                                    <Link to={`/u/${pin.author?.username || '#'}`} className="shrink-0">
+                                      {pin.author?.avatar ? (
+                                        <img src={uploadsUrl(pin.author.avatar)} alt="" className="h-8 w-8 rounded-full object-cover border border-slate-600" />
+                                      ) : (
+                                        <div className="h-8 w-8 rounded-full bg-purple-900/50 text-purple-200 flex items-center justify-center text-xs font-bold border border-purple-500/30">
+                                            {pin.author?.username?.charAt(0).toUpperCase() || '?'}
+                                        </div>
+                                      )}
+                                    </Link>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center justify-between mb-1">
                                             <div className="flex items-center gap-2">
-                                                <span className="text-sm font-bold text-slate-200">@{pin.author?.username || 'Usuario desconocido'}</span>
+                                                <Link 
+                                                  to={`/u/${pin.author?.username || '#'}`}
+                                                  className="text-sm font-bold text-slate-200 hover:text-blue-400 transition-colors"
+                                                >
+                                                  @{pin.author?.username || 'Usuario desconocido'}
+                                                </Link>
                                                 <span className="text-[10px] text-slate-500">{new Date(pin.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                                             </div>
                                             
